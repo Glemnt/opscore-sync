@@ -41,7 +41,7 @@ export function AddClientDialog({ open, onClose }: AddClientDialogProps) {
   const [segment, setSegment] = useState('');
   const [squadId, setSquadId] = useState(squads[0]?.id ?? '');
   const [monthlyRevenue, setMonthlyRevenue] = useState('');
-  const [platform, setPlatform] = useState<Platform>('mercado_livre');
+  const [platforms, setPlatforms] = useState<Platform[]>(['mercado_livre']);
 
   // Selected templates for auto-creation
   const [selectedTemplateIds, setSelectedTemplateIds] = useState<string[]>([]);
@@ -60,7 +60,7 @@ export function AddClientDialog({ open, onClose }: AddClientDialogProps) {
     setName(''); setCompanyName(''); setContractType('mrr');
     setPaymentDay('10'); setContractDuration('3'); setSegment('');
     setSquadId(squads[0]?.id ?? ''); setMonthlyRevenue('');
-    setPlatform('mercado_livre');
+    setPlatforms(['mercado_livre']);
     setSelectedTemplateIds([]);
     setTab('dados');
   };
@@ -87,7 +87,8 @@ export function AddClientDialog({ open, onClose }: AddClientDialogProps) {
       contractType,
       paymentDay: Number(paymentDay),
       contractDurationMonths: contractType === 'tcv' ? Number(contractDuration) : undefined,
-      platform,
+      platform: platforms[0],
+      platforms,
       changeLogs: [],
       chatNotes: [],
     };
@@ -169,11 +170,26 @@ export function AddClientDialog({ open, onClose }: AddClientDialogProps) {
             </div>
             <div>
               <Label className="text-xs">Plataformas</Label>
-              <select value={platform} onChange={e => setPlatform(e.target.value as Platform)} className="w-full h-8 px-2 text-sm bg-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring text-foreground">
-                <option value="mercado_livre">Mercado Livre</option>
-                <option value="shopee">Shopee</option>
-                <option value="shein">Shein</option>
-              </select>
+              <div className="flex flex-wrap gap-2 mt-1.5">
+                {([['mercado_livre', 'Mercado Livre'], ['shopee', 'Shopee'], ['shein', 'Shein']] as const).map(([value, label]) => {
+                  const selected = platforms.includes(value);
+                  return (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() => setPlatforms(prev => selected ? prev.filter(p => p !== value) : [...prev, value])}
+                      className={cn(
+                        'px-3 py-1.5 text-xs rounded-lg border transition-all font-medium',
+                        selected
+                          ? 'border-primary bg-primary/10 text-primary ring-1 ring-primary/30'
+                          : 'border-border bg-card text-muted-foreground hover:border-primary/40'
+                      )}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
