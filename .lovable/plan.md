@@ -1,48 +1,40 @@
 
 
-## Plano: Relatórios PDF com Seleção por Categoria
+## Plano: Dialog "Nova Demanda" Completo
 
-### Dependências
-- Instalar `jspdf` e `jspdf-autotable`
+### Criar `src/components/AddTaskDialog.tsx`
 
-### Arquivos
+Dialog com os seguintes campos:
 
-**1. Criar `src/lib/reportGenerators.ts`**
-Utilitário com 4 funções de geração de PDF, todas com header (logo Grupo TG + título + data), tabelas estilizadas com cores da marca (`#7c3aed`), paginação automática, formato A4 landscape.
+| Campo | Componente | Dados |
+|---|---|---|
+| Cliente | Select | Clientes visíveis via `useAuth().getVisibleClients()` |
+| Projeto vinculado | Select (opcional) | Projetos do cliente selecionado |
+| Tipo de demanda | Select | `taskTypeConfig` (Anúncio, Copy, Design, etc.) |
+| Nome da demanda | Input | Texto livre |
+| Prazo | DatePicker (Popover + Calendar) | `pointer-events-auto` no Calendar |
+| Responsável | Select | Membros do squad do cliente selecionado |
+| Prioridade | Select | Alta, Média, Baixa |
+| Tempo estimado (h) | Input number | Horas |
+| Observação | Textarea | Texto livre |
+| Subtarefas iniciais | Input + botão adicionar | Lista dinâmica de strings |
 
-- **`generateTeamReport(squads, clients, tasks, projects, teamMembers)`** — Relatório por Squad
-  - Para cada squad: nome, líder, membros
-  - Tabela de membros do squad: nome, cargo, tarefas concluídas, tempo médio, pontualidade, carga atual
-  - Clientes do squad: nome, projetos ativos, demandas pendentes, receita
-  - Tarefas do squad: título, tipo, status, responsável, prazo
+**Lógica:**
+- Ao selecionar cliente, filtra projetos e responsáveis pelo squad do cliente
+- Ao submeter, cria `Task` com status `backlog`, `createdAt` = agora, e adiciona via `addTask` do `TasksContext`
+- Toast de sucesso após criação
 
-- **`generateClientReport(client, tasks, projects)`** — Recebe 1 cliente selecionado
-  - KPIs: receita, projetos ativos, demandas, saúde, contrato
-  - Tabela de projetos: nome, tipo, status, progresso, prazo
-  - Tabela de tarefas: título, responsável, tipo, status, prioridade, tempo estimado/real, prazo
+### Atualizar `src/pages/TasksPage.tsx`
 
-- **`generateTaskTypeReport(taskType, tasks, taskTypeConfig)`** — Recebe 1 tipo de tarefa selecionado
-  - KPIs: total de tarefas, concluídas, em andamento, tempo médio estimado, tempo médio real
-  - Tabela completa: título, cliente, responsável, status, prioridade, tempo estimado/real, prazo
+- Importar `AddTaskDialog`
+- Estado `showAddDialog` para controlar abertura
+- Botão "Nova Demanda" abre o dialog
+- Card aparece automaticamente na coluna Backlog
 
-- **`generateCollaboratorReport(member, tasks, teamRoleConfig)`** — Recebe 1 colaborador selecionado
-  - KPIs: tarefas concluídas, tempo médio, pontualidade, tarefas atrasadas, carga atual
-  - Tabela de tarefas atribuídas: título, cliente, tipo, status, prioridade, prazo, tempo estimado/real
-
-**2. Atualizar `src/pages/ReportsPage.tsx`**
-- Cada card "Gerar relatório" abre um dialog/modal de seleção antes de gerar:
-  - **Equipe**: gera direto (sem seleção) — relatório completo por squads
-  - **Cliente**: Select com lista de clientes ativos → seleciona → gera PDF
-  - **Tipo de Tarefa**: Select com tipos de tarefa → seleciona → gera PDF
-  - **Colaborador**: Select com lista de membros → seleciona → gera PDF
-- Usar `Dialog` + `Select` existentes do projeto
-- Estado de loading no botão durante geração
-- Toast de sucesso após download
-
-### Resumo
+### Arquivos alterados
 
 | Arquivo | Alteração |
 |---|---|
-| `src/lib/reportGenerators.ts` | Novo — 4 funções de geração PDF |
-| `src/pages/ReportsPage.tsx` | Dialogs de seleção + chamadas aos geradores |
+| `src/components/AddTaskDialog.tsx` | Novo |
+| `src/pages/TasksPage.tsx` | Integrar dialog ao botão |
 
