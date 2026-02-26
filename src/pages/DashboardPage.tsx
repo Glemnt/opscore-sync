@@ -130,12 +130,15 @@ export function DashboardPage() {
   const platformData = useMemo(() => {
     const map: Record<string, number> = {};
     clients.filter(c => c.status === 'active').forEach(c => {
-      const p = c.platform || 'mercado_livre';
-      map[p] = (map[p] || 0) + (c.monthlyRevenue || 0);
+      const plats = c.platforms?.length ? c.platforms : (c.platform ? [c.platform] : ['mercado_livre']);
+      const rev = (c.monthlyRevenue || 0) / plats.length;
+      plats.forEach(p => {
+        map[p] = (map[p] || 0) + rev;
+      });
     });
     return Object.entries(map).map(([key, value]) => ({
       name: PLATFORM_LABELS[key] || key,
-      value,
+      value: Math.round(value),
       color: PLATFORM_COLORS[key] || '#94a3b8',
     }));
   }, [clients]);

@@ -42,6 +42,7 @@ export interface Client {
   paymentDay: number;
   contractDurationMonths?: number; // only for TCV
   platform?: Platform;
+  platforms?: Platform[];
   healthColor?: 'green' | 'yellow' | 'red' | 'white';
   contractFile?: { name: string; url: string; uploadedAt: string };
   changeLogs: ChangeLogEntry[];
