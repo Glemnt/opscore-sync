@@ -1,25 +1,48 @@
 
 
-## Plano: Adicionar aba "Editar Template" no dialog de demanda
+## Plano: Relatórios PDF com Seleção por Categoria
 
-### Alteracao
+### Dependências
+- Instalar `jspdf` e `jspdf-autotable`
 
-**Arquivo: `src/components/AddDemandDialog.tsx`**
+### Arquivos
 
-- Adicionar um 4o tab "Editar Template" ao `TabsList` com valor `edit_template`
-- Atualizar o tipo do state `mode` para incluir `'edit_template'`
-- Na aba "Editar Template":
-  - Listar todos os templates customizados criados pelo usuario
-  - Ao clicar num template, carregar o formulario de edicao (mesmo formulario do criar template) com nome e subtarefas preenchidos
-  - Permitir alterar titulo, adicionar/remover subtarefas
-  - Botao "Atualizar Template" para salvar as alteracoes
-  - Botao de excluir template (icone Trash2) ao lado de cada item
-  - Se nao houver templates customizados, exibir mensagem "Nenhum template criado ainda"
-- Templates padrao (fixos) nao aparecem para edicao
+**1. Criar `src/lib/reportGenerators.ts`**
+Utilitário com 4 funções de geração de PDF, todas com header (logo Grupo TG + título + data), tabelas estilizadas com cores da marca (`#7c3aed`), paginação automática, formato A4 landscape.
+
+- **`generateTeamReport(squads, clients, tasks, projects, teamMembers)`** — Relatório por Squad
+  - Para cada squad: nome, líder, membros
+  - Tabela de membros do squad: nome, cargo, tarefas concluídas, tempo médio, pontualidade, carga atual
+  - Clientes do squad: nome, projetos ativos, demandas pendentes, receita
+  - Tarefas do squad: título, tipo, status, responsável, prazo
+
+- **`generateClientReport(client, tasks, projects)`** — Recebe 1 cliente selecionado
+  - KPIs: receita, projetos ativos, demandas, saúde, contrato
+  - Tabela de projetos: nome, tipo, status, progresso, prazo
+  - Tabela de tarefas: título, responsável, tipo, status, prioridade, tempo estimado/real, prazo
+
+- **`generateTaskTypeReport(taskType, tasks, taskTypeConfig)`** — Recebe 1 tipo de tarefa selecionado
+  - KPIs: total de tarefas, concluídas, em andamento, tempo médio estimado, tempo médio real
+  - Tabela completa: título, cliente, responsável, status, prioridade, tempo estimado/real, prazo
+
+- **`generateCollaboratorReport(member, tasks, teamRoleConfig)`** — Recebe 1 colaborador selecionado
+  - KPIs: tarefas concluídas, tempo médio, pontualidade, tarefas atrasadas, carga atual
+  - Tabela de tarefas atribuídas: título, cliente, tipo, status, prioridade, prazo, tempo estimado/real
+
+**2. Atualizar `src/pages/ReportsPage.tsx`**
+- Cada card "Gerar relatório" abre um dialog/modal de seleção antes de gerar:
+  - **Equipe**: gera direto (sem seleção) — relatório completo por squads
+  - **Cliente**: Select com lista de clientes ativos → seleciona → gera PDF
+  - **Tipo de Tarefa**: Select com tipos de tarefa → seleciona → gera PDF
+  - **Colaborador**: Select com lista de membros → seleciona → gera PDF
+- Usar `Dialog` + `Select` existentes do projeto
+- Estado de loading no botão durante geração
+- Toast de sucesso após download
 
 ### Resumo
 
-| Arquivo | Alteracao |
+| Arquivo | Alteração |
 |---|---|
-| `src/components/AddDemandDialog.tsx` | Nova aba "Editar Template" com listagem e formulario de edicao inline |
+| `src/lib/reportGenerators.ts` | Novo — 4 funções de geração PDF |
+| `src/pages/ReportsPage.tsx` | Dialogs de seleção + chamadas aos geradores |
 
