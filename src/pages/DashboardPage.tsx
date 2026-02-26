@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { format, parseISO, isWithinInterval, startOfMonth, endOfMonth } from 'date-fns';
+import { format, parseISO, isWithinInterval, startOfMonth, endOfMonth, subMonths, isAfter, isBefore, startOfDay, endOfDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import {
   Users, AlertTriangle, TrendingUp, Activity, DollarSign, UserMinus, UserPlus, CalendarIcon
@@ -7,7 +7,7 @@ import {
 import { projects as allProjects, tasks as allTasks, teamMembers } from '@/data/mockData';
 import { PageHeader, StatCard, StatusBadge, Avatar, ProgressBar } from '@/components/ui/shared';
 import { projectStatusConfig, priorityConfig } from '@/lib/config';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Legend } from 'recharts';
 import { useAuth } from '@/contexts/AuthContext';
 import { useClients } from '@/contexts/ClientsContext';
 import { Button } from '@/components/ui/button';
@@ -139,6 +139,27 @@ export function DashboardPage() {
       color: PLATFORM_COLORS[key] || '#94a3b8',
     }));
   }, [clients]);
+
+  // Client evolution by month (last 6 months)
+  const clientEvolutionData = useMemo(() => {
+    const months: { month: string; entradas: number; saidas: number }[] = [];
+    for (let i = 5; i >= 0; i--) {
+      const monthStart = startOfMonth(subMonths(now, i));
+      const monthEnd = endOfMonth(subMonths(now, i));
+      const label = format(monthStart, 'MMM/yy', { locale: ptBR });
+      const entradas = allClientsList.filter(c => {
+        const d = parseISO(c.startDate);
+        return isWithinInterval(d, { start: monthStart, end: monthEnd });
+      }).length;
+      const saidas = allClientsList.filter(c => {
+        if (c.status !== 'churned') return false;
+        const d = parseISO(c.startDate);
+        return isWithinInterval(d, { start: monthStart, end: monthEnd });
+      }).length;
+      months.push({ month: label, entradas, saidas });
+    }
+    return months;
+  }, [allClientsList]);
 
   const recentProjects = projects.slice(0, 4);
 
@@ -273,38 +294,25 @@ export function DashboardPage() {
 
       {/* Bottom row */}
       <div className="grid grid-cols-3 gap-4">
-        {/* Active projects */}
+        {/* Client evolution chart */}
         <div className="col-span-2 bg-card rounded-xl border border-border p-5 shadow-sm-custom">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-semibold text-foreground">Projetos Ativos</h3>
-            <span className="text-xs text-primary font-medium cursor-pointer hover:underline">Ver todos →</span>
+            <div>
+              <h3 className="text-sm font-semibold text-foreground">Evolução de Clientes</h3>
+              <p className="text-xs text-muted-foreground">Entrada e saída de clientes por mês</p>
+            </div>
           </div>
-          <div className="space-y-3">
-            {recentProjects.map((project) => {
-              const statusConf = projectStatusConfig[project.status];
-              const priorityConf = priorityConfig[project.priority];
-              return (
-                <div key={project.id} className="flex items-center gap-3 p-3 rounded-lg bg-background hover:bg-muted/40 transition-colors">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <p className="text-sm font-medium text-foreground truncate">{project.name}</p>
-                      <StatusBadge className={statusConf.className}>{statusConf.label}</StatusBadge>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <p className="text-xs text-muted-foreground">{project.clientName}</p>
-                      <span className="text-xs text-muted-foreground">·</span>
-                      <p className="text-xs text-muted-foreground">Prazo: {new Date(project.deadline).toLocaleDateString('pt-BR')}</p>
-                    </div>
-                    <ProgressBar value={project.progress} className="mt-2" />
-                  </div>
-                  <div className="text-right shrink-0">
-                    <p className="text-sm font-bold text-foreground">{project.progress}%</p>
-                    <Avatar name={project.responsible} size="sm" className="ml-auto mt-1" />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+          <ResponsiveContainer width="100%" height={220}>
+            <BarChart data={clientEvolutionData} barGap={4}>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(220 13% 90%)" vertical={false} />
+              <XAxis dataKey="month" tick={{ fontSize: 11, fill: 'hsl(215 16% 47%)' }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fontSize: 11, fill: 'hsl(215 16% 47%)' }} axisLine={false} tickLine={false} />
+              <Tooltip contentStyle={{ background: 'hsl(0 0% 100%)', border: '1px solid hsl(220 13% 90%)', borderRadius: '8px', fontSize: '12px' }} />
+              <Bar dataKey="entradas" name="Entradas" fill="hsl(142 71% 45%)" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="saidas" name="Saídas" fill="hsl(0 84% 60%)" radius={[4, 4, 0, 0]} />
+              <Legend wrapperStyle={{ fontSize: '11px' }} />
+            </BarChart>
+          </ResponsiveContainer>
         </div>
 
         {/* Team workload */}
