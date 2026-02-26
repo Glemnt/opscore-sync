@@ -27,7 +27,7 @@ const DEFAULT_TEMPLATES = [
 
 export function AddClientDialog({ open, onClose }: AddClientDialogProps) {
   const { addClient } = useClients();
-  const { addTask, customTemplates } = useTasks();
+  const { addTask, customTemplates, flows } = useTasks();
   const { currentUser } = useAuth();
 
   const [tab, setTab] = useState<'dados' | 'fluxo'>('dados');
@@ -45,7 +45,9 @@ export function AddClientDialog({ open, onClose }: AddClientDialogProps) {
   // Selected templates for auto-creation
   const [selectedTemplateIds, setSelectedTemplateIds] = useState<string[]>([]);
 
-  const allTemplates = [...DEFAULT_TEMPLATES, ...customTemplates];
+  // Merge default templates, custom templates, and flows into a single list
+  const flowsAsTemplates = flows.map(f => ({ id: f.id, name: f.name, subtasks: f.steps }));
+  const allTemplates = [...DEFAULT_TEMPLATES, ...customTemplates, ...flowsAsTemplates];
 
   const toggleTemplate = (id: string) => {
     setSelectedTemplateIds(prev =>
