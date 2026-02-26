@@ -1,12 +1,19 @@
+import { useState, useMemo } from 'react';
+import { format, parseISO, isWithinInterval, startOfMonth, endOfMonth } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 import {
-  Users, FolderKanban, CheckSquare, AlertTriangle,
-  TrendingUp, Clock, ArrowUpRight, Activity
+  Users, AlertTriangle, TrendingUp, Activity, DollarSign, UserMinus, UserPlus, CalendarIcon
 } from 'lucide-react';
-import { clients as allClients, projects as allProjects, tasks as allTasks, teamMembers } from '@/data/mockData';
+import { projects as allProjects, tasks as allTasks, teamMembers } from '@/data/mockData';
 import { PageHeader, StatCard, StatusBadge, Avatar, ProgressBar } from '@/components/ui/shared';
 import { projectStatusConfig, priorityConfig } from '@/lib/config';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { useAuth } from '@/contexts/AuthContext';
+import { useClients } from '@/contexts/ClientsContext';
+import { Button } from '@/components/ui/button';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { cn } from '@/lib/utils';
 
 const weeklyData = [
   { day: 'Seg', concluidas: 8, abertas: 3 },
@@ -26,45 +33,132 @@ const taskTypeData = [
   { name: 'Outros', value: 17, color: '#94a3b8' },
 ];
 
+const PLATFORM_LABELS: Record<string, string> = {
+  mercado_livre: 'Mercado Livre',
+  shopee: 'Shopee',
+  shein: 'Shein',
+};
+const PLATFORM_COLORS: Record<string, string> = {
+  mercado_livre: '#ffe600',
+  shopee: '#ee4d2d',
+  shein: '#000000',
+};
+
+function DateRangeFilter({ startDate, endDate, onStartChange, onEndChange }: {
+  startDate: Date | undefined;
+  endDate: Date | undefined;
+  onStartChange: (d: Date | undefined) => void;
+  onEndChange: (d: Date | undefined) => void;
+}) {
+  return (
+    <div className="flex items-center gap-2">
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button variant="outline" size="sm" className={cn("h-7 text-xs gap-1", !startDate && "text-muted-foreground")}>
+            <CalendarIcon className="w-3 h-3" />
+            {startDate ? format(startDate, 'dd/MM/yy') : 'Início'}
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-auto p-0" align="start">
+          <Calendar mode="single" selected={startDate} onSelect={onStartChange} initialFocus className="p-3 pointer-events-auto" />
+        </PopoverContent>
+      </Popover>
+      <span className="text-xs text-muted-foreground">—</span>
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button variant="outline" size="sm" className={cn("h-7 text-xs gap-1", !endDate && "text-muted-foreground")}>
+            <CalendarIcon className="w-3 h-3" />
+            {endDate ? format(endDate, 'dd/MM/yy') : 'Fim'}
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-auto p-0" align="start">
+          <Calendar mode="single" selected={endDate} onSelect={onEndChange} initialFocus className="p-3 pointer-events-auto" />
+        </PopoverContent>
+      </Popover>
+    </div>
+  );
+}
+
 export function DashboardPage() {
   const { getVisibleClients } = useAuth();
+  const { clients: allClientsList } = useClients();
   const clients = getVisibleClients();
   const visibleClientIds = new Set(clients.map((c) => c.id));
   const projects = allProjects.filter((p) => visibleClientIds.has(p.clientId));
   const tasks = allTasks.filter((t) => visibleClientIds.has(t.clientId));
 
+  // Date filters
+  const now = new Date();
+  const [clientsStartDate, setClientsStartDate] = useState<Date | undefined>(startOfMonth(now));
+  const [clientsEndDate, setClientsEndDate] = useState<Date | undefined>(endOfMonth(now));
+  const [churnStartDate, setChurnStartDate] = useState<Date | undefined>(startOfMonth(now));
+  const [churnEndDate, setChurnEndDate] = useState<Date | undefined>(endOfMonth(now));
+
   const activeClients = clients.filter(c => c.status === 'active').length;
-  const activeProjects = projects.filter(p => p.status === 'in_progress').length;
   const lateTasks = tasks.filter(t => {
     const isLate = new Date(t.deadline) < new Date() && t.status !== 'done';
     return isLate;
   }).length;
-  const waitingTasks = tasks.filter(t => t.status === 'waiting_client').length;
 
-  const overloadedMembers = teamMembers.filter(m => m.currentLoad >= 8);
+  // MRR
+  const mrr = useMemo(() => {
+    return clients
+      .filter(c => c.status === 'active')
+      .reduce((sum, c) => sum + (c.monthlyRevenue || 0), 0);
+  }, [clients]);
+
+  // Clients added in range
+  const clientsAdded = useMemo(() => {
+    if (!clientsStartDate || !clientsEndDate) return clients.length;
+    return clients.filter(c => {
+      const d = parseISO(c.startDate);
+      return isWithinInterval(d, { start: clientsStartDate, end: clientsEndDate });
+    }).length;
+  }, [clients, clientsStartDate, clientsEndDate]);
+
+  // Churn in range
+  const churnCount = useMemo(() => {
+    const churned = allClientsList.filter(c => c.status === 'churned');
+    if (!churnStartDate || !churnEndDate) return churned.length;
+    return churned.filter(c => {
+      const d = parseISO(c.startDate);
+      return isWithinInterval(d, { start: churnStartDate, end: churnEndDate });
+    }).length;
+  }, [allClientsList, churnStartDate, churnEndDate]);
+
+  // Revenue by platform
+  const platformData = useMemo(() => {
+    const map: Record<string, number> = {};
+    clients.filter(c => c.status === 'active').forEach(c => {
+      const p = c.platform || 'mercado_livre';
+      map[p] = (map[p] || 0) + (c.monthlyRevenue || 0);
+    });
+    return Object.entries(map).map(([key, value]) => ({
+      name: PLATFORM_LABELS[key] || key,
+      value,
+      color: PLATFORM_COLORS[key] || '#94a3b8',
+    }));
+  }, [clients]);
+
   const recentProjects = projects.slice(0, 4);
 
   return (
     <div className="p-6 animate-fade-in">
-      <PageHeader
-        title="Dashboard"
-        subtitle="Visão geral da operação em tempo real"
-      />
+      <PageHeader title="Dashboard" subtitle="Visão geral da operação em tempo real" />
 
       {/* Stats */}
-      <div className="grid grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <StatCard
           label="Clientes Ativos"
           value={activeClients}
           icon={<Users className="w-5 h-5 text-primary" />}
-          trend={{ value: '+2 esse mês', positive: true }}
           accent="bg-primary-light"
         />
         <StatCard
-          label="Projetos em Andamento"
-          value={activeProjects}
-          icon={<FolderKanban className="w-5 h-5 text-info" />}
-          accent="bg-info-light"
+          label="MRR"
+          value={`R$ ${mrr.toLocaleString('pt-BR')}`}
+          icon={<DollarSign className="w-5 h-5 text-emerald-500" />}
+          accent="bg-emerald-500/10"
         />
         <StatCard
           label="Demandas Atrasadas"
@@ -73,12 +167,56 @@ export function DashboardPage() {
           trend={{ value: 'Atenção necessária', positive: false }}
           accent="bg-destructive/10"
         />
-        <StatCard
-          label="Aguard. Cliente"
-          value={waitingTasks}
-          icon={<Clock className="w-5 h-5 text-warning" />}
-          accent="bg-warning-light"
-        />
+        <div className="bg-card rounded-xl border border-border p-4 shadow-sm-custom">
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-xs text-muted-foreground font-medium">Clientes Adicionados</span>
+            <div className="p-1.5 rounded-lg bg-blue-500/10"><UserPlus className="w-4 h-4 text-blue-500" /></div>
+          </div>
+          <p className="text-2xl font-bold text-foreground mb-2">{clientsAdded}</p>
+          <DateRangeFilter startDate={clientsStartDate} endDate={clientsEndDate} onStartChange={setClientsStartDate} onEndChange={setClientsEndDate} />
+        </div>
+      </div>
+
+      {/* Churn + Revenue by Platform */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+        {/* Churn card */}
+        <div className="bg-card rounded-xl border border-border p-5 shadow-sm-custom">
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-xs text-muted-foreground font-medium">Churn</span>
+            <div className="p-1.5 rounded-lg bg-destructive/10"><UserMinus className="w-4 h-4 text-destructive" /></div>
+          </div>
+          <p className="text-2xl font-bold text-foreground mb-2">{churnCount}</p>
+          <DateRangeFilter startDate={churnStartDate} endDate={churnEndDate} onStartChange={setChurnStartDate} onEndChange={setChurnEndDate} />
+        </div>
+
+        {/* Revenue by Platform */}
+        <div className="lg:col-span-2 bg-card rounded-xl border border-border p-5 shadow-sm-custom">
+          <div className="mb-4">
+            <h3 className="text-sm font-semibold text-foreground">Receita por Plataforma</h3>
+            <p className="text-xs text-muted-foreground">Distribuição de MRR entre plataformas</p>
+          </div>
+          <div className="flex items-center gap-6">
+            <PieChart width={140} height={140}>
+              <Pie data={platformData} cx={65} cy={65} innerRadius={40} outerRadius={65} dataKey="value" strokeWidth={2}>
+                {platformData.map((entry, index) => (
+                  <Cell key={index} fill={entry.color} />
+                ))}
+              </Pie>
+              <Tooltip formatter={(value: number) => `R$ ${value.toLocaleString('pt-BR')}`} />
+            </PieChart>
+            <div className="space-y-2 flex-1">
+              {platformData.map((item) => (
+                <div key={item.name} className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full" style={{ background: item.color }} />
+                    <span className="text-xs text-muted-foreground">{item.name}</span>
+                  </div>
+                  <span className="text-xs font-semibold text-foreground">R$ {item.value.toLocaleString('pt-BR')}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Charts row */}
@@ -97,10 +235,7 @@ export function DashboardPage() {
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(220 13% 90%)" vertical={false} />
               <XAxis dataKey="day" tick={{ fontSize: 11, fill: 'hsl(215 16% 47%)' }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fontSize: 11, fill: 'hsl(215 16% 47%)' }} axisLine={false} tickLine={false} />
-              <Tooltip
-                contentStyle={{ background: 'hsl(0 0% 100%)', border: '1px solid hsl(220 13% 90%)', borderRadius: '8px', fontSize: '12px' }}
-                cursor={{ fill: 'hsl(220 20% 97%)' }}
-              />
+              <Tooltip contentStyle={{ background: 'hsl(0 0% 100%)', border: '1px solid hsl(220 13% 90%)', borderRadius: '8px', fontSize: '12px' }} cursor={{ fill: 'hsl(220 20% 97%)' }} />
               <Bar dataKey="concluidas" name="Concluídas" fill="hsl(238 75% 52%)" radius={[4, 4, 0, 0]} />
               <Bar dataKey="abertas" name="Abertas" fill="hsl(220 13% 88%)" radius={[4, 4, 0, 0]} />
             </BarChart>
@@ -187,22 +322,15 @@ export function DashboardPage() {
                   <div className="flex items-center justify-between mb-1">
                     <div className="flex items-center gap-2">
                       <Avatar name={member.name} size="sm" />
-                      <span className="text-xs font-medium text-foreground truncate max-w-[90px]">
-                        {member.name.split(' ')[0]}
-                      </span>
+                      <span className="text-xs font-medium text-foreground truncate max-w-[90px]">{member.name.split(' ')[0]}</span>
                     </div>
                     <div className="flex items-center gap-1">
                       {isOverloaded && <AlertTriangle className="w-3 h-3 text-warning" />}
-                      <span className={`text-xs font-semibold ${isOverloaded ? 'text-warning' : 'text-muted-foreground'}`}>
-                        {member.currentLoad}/10
-                      </span>
+                      <span className={`text-xs font-semibold ${isOverloaded ? 'text-warning' : 'text-muted-foreground'}`}>{member.currentLoad}/10</span>
                     </div>
                   </div>
                   <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                    <div
-                      className={`h-full rounded-full transition-all ${isOverloaded ? 'bg-warning' : 'bg-primary'}`}
-                      style={{ width: `${pct}%` }}
-                    />
+                    <div className={`h-full rounded-full transition-all ${isOverloaded ? 'bg-warning' : 'bg-primary'}`} style={{ width: `${pct}%` }} />
                   </div>
                 </div>
               );

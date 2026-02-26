@@ -6,6 +6,7 @@ export type TaskType = 'anuncio' | 'copy' | 'design' | 'otimizacao' | 'analise' 
 export type ProjectType = 'criacao_anuncio' | 'setup_campanha' | 'otimizacao' | 'relatorio' | 'redesign' | 'consultoria';
 export type TeamRole = 'cs' | 'operacional' | 'design' | 'copy' | 'gestao';
 export type ContractType = 'mrr' | 'tcv';
+export type Platform = 'mercado_livre' | 'shopee' | 'shein';
 
 export interface ChangeLogEntry {
   id: string;
@@ -40,6 +41,7 @@ export interface Client {
   contractType: ContractType;
   paymentDay: number;
   contractDurationMonths?: number; // only for TCV
+  platform?: Platform;
   healthColor?: 'green' | 'yellow' | 'red' | 'white';
   contractFile?: { name: string; url: string; uploadedAt: string };
   changeLogs: ChangeLogEntry[];
