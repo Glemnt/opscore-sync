@@ -12,7 +12,7 @@ import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTasks } from '@/contexts/TasksContext';
 import { useSquads } from '@/contexts/SquadsContext';
-import { projects as allProjects } from '@/data/mockData';
+
 import { taskTypeConfig, priorityConfig } from '@/lib/config';
 import { Task, TaskType, Priority } from '@/types';
 import { cn } from '@/lib/utils';
@@ -30,7 +30,7 @@ export function AddTaskDialog({ open, onOpenChange }: AddTaskDialogProps) {
   const visibleClients = getVisibleClients();
 
   const [clientId, setClientId] = useState('');
-  const [projectId, setProjectId] = useState('');
+  
   const [type, setType] = useState<TaskType>('anuncio');
   const [title, setTitle] = useState('');
   const [deadline, setDeadline] = useState<Date>();
@@ -51,7 +51,6 @@ export function AddTaskDialog({ open, onOpenChange }: AddTaskDialogProps) {
 
   const handleClientChange = (v: string) => {
     setClientId(v);
-    setProjectId('');
     setResponsible('');
     setTitle(generateTitle(v, type));
   };
@@ -61,10 +60,6 @@ export function AddTaskDialog({ open, onOpenChange }: AddTaskDialogProps) {
     setTitle(generateTitle(clientId, v));
   };
 
-  const clientProjects = useMemo(
-    () => (clientId ? allProjects.filter((p) => p.clientId === clientId) : []),
-    [clientId]
-  );
 
   const squadMembers = useMemo(() => {
     if (!selectedClient) return [];
@@ -74,7 +69,6 @@ export function AddTaskDialog({ open, onOpenChange }: AddTaskDialogProps) {
 
   const resetForm = () => {
     setClientId('');
-    setProjectId('');
     setType('anuncio');
     setTitle('');
     setDeadline(undefined);
@@ -93,15 +87,12 @@ export function AddTaskDialog({ open, onOpenChange }: AddTaskDialogProps) {
     }
 
     const client = visibleClients.find((c) => c.id === clientId)!;
-    const project = clientProjects.find((p) => p.id === projectId);
 
     const newTask: Task = {
       id: `t_${Date.now()}`,
       title,
       clientId,
       clientName: client.name,
-      projectId: project?.id,
-      projectName: project?.name,
       responsible,
       type,
       estimatedTime: parseFloat(estimatedTime) || 0,
@@ -152,18 +143,6 @@ export function AddTaskDialog({ open, onOpenChange }: AddTaskDialogProps) {
             </Select>
           </div>
 
-          {/* Projeto vinculado */}
-          <div className="space-y-1.5">
-            <Label>Projeto vinculado</Label>
-            <Select value={projectId} onValueChange={setProjectId} disabled={!clientId}>
-              <SelectTrigger><SelectValue placeholder="(Opcional)" /></SelectTrigger>
-              <SelectContent>
-                {clientProjects.map((p) => (
-                  <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
 
           {/* Tipo de demanda */}
           <div className="space-y-1.5">
