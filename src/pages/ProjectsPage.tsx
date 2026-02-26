@@ -10,6 +10,7 @@ import { AddDemandDialog } from '@/components/AddDemandDialog';
 import { useTasks } from '@/contexts/TasksContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSquads } from '@/contexts/SquadsContext';
+import { useClients } from '@/contexts/ClientsContext';
 import { cn } from '@/lib/utils';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -27,9 +28,10 @@ const statusCols: {status: ProjectStatus;label: string;}[] = [
 
 
 export function ProjectsPage() {
-  const { getVisibleClients } = useAuth();
+  const { currentUser } = useAuth();
   const { squads, addSquad, removeSquad, updateSquad } = useSquads();
   const { addTask } = useTasks();
+  const { updateClientField, getVisibleClients } = useClients();
   const clients = getVisibleClients();
   const [selectedSquad, setSelectedSquad] = useState<Squad | null>(null);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
@@ -89,6 +91,7 @@ export function ProjectsPage() {
     { id: 'paused', label: 'Pausado', status: 'paused' },
     { id: 'churned', label: 'Churned', status: 'churned' },
   ]);
+  const [dragOverClientCol, setDragOverClientCol] = useState<string | null>(null);
   const [editingColId, setEditingColId] = useState<string | null>(null);
 
   // Step 1: Show squads
@@ -229,7 +232,20 @@ export function ProjectsPage() {
             const colClients = squadClients.filter((c) => c.status === col.status);
             const conf = clientStatusConfig[col.status as ClientStatus];
             return (
-              <div key={col.id} className="flex-shrink-0 w-72 group/col">
+              <div
+                key={col.id}
+                className="flex-shrink-0 w-72 group/col"
+                onDragOver={(e) => { e.preventDefault(); setDragOverClientCol(col.id); }}
+                onDragLeave={() => setDragOverClientCol(null)}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  setDragOverClientCol(null);
+                  const clientId = e.dataTransfer.getData('text/plain');
+                  if (clientId) {
+                    updateClientField(clientId, 'status', col.status, 'Status');
+                  }
+                }}
+              >
                 <div className="flex items-center gap-2 mb-3">
                   {editingColId === col.id ? (
                     <EditableColInput
@@ -258,15 +274,23 @@ export function ProjectsPage() {
                     <X className="w-3.5 h-3.5" />
                   </button>
                 </div>
-                <div className="space-y-3">
+                <div className={cn(
+                  'space-y-3 min-h-[60px] rounded-xl transition-colors p-1',
+                  dragOverClientCol === col.id && 'bg-primary/5 ring-2 ring-primary/20'
+                )}>
                   {colClients.map((client) => {
                     const clientProjects = projects.filter((p) => p.clientId === client.id);
                     const activeCount = clientProjects.filter((p) => p.status === 'in_progress').length;
                     return (
-                      <button
+                      <div
                         key={client.id}
+                        draggable
+                        onDragStart={(e) => {
+                          e.dataTransfer.setData('text/plain', client.id);
+                          e.dataTransfer.effectAllowed = 'move';
+                        }}
                         onClick={() => setSelectedClient(client)}
-                        className="w-full bg-card rounded-xl border border-border p-4 shadow-sm-custom hover:shadow-md-custom hover:-translate-y-0.5 transition-all text-left group cursor-pointer">
+                        className="w-full bg-card rounded-xl border border-border p-4 shadow-sm-custom hover:shadow-md-custom hover:-translate-y-0.5 transition-all text-left group cursor-grab active:cursor-grabbing">
                         <h3 className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors mb-1">
                           {client.name}
                         </h3>
@@ -276,7 +300,7 @@ export function ProjectsPage() {
                           <span>•</span>
                           <span className="text-primary font-medium">{activeCount} ativos</span>
                         </div>
-                      </button>
+                      </div>
                     );
                   })}
                 </div>
