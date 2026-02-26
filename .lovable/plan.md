@@ -1,31 +1,46 @@
 
 
-## Plan: Add "Fluxo" (Workflow) Dropdown Button Next to "Nova Demanda"
+## Plan: Dashboard Overhaul + Platform Field on Client
 
-### Approach
-Add a dropdown menu button next to the existing "Nova Demanda" button with three options: **Criar Fluxo**, **Editar Fluxo**, and **Atribuir Fluxo ao Cliente**. Each option opens a dedicated dialog.
+### Summary of Changes
 
-### Data Model
-- Add a `Flow` type to `src/types/index.ts` with fields: `id`, `name`, `steps` (array of step labels), `createdAt`.
-- Add a `clientFlows` mapping (clientId -> flowId[]) to track assignments.
-- Extend `TasksContext` to store flows and client-flow assignments with CRUD operations.
+**Remove** from Dashboard stats: "Aguard. Cliente" and "Projetos em Andamento".
 
-### New Components
-1. **`src/components/FlowManagerDialog.tsx`** — A single dialog component with tabs/modes for:
-   - **Criar Fluxo**: Form with flow name + dynamic list of steps (add/remove/reorder).
-   - **Editar Fluxo**: Select an existing flow, then edit its name/steps. Option to delete.
-   - **Atribuir Fluxo**: Select a client, select a flow, assign it (creates tasks from flow steps).
+**Add** to Dashboard:
+1. **Receita Recorrente Mensal (MRR)** — stat card summing all active clients' `monthlyRevenue`
+2. **Clientes Adicionados** — stat card with count, plus date range filter (date pickers)
+3. **Churn** — card showing churned clients count with date range filter
+4. **Receita por Plataforma** — chart (pie or bar) breaking down revenue by platform (Mercado Livre, Shopee, Shein)
 
-### Changes to Existing Files
-1. **`src/types/index.ts`**: Add `Flow` interface.
-2. **`src/contexts/TasksContext.tsx`**: Add `flows` state, `clientFlows` state, and methods: `addFlow`, `updateFlow`, `deleteFlow`, `assignFlowToClient`.
-3. **`src/pages/TasksPage.tsx`**:
-   - Import `DropdownMenu` from radix and the new dialog.
-   - In the `PageHeader` actions, add a dropdown button ("Fluxos") with three menu items.
-   - Each item sets a dialog mode and opens `FlowManagerDialog`.
+**Add `platform` field to Client model** — new field on the `Client` type for which marketplace the client pays on.
 
-### UI Details
-- The dropdown button uses `outline` variant styling to differentiate from the primary "Nova Demanda" button.
-- Uses `Workflow` icon from lucide-react.
-- Dialog uses tabs or conditional rendering based on which action was selected.
+**Add platform selector to AddClientDialog** — dropdown with options: Mercado Livre, Shopee, Shein.
+
+---
+
+### Files to Change
+
+#### 1. `src/types/index.ts`
+- Add `Platform` type: `'mercado_livre' | 'shopee' | 'shein'`
+- Add `platform: Platform` to `Client` interface
+
+#### 2. `src/data/mockData.ts`
+- Add `platform` field to each existing mock client (distribute across the 3 platforms)
+
+#### 3. `src/components/AddClientDialog.tsx`
+- Add a `platform` select field (Mercado Livre / Shopee / Shein) in the "Dados" tab
+- Pass `platform` into the new `Client` object on submit
+
+#### 4. `src/pages/DashboardPage.tsx`
+- Remove "Projetos em Andamento" and "Aguard. Cliente" stat cards
+- Add state for date filters (start/end date) using `Popover` + `Calendar`
+- Add **MRR** stat card: sum of `monthlyRevenue` of active clients
+- Add **Clientes Adicionados** card: count clients whose `startDate` falls within selected date range
+- Add **Churn** card: count clients with `status === 'churned'` (filtered by date range)
+- Add **Receita por Plataforma** chart: group active clients by `platform`, sum `monthlyRevenue` per platform, render as PieChart or BarChart
+- Import `useClients` instead of raw mock data to get live client data including platform
+- Use `date-fns` for date comparisons and `react-day-picker` Calendar for filters
+
+#### 5. `src/contexts/ClientsContext.tsx`
+- No structural changes needed — already exposes `clients` and `getVisibleClients`
 
