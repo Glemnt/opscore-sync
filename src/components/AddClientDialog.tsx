@@ -10,7 +10,7 @@ import { squads } from '@/data/mockData';
 import { useClients } from '@/contexts/ClientsContext';
 import { useTasks } from '@/contexts/TasksContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { ContractType, Client, Task, TaskType, SubTask } from '@/types';
+import { ContractType, Client, Task, TaskType, SubTask, Platform } from '@/types';
 import { cn } from '@/lib/utils';
 
 interface AddClientDialogProps {
@@ -41,6 +41,7 @@ export function AddClientDialog({ open, onClose }: AddClientDialogProps) {
   const [segment, setSegment] = useState('');
   const [squadId, setSquadId] = useState(squads[0]?.id ?? '');
   const [monthlyRevenue, setMonthlyRevenue] = useState('');
+  const [platform, setPlatform] = useState<Platform>('mercado_livre');
 
   // Selected templates for auto-creation
   const [selectedTemplateIds, setSelectedTemplateIds] = useState<string[]>([]);
@@ -59,6 +60,7 @@ export function AddClientDialog({ open, onClose }: AddClientDialogProps) {
     setName(''); setCompanyName(''); setContractType('mrr');
     setPaymentDay('10'); setContractDuration('3'); setSegment('');
     setSquadId(squads[0]?.id ?? ''); setMonthlyRevenue('');
+    setPlatform('mercado_livre');
     setSelectedTemplateIds([]);
     setTab('dados');
   };
@@ -85,6 +87,7 @@ export function AddClientDialog({ open, onClose }: AddClientDialogProps) {
       contractType,
       paymentDay: Number(paymentDay),
       contractDurationMonths: contractType === 'tcv' ? Number(contractDuration) : undefined,
+      platform,
       changeLogs: [],
       chatNotes: [],
     };
@@ -163,6 +166,14 @@ export function AddClientDialog({ open, onClose }: AddClientDialogProps) {
                 <Label className="text-xs">Mensalidade (R$)</Label>
                 <Input type="number" value={monthlyRevenue} onChange={e => setMonthlyRevenue(e.target.value)} placeholder="3500" className="h-8 text-sm" />
               </div>
+            </div>
+            <div>
+              <Label className="text-xs">Plataforma de Pagamento</Label>
+              <select value={platform} onChange={e => setPlatform(e.target.value as Platform)} className="w-full h-8 px-2 text-sm bg-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring text-foreground">
+                <option value="mercado_livre">Mercado Livre</option>
+                <option value="shopee">Shopee</option>
+                <option value="shein">Shein</option>
+              </select>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
