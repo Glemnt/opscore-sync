@@ -127,6 +127,13 @@ export interface AppUser {
   squadIds: string[];
 }
 
+export interface Flow {
+  id: string;
+  name: string;
+  steps: string[];
+  createdAt: string;
+}
+
 export interface NavItem {
   id: string;
   label: string;

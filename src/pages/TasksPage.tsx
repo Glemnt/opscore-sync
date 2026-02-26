@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Plus, Search, Clock, MessageSquare, AlertTriangle, Trash2 } from 'lucide-react';
+import { Plus, Search, Clock, MessageSquare, AlertTriangle, Trash2, Workflow, ChevronDown } from 'lucide-react';
 import { useTasks } from '@/contexts/TasksContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSquads } from '@/contexts/SquadsContext';
@@ -10,6 +10,8 @@ import { Task, TaskStatus } from '@/types';
 import { cn } from '@/lib/utils';
 import { TaskDetailModal } from '@/components/TaskDetailModal';
 import { AddTaskDialog } from '@/components/AddTaskDialog';
+import { FlowManagerDialog, FlowDialogMode } from '@/components/FlowManagerDialog';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 const defaultKanbanCols: { status: TaskStatus; label: string }[] = [
   { status: 'backlog', label: 'Backlog' },
@@ -31,6 +33,8 @@ export function TasksPage() {
   const [dragOverCol, setDragOverCol] = useState<string | null>(null);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [showAddDialog, setShowAddDialog] = useState(false);
+  const [flowDialogOpen, setFlowDialogOpen] = useState(false);
+  const [flowMode, setFlowMode] = useState<FlowDialogMode>('create');
 
   const responsibles = ['all', ...Array.from(new Set(tasks.map(t => t.responsible)))];
 
@@ -61,13 +65,35 @@ export function TasksPage() {
         title="Demandas"
         subtitle="Gestão de tarefas em Kanban"
         actions={
-          <button
-            onClick={() => setShowAddDialog(true)}
-            className="flex items-center gap-2 px-4 py-2 gradient-primary text-primary-foreground rounded-lg text-sm font-medium shadow-primary hover:opacity-90 transition-opacity"
-          >
-            <Plus className="w-4 h-4" />
-            Nova Demanda
-          </button>
+          <div className="flex items-center gap-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="flex items-center gap-2 px-4 py-2 border border-border rounded-lg text-sm font-medium hover:bg-muted transition-colors">
+                  <Workflow className="w-4 h-4" />
+                  Fluxos
+                  <ChevronDown className="w-3.5 h-3.5" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => { setFlowMode('create'); setFlowDialogOpen(true); }}>
+                  Criar Fluxo
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => { setFlowMode('edit'); setFlowDialogOpen(true); }}>
+                  Editar Fluxo
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => { setFlowMode('assign'); setFlowDialogOpen(true); }}>
+                  Atribuir Fluxo ao Cliente
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <button
+              onClick={() => setShowAddDialog(true)}
+              className="flex items-center gap-2 px-4 py-2 gradient-primary text-primary-foreground rounded-lg text-sm font-medium shadow-primary hover:opacity-90 transition-opacity"
+            >
+              <Plus className="w-4 h-4" />
+              Nova Demanda
+            </button>
+          </div>
         }
       />
 
@@ -187,6 +213,7 @@ export function TasksPage() {
       />
 
       <AddTaskDialog open={showAddDialog} onOpenChange={setShowAddDialog} />
+      <FlowManagerDialog open={flowDialogOpen} onOpenChange={setFlowDialogOpen} mode={flowMode} />
     </div>
   );
 }
