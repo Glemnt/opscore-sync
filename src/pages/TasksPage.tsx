@@ -9,6 +9,7 @@ import { taskStatusConfig, priorityConfig, taskTypeConfig } from '@/lib/config';
 import { Task, TaskStatus } from '@/types';
 import { cn } from '@/lib/utils';
 import { TaskDetailModal } from '@/components/TaskDetailModal';
+import { AddTaskDialog } from '@/components/AddTaskDialog';
 
 const defaultKanbanCols: { status: TaskStatus; label: string }[] = [
   { status: 'backlog', label: 'Backlog' },
@@ -29,6 +30,7 @@ export function TasksPage() {
   const [editingCol, setEditingCol] = useState<string | null>(null);
   const [dragOverCol, setDragOverCol] = useState<string | null>(null);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [showAddDialog, setShowAddDialog] = useState(false);
 
   const responsibles = ['all', ...Array.from(new Set(tasks.map(t => t.responsible)))];
 
@@ -59,7 +61,10 @@ export function TasksPage() {
         title="Demandas"
         subtitle="Gestão de tarefas em Kanban"
         actions={
-          <button className="flex items-center gap-2 px-4 py-2 gradient-primary text-primary-foreground rounded-lg text-sm font-medium shadow-primary hover:opacity-90 transition-opacity">
+          <button
+            onClick={() => setShowAddDialog(true)}
+            className="flex items-center gap-2 px-4 py-2 gradient-primary text-primary-foreground rounded-lg text-sm font-medium shadow-primary hover:opacity-90 transition-opacity"
+          >
             <Plus className="w-4 h-4" />
             Nova Demanda
           </button>
@@ -180,6 +185,8 @@ export function TasksPage() {
         open={!!selectedTask}
         onOpenChange={(open) => { if (!open) setSelectedTask(null); }}
       />
+
+      <AddTaskDialog open={showAddDialog} onOpenChange={setShowAddDialog} />
     </div>
   );
 }
