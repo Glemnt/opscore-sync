@@ -168,7 +168,7 @@ export function AddClientDialog({ open, onClose }: AddClientDialogProps) {
               </div>
             </div>
             <div>
-              <Label className="text-xs">Plataforma de Pagamento</Label>
+              <Label className="text-xs">Plataformas</Label>
               <select value={platform} onChange={e => setPlatform(e.target.value as Platform)} className="w-full h-8 px-2 text-sm bg-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring text-foreground">
                 <option value="mercado_livre">Mercado Livre</option>
                 <option value="shopee">Shopee</option>
