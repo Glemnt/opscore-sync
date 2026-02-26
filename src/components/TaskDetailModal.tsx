@@ -176,10 +176,10 @@ export function TaskDetailModal({ task, open, onOpenChange }: TaskDetailModalPro
               </div>
               {isLate && (() => {
                 const diffMs = new Date().getTime() - new Date(task.deadline).getTime();
-                const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+                const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
                 return (
                   <p className="text-xs text-destructive font-medium mt-1">
-                    ⚠ {diffDays} {diffDays === 1 ? 'dia' : 'dias'} de atraso
+                    ⚠ {diffHours}h de atraso
                   </p>
                 );
               })()}
