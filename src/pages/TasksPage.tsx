@@ -1,0 +1,293 @@
+import { useState, useRef, useEffect } from 'react';
+import { Plus, Search, Clock, MessageSquare, AlertTriangle, Trash2 } from 'lucide-react';
+import { useTasks } from '@/contexts/TasksContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { useSquads } from '@/contexts/SquadsContext';
+import { clients as allClientsData } from '@/data/mockData';
+import { PageHeader, StatusBadge, Avatar, ProgressBar } from '@/components/ui/shared';
+import { taskStatusConfig, priorityConfig, taskTypeConfig } from '@/lib/config';
+import { Task, TaskStatus } from '@/types';
+import { cn } from '@/lib/utils';
+import { TaskDetailModal } from '@/components/TaskDetailModal';
+
+const defaultKanbanCols: { status: TaskStatus; label: string }[] = [
+  { status: 'backlog', label: 'Backlog' },
+  { status: 'in_progress', label: 'Em Andamento' },
+  { status: 'waiting_client', label: 'Aguard. Cliente' },
+  { status: 'done', label: 'Concluído' },
+];
+
+export function TasksPage() {
+  const { tasks: allTasks, updateTask, deleteTask } = useTasks();
+  const { currentUser, getVisibleClients } = useAuth();
+  const { squads } = useSquads();
+  const visibleClientIds = new Set(getVisibleClients().map((c) => c.id));
+  const tasks = allTasks.filter((t) => visibleClientIds.has(t.clientId));
+  const [search, setSearch] = useState('');
+  const [responsible, setResponsible] = useState('all');
+  const [cols, setCols] = useState(defaultKanbanCols);
+  const [editingCol, setEditingCol] = useState<string | null>(null);
+  const [dragOverCol, setDragOverCol] = useState<string | null>(null);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+
+  const responsibles = ['all', ...Array.from(new Set(tasks.map(t => t.responsible)))];
+
+  const filtered = tasks.filter(t => {
+    const matchSearch = t.title.toLowerCase().includes(search.toLowerCase()) ||
+      t.clientName.toLowerCase().includes(search.toLowerCase());
+    const matchResp = responsible === 'all' || t.responsible === responsible;
+    return matchSearch && matchResp;
+  });
+
+  const isLate = (task: Task) => new Date(task.deadline) < new Date() && task.status !== 'done';
+
+  const handleDrop = (colStatus: TaskStatus, e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOverCol(null);
+    const taskId = e.dataTransfer.getData('text/plain');
+    if (taskId) {
+      updateTask(taskId, { status: colStatus });
+    }
+  };
+
+  // Keep selectedTask in sync with context
+  const liveSelectedTask = selectedTask ? allTasks.find((t) => t.id === selectedTask.id) ?? null : null;
+
+  return (
+    <div className="p-6 animate-fade-in h-full flex flex-col">
+      <PageHeader
+        title="Demandas"
+        subtitle="Gestão de tarefas em Kanban"
+        actions={
+          <button className="flex items-center gap-2 px-4 py-2 gradient-primary text-primary-foreground rounded-lg text-sm font-medium shadow-primary hover:opacity-90 transition-opacity">
+            <Plus className="w-4 h-4" />
+            Nova Demanda
+          </button>
+        }
+      />
+
+      {/* Filters */}
+      <div className="flex items-center gap-3 mb-5">
+        <div className="relative max-w-xs flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <input
+            type="text"
+            placeholder="Buscar demanda..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="w-full pl-9 pr-4 py-2 text-sm bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition"
+          />
+        </div>
+        <select
+          value={responsible}
+          onChange={e => setResponsible(e.target.value)}
+          className="px-3 py-2 text-sm bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 text-foreground"
+        >
+          {responsibles.map(r => (
+            <option key={r} value={r}>{r === 'all' ? 'Todos responsáveis' : r}</option>
+          ))}
+        </select>
+      </div>
+
+      {/* Kanban */}
+      <div className="flex gap-4 flex-1 overflow-x-auto pb-4">
+        {cols.map(col => {
+          const colTasks = filtered.filter(t => t.status === col.status);
+          return (
+            <div
+              key={col.status}
+              className="flex-shrink-0 w-72"
+              onDragOver={(e) => { e.preventDefault(); setDragOverCol(col.status); }}
+              onDragLeave={() => setDragOverCol(null)}
+              onDrop={(e) => handleDrop(col.status, e)}
+            >
+              <div className={cn(
+                'flex items-center justify-between mb-3 pb-3 border-b-2',
+                col.status === 'backlog' ? 'border-b-slate-300' :
+                col.status === 'in_progress' ? 'border-b-info' :
+                col.status === 'waiting_client' ? 'border-b-warning' : 'border-b-success'
+              )}>
+                {editingCol === col.status ? (
+                  <EditableColInput
+                    value={col.label}
+                    onSave={(v) => {
+                      setCols(c => c.map(x => x.status === col.status ? { ...x, label: v } : x));
+                      setEditingCol(null);
+                    }}
+                    onCancel={() => setEditingCol(null)}
+                  />
+                ) : (
+                  <h3
+                    className="text-sm font-semibold text-foreground cursor-text"
+                    onClick={() => setEditingCol(col.status)}
+                  >
+                    {col.label}
+                  </h3>
+                )}
+                <span className="text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded-full font-medium">
+                  {colTasks.length}
+                </span>
+              </div>
+              <div className={cn(
+                'space-y-2.5 min-h-[60px] rounded-xl transition-colors p-1',
+                dragOverCol === col.status && 'bg-primary/5 ring-2 ring-primary/20'
+              )}>
+                {colTasks.map(task => {
+                  const canDel = (() => {
+                    if (!currentUser) return false;
+                    if (currentUser.accessLevel === 3) return true;
+                    const client = allClientsData.find((c) => c.id === task.clientId);
+                    if (!client) return false;
+                    const squad = squads.find((s) => s.id === client.squadId);
+                    return squad?.leader === currentUser.name;
+                  })();
+                  return (
+                    <TaskCard
+                      key={task.id}
+                      task={task}
+                      isLate={isLate(task)}
+                      onClick={() => setSelectedTask(task)}
+                      canDelete={canDel}
+                      onDelete={() => deleteTask(task.id)}
+                    />
+                  );
+                })}
+                <button className="w-full py-2.5 border-2 border-dashed border-border rounded-xl text-xs text-muted-foreground hover:border-primary/40 hover:text-primary transition-colors flex items-center justify-center gap-1.5">
+                  <Plus className="w-3.5 h-3.5" />
+                  Adicionar
+                </button>
+              </div>
+            </div>
+          );
+        })}
+        <div className="flex-shrink-0 w-72">
+          <button
+            onClick={() => {
+              const newId = `custom_${Date.now()}` as TaskStatus;
+              setCols(c => [...c, { status: newId, label: 'Nova Coluna' }]);
+              setEditingCol(newId);
+            }}
+            className="w-full py-3 border-2 border-dashed border-border rounded-xl text-sm text-muted-foreground hover:border-primary/40 hover:text-primary transition-colors flex items-center justify-center gap-2"
+          >
+            <Plus className="w-4 h-4" />
+            Nova Coluna
+          </button>
+        </div>
+      </div>
+
+      <TaskDetailModal
+        task={liveSelectedTask}
+        open={!!selectedTask}
+        onOpenChange={(open) => { if (!open) setSelectedTask(null); }}
+      />
+    </div>
+  );
+}
+
+function TaskCard({ task, isLate, onClick, canDelete, onDelete }: { task: Task; isLate: boolean; onClick: () => void; canDelete: boolean; onDelete: () => void }) {
+  const typeConf = taskTypeConfig[task.type];
+  const priorityConf = priorityConfig[task.priority];
+  const subtasks = task.subtasks ?? [];
+  const progress = subtasks.length > 0 ? Math.round((subtasks.filter(s => s.done).length / subtasks.length) * 100) : -1;
+
+  const handleDragStart = (e: React.DragEvent) => {
+    e.dataTransfer.setData('text/plain', task.id);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  return (
+    <div
+      draggable
+      onDragStart={handleDragStart}
+      onClick={onClick}
+      className={cn(
+        'bg-card rounded-xl border p-3.5 shadow-sm-custom hover:shadow-md-custom transition-all cursor-grab active:cursor-grabbing',
+        isLate ? 'border-destructive/30 bg-destructive/5' : 'border-border hover:-translate-y-0.5'
+      )}
+    >
+      {isLate && (
+        <div className="flex items-center gap-1.5 text-xs text-destructive font-medium mb-2">
+          <AlertTriangle className="w-3 h-3" />
+          Atrasada
+        </div>
+      )}
+      <div className="flex items-start justify-between gap-2 mb-2">
+        <p className="text-sm font-semibold text-foreground line-clamp-2 leading-snug flex-1">{task.title}</p>
+        <span className="text-xs">{priorityConf.icon}</span>
+      </div>
+
+      <div className="flex items-center gap-1.5 mb-3">
+        <span className={cn('text-xs px-1.5 py-0.5 rounded-md font-medium', typeConf.color)}>
+          {typeConf.label}
+        </span>
+        <span className="text-xs text-muted-foreground truncate">{task.clientName}</span>
+      </div>
+
+      {progress >= 0 && (
+        <div className="mb-3">
+          <ProgressBar value={progress} className="mb-1" />
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <span>Subtarefas</span>
+            <span className="font-medium">{progress}%</span>
+          </div>
+        </div>
+      )}
+
+      {task.comments && (
+        <div className="flex items-start gap-1.5 text-xs text-muted-foreground bg-muted/50 rounded-lg p-2 mb-3">
+          <MessageSquare className="w-3 h-3 mt-0.5 shrink-0" />
+          <span className="line-clamp-2">{task.comments}</span>
+        </div>
+      )}
+
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <Clock className="w-3 h-3" />
+          {task.estimatedTime}h est.
+          {task.realTime && <span className="text-foreground font-medium"> · {task.realTime}h real</span>}
+        </div>
+        <div className="flex items-center gap-1.5">
+          {canDelete && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onDelete(); }}
+              className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+              title="Excluir demanda"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
+          )}
+          <span className="text-xs text-muted-foreground">
+            {new Date(task.deadline).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}
+          </span>
+          <Avatar name={task.responsible} size="sm" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function EditableColInput({ value, onSave, onCancel }: { value: string; onSave: (v: string) => void; onCancel: () => void }) {
+  const [text, setText] = useState(value);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    inputRef.current?.focus();
+    inputRef.current?.select();
+  }, []);
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') onSave(text.trim() || value);
+    else if (e.key === 'Escape') onCancel();
+  };
+
+  return (
+    <input
+      ref={inputRef}
+      value={text}
+      onChange={(e) => setText(e.target.value)}
+      onBlur={() => onSave(text.trim() || value)}
+      onKeyDown={handleKeyDown}
+      className="text-sm font-medium bg-background border border-primary/30 rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-primary/30 w-32"
+    />
+  );
+}

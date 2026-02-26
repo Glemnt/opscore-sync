@@ -1,0 +1,137 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+@layer base {
+  :root {
+    /* Core backgrounds */
+    --background: 220 20% 97%;
+    --foreground: 222 47% 11%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+
+    /* Primary - Indigo deep */
+    --primary: 238 75% 52%;
+    --primary-foreground: 0 0% 100%;
+    --primary-light: 238 75% 96%;
+    --primary-glow: 238 75% 65%;
+
+    /* Secondary */
+    --secondary: 220 20% 94%;
+    --secondary-foreground: 222 47% 11%;
+
+    /* Muted */
+    --muted: 220 15% 95%;
+    --muted-foreground: 215 16% 47%;
+
+    /* Accent */
+    --accent: 238 75% 96%;
+    --accent-foreground: 238 75% 40%;
+
+    /* Semantic */
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --success: 142 71% 45%;
+    --success-foreground: 0 0% 100%;
+    --success-light: 142 71% 94%;
+
+    --warning: 37 92% 50%;
+    --warning-foreground: 0 0% 100%;
+    --warning-light: 37 92% 94%;
+
+    --info: 199 89% 48%;
+    --info-foreground: 0 0% 100%;
+    --info-light: 199 89% 94%;
+
+    /* Borders */
+    --border: 220 13% 90%;
+    --input: 220 13% 90%;
+    --ring: 238 75% 52%;
+
+    --radius: 0.75rem;
+
+    /* Sidebar */
+    --sidebar-background: 228 47% 12%;
+    --sidebar-foreground: 220 20% 85%;
+    --sidebar-primary: 238 75% 65%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 228 47% 18%;
+    --sidebar-accent-foreground: 220 20% 95%;
+    --sidebar-border: 228 47% 18%;
+    --sidebar-ring: 238 75% 65%;
+
+    /* Status colors */
+    --status-backlog: 220 13% 70%;
+    --status-in-progress: 199 89% 48%;
+    --status-waiting: 37 92% 50%;
+    --status-done: 142 71% 45%;
+
+    /* Priority colors */
+    --priority-high: 0 84% 60%;
+    --priority-medium: 37 92% 50%;
+    --priority-low: 142 71% 45%;
+
+    /* Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(238 75% 52%), hsl(258 75% 58%));
+    --gradient-card: linear-gradient(135deg, hsl(0 0% 100%), hsl(220 20% 98%));
+    --gradient-sidebar: linear-gradient(180deg, hsl(228 47% 12%), hsl(228 47% 9%));
+
+    /* Shadows */
+    --shadow-sm: 0 1px 3px hsl(222 47% 11% / 0.06), 0 1px 2px hsl(222 47% 11% / 0.04);
+    --shadow-md: 0 4px 12px hsl(222 47% 11% / 0.08), 0 2px 4px hsl(222 47% 11% / 0.05);
+    --shadow-lg: 0 10px 30px hsl(222 47% 11% / 0.10), 0 4px 8px hsl(222 47% 11% / 0.06);
+    --shadow-primary: 0 4px 20px hsl(238 75% 52% / 0.25);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold tracking-tight;
+  }
+}
+
+@layer utilities {
+  .shadow-sm-custom { box-shadow: var(--shadow-sm); }
+  .shadow-md-custom { box-shadow: var(--shadow-md); }
+  .shadow-lg-custom { box-shadow: var(--shadow-lg); }
+  .shadow-primary { box-shadow: var(--shadow-primary); }
+
+  .gradient-primary { background: var(--gradient-primary); }
+  .gradient-sidebar { background: var(--gradient-sidebar); }
+
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--border)) transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--border));
+    border-radius: 2px;
+  }
+}
