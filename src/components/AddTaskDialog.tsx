@@ -43,6 +43,24 @@ export function AddTaskDialog({ open, onOpenChange }: AddTaskDialogProps) {
 
   const selectedClient = visibleClients.find((c) => c.id === clientId);
 
+  const generateTitle = (cId: string, t: TaskType) => {
+    const client = visibleClients.find((c) => c.id === cId);
+    if (client) return `${taskTypeConfig[t].label} - ${client.name}`;
+    return '';
+  };
+
+  const handleClientChange = (v: string) => {
+    setClientId(v);
+    setProjectId('');
+    setResponsible('');
+    setTitle(generateTitle(v, type));
+  };
+
+  const handleTypeChange = (v: TaskType) => {
+    setType(v);
+    setTitle(generateTitle(clientId, v));
+  };
+
   const clientProjects = useMemo(
     () => (clientId ? allProjects.filter((p) => p.clientId === clientId) : []),
     [clientId]
@@ -124,7 +142,7 @@ export function AddTaskDialog({ open, onOpenChange }: AddTaskDialogProps) {
           {/* Cliente */}
           <div className="space-y-1.5">
             <Label>Cliente *</Label>
-            <Select value={clientId} onValueChange={(v) => { setClientId(v); setProjectId(''); setResponsible(''); }}>
+            <Select value={clientId} onValueChange={handleClientChange}>
               <SelectTrigger><SelectValue placeholder="Selecione o cliente" /></SelectTrigger>
               <SelectContent>
                 {visibleClients.map((c) => (
@@ -150,7 +168,7 @@ export function AddTaskDialog({ open, onOpenChange }: AddTaskDialogProps) {
           {/* Tipo de demanda */}
           <div className="space-y-1.5">
             <Label>Tipo de demanda *</Label>
-            <Select value={type} onValueChange={(v) => setType(v as TaskType)}>
+            <Select value={type} onValueChange={(v) => handleTypeChange(v as TaskType)}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 {Object.entries(taskTypeConfig).map(([key, conf]) => (
@@ -173,7 +191,7 @@ export function AddTaskDialog({ open, onOpenChange }: AddTaskDialogProps) {
             </Select>
           </div>
 
-          {/* Nome da demanda */}
+          {/* Nome da demanda (auto-preenchido) */}
           <div className="space-y-1.5 sm:col-span-2">
             <Label>Nome da demanda *</Label>
             <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Ex: Criar anúncios para campanha de verão" />
