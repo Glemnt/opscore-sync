@@ -28,6 +28,9 @@ export function AddTaskDialog({ open, onOpenChange }: AddTaskDialogProps) {
   const { addTask } = useTasks();
   const { squads } = useSquads();
   const visibleClients = getVisibleClients();
+  const [customTypes, setCustomTypes] = useState<Record<string, { label: string; color: string }>>({});
+  const [showNewType, setShowNewType] = useState(false);
+  const [newTypeLabel, setNewTypeLabel] = useState('');
 
   const [clientId, setClientId] = useState('');
   
@@ -43,9 +46,12 @@ export function AddTaskDialog({ open, onOpenChange }: AddTaskDialogProps) {
 
   const selectedClient = visibleClients.find((c) => c.id === clientId);
 
+  const allTypes = useMemo(() => ({ ...taskTypeConfig, ...customTypes }), [customTypes]);
+
   const generateTitle = (cId: string, t: TaskType) => {
     const client = visibleClients.find((c) => c.id === cId);
-    if (client) return `${taskTypeConfig[t].label} - ${client.name}`;
+    const typeLabel = allTypes[t]?.label ?? t;
+    if (client) return `${typeLabel} - ${client.name}`;
     return '';
   };
 
@@ -58,6 +64,17 @@ export function AddTaskDialog({ open, onOpenChange }: AddTaskDialogProps) {
   const handleTypeChange = (v: TaskType) => {
     setType(v);
     setTitle(generateTitle(clientId, v));
+  };
+
+  const handleAddCustomType = () => {
+    const trimmed = newTypeLabel.trim();
+    if (!trimmed) return;
+    const key = trimmed.toLowerCase().replace(/\s+/g, '_');
+    setCustomTypes((prev) => ({ ...prev, [key]: { label: trimmed, color: 'bg-gray-100 text-gray-700' } }));
+    setType(key as TaskType);
+    setTitle(generateTitle(clientId, key as TaskType));
+    setNewTypeLabel('');
+    setShowNewType(false);
   };
 
 
@@ -147,14 +164,38 @@ export function AddTaskDialog({ open, onOpenChange }: AddTaskDialogProps) {
           {/* Tipo de demanda */}
           <div className="space-y-1.5">
             <Label>Tipo de demanda *</Label>
-            <Select value={type} onValueChange={(v) => handleTypeChange(v as TaskType)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {Object.entries(taskTypeConfig).map(([key, conf]) => (
-                  <SelectItem key={key} value={key}>{conf.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {showNewType ? (
+              <div className="flex gap-2">
+                <Input
+                  value={newTypeLabel}
+                  onChange={(e) => setNewTypeLabel(e.target.value)}
+                  placeholder="Nome do novo tipo"
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddCustomType(); } }}
+                  autoFocus
+                />
+                <Button type="button" variant="outline" size="icon" onClick={handleAddCustomType}>
+                  <Plus className="h-4 w-4" />
+                </Button>
+                <Button type="button" variant="ghost" size="icon" onClick={() => setShowNewType(false)}>
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            ) : (
+              <Select value={type} onValueChange={(v) => {
+                if (v === '__new__') { setShowNewType(true); return; }
+                handleTypeChange(v as TaskType);
+              }}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {Object.entries(allTypes).map(([key, conf]) => (
+                    <SelectItem key={key} value={key}>{conf.label}</SelectItem>
+                  ))}
+                  <SelectItem value="__new__" className="text-primary font-medium">
+                    + Criar novo tipo
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            )}
           </div>
 
           {/* Prioridade */}
