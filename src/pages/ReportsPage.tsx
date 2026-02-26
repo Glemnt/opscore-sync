@@ -1,11 +1,19 @@
-import { FileText, Download, Users, Building2, Tag, BarChart3 } from 'lucide-react';
+import { useState } from 'react';
+import { FileText, Download, Users, Building2, Tag, BarChart3, Loader2 } from 'lucide-react';
 import { PageHeader } from '@/components/ui/shared';
-import { clients, teamMembers, tasks } from '@/data/mockData';
+import { clients as allClients, teamMembers, tasks, projects, squads } from '@/data/mockData';
 import { teamRoleConfig, taskTypeConfig } from '@/lib/config';
 import { cn } from '@/lib/utils';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
+import { generateTeamReport, generateClientReport, generateTaskTypeReport, generateCollaboratorReport } from '@/lib/reportGenerators';
+import { TaskType } from '@/types';
 
 const reportCards = [
   {
+    id: 'team',
     icon: Users,
     title: 'Relatório Semanal da Equipe',
     description: 'Produtividade, tarefas concluídas e pontualidade por colaborador na última semana.',
@@ -14,6 +22,7 @@ const reportCards = [
     tagColor: 'bg-primary/10 text-primary',
   },
   {
+    id: 'client',
     icon: Building2,
     title: 'Relatório por Cliente',
     description: 'Volume de demandas, projetos ativos, tempo gasto e status geral por cliente.',
@@ -22,6 +31,7 @@ const reportCards = [
     tagColor: 'bg-info-light text-info',
   },
   {
+    id: 'tasktype',
     icon: Tag,
     title: 'Relatório por Tipo de Tarefa',
     description: 'Distribuição e tempo médio por tipo: anúncio, copy, design, otimização, etc.',
@@ -30,6 +40,7 @@ const reportCards = [
     tagColor: 'bg-warning-light text-warning',
   },
   {
+    id: 'collaborator',
     icon: BarChart3,
     title: 'Performance por Colaborador',
     description: 'Histórico detalhado de produtividade, pontualidade e evolução por colaborador.',
@@ -40,6 +51,68 @@ const reportCards = [
 ];
 
 export function ReportsPage() {
+  const { toast } = useToast();
+  const [loading, setLoading] = useState(false);
+  const [dialogType, setDialogType] = useState<string | null>(null);
+  const [selectedClient, setSelectedClient] = useState('');
+  const [selectedTaskType, setSelectedTaskType] = useState('');
+  const [selectedMember, setSelectedMember] = useState('');
+
+  const activeClients = allClients.filter(c => c.status === 'active');
+
+  const handleCardClick = async (cardId: string) => {
+    if (cardId === 'team') {
+      setLoading(true);
+      try {
+        await generateTeamReport(squads, allClients, tasks, projects, teamMembers);
+        toast({ title: 'Relatório gerado!', description: 'O PDF da equipe foi baixado com sucesso.' });
+      } finally {
+        setLoading(false);
+      }
+    } else {
+      setDialogType(cardId);
+    }
+  };
+
+  const handleGenerate = async () => {
+    setLoading(true);
+    try {
+      if (dialogType === 'client') {
+        const client = allClients.find(c => c.id === selectedClient);
+        if (!client) return;
+        await generateClientReport(client, tasks, projects);
+        toast({ title: 'Relatório gerado!', description: `PDF do cliente ${client.name} baixado.` });
+      } else if (dialogType === 'tasktype') {
+        await generateTaskTypeReport(selectedTaskType as TaskType, tasks, taskTypeConfig);
+        toast({ title: 'Relatório gerado!', description: `PDF do tipo de tarefa baixado.` });
+      } else if (dialogType === 'collaborator') {
+        const member = teamMembers.find(m => m.id === selectedMember);
+        if (!member) return;
+        await generateCollaboratorReport(member, tasks, teamRoleConfig);
+        toast({ title: 'Relatório gerado!', description: `PDF de ${member.name} baixado.` });
+      }
+    } finally {
+      setLoading(false);
+      setDialogType(null);
+      setSelectedClient('');
+      setSelectedTaskType('');
+      setSelectedMember('');
+    }
+  };
+
+  const canGenerate = () => {
+    if (dialogType === 'client') return !!selectedClient;
+    if (dialogType === 'tasktype') return !!selectedTaskType;
+    if (dialogType === 'collaborator') return !!selectedMember;
+    return false;
+  };
+
+  const dialogConfig: Record<string, { title: string; description: string }> = {
+    client: { title: 'Selecione o Cliente', description: 'Escolha um cliente para gerar o relatório completo.' },
+    tasktype: { title: 'Selecione o Tipo de Tarefa', description: 'Escolha o tipo de tarefa para análise detalhada.' },
+    collaborator: { title: 'Selecione o Colaborador', description: 'Escolha um colaborador para ver a performance.' },
+  };
+
   return (
     <div className="p-6 animate-fade-in">
       <PageHeader
@@ -52,7 +125,7 @@ export function ReportsPage() {
         {reportCards.map((card) => {
           const Icon = card.icon;
           return (
-            <div key={card.title} className="bg-card rounded-xl border border-border p-5 shadow-sm-custom hover:shadow-md-custom transition-all group cursor-pointer">
+            <div key={card.id} className="bg-card rounded-xl border border-border p-5 shadow-sm-custom hover:shadow-md-custom transition-all group cursor-pointer">
               <div className="flex items-start justify-between mb-3">
                 <div className={cn('w-10 h-10 rounded-xl flex items-center justify-center', card.color)}>
                   <Icon className="w-5 h-5" />
@@ -65,14 +138,75 @@ export function ReportsPage() {
                 {card.title}
               </h3>
               <p className="text-xs text-muted-foreground mb-4 leading-relaxed">{card.description}</p>
-              <button className="flex items-center gap-1.5 text-xs font-medium text-primary hover:underline">
-                <Download className="w-3.5 h-3.5" />
+              <button
+                onClick={() => handleCardClick(card.id)}
+                disabled={loading}
+                className="flex items-center gap-1.5 text-xs font-medium text-primary hover:underline disabled:opacity-50"
+              >
+                {loading && card.id === 'team' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
                 Gerar relatório
               </button>
             </div>
           );
         })}
       </div>
+
+      {/* Selection Dialog */}
+      <Dialog open={!!dialogType} onOpenChange={(open) => { if (!open) setDialogType(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{dialogType && dialogConfig[dialogType]?.title}</DialogTitle>
+            <DialogDescription>{dialogType && dialogConfig[dialogType]?.description}</DialogDescription>
+          </DialogHeader>
+
+          {dialogType === 'client' && (
+            <Select value={selectedClient} onValueChange={setSelectedClient}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione um cliente..." />
+              </SelectTrigger>
+              <SelectContent>
+                {activeClients.map(c => (
+                  <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+
+          {dialogType === 'tasktype' && (
+            <Select value={selectedTaskType} onValueChange={setSelectedTaskType}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione um tipo de tarefa..." />
+              </SelectTrigger>
+              <SelectContent>
+                {Object.entries(taskTypeConfig).map(([key, conf]) => (
+                  <SelectItem key={key} value={key}>{conf.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+
+          {dialogType === 'collaborator' && (
+            <Select value={selectedMember} onValueChange={setSelectedMember}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione um colaborador..." />
+              </SelectTrigger>
+              <SelectContent>
+                {teamMembers.map(m => (
+                  <SelectItem key={m.id} value={m.id}>{m.name} — {teamRoleConfig[m.role]?.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDialogType(null)}>Cancelar</Button>
+            <Button onClick={handleGenerate} disabled={!canGenerate() || loading}>
+              {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Download className="w-4 h-4 mr-2" />}
+              Gerar PDF
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Quick summary tables */}
       <div className="grid grid-cols-2 gap-4">
@@ -90,7 +224,7 @@ export function ReportsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {clients.filter(c => c.status === 'active').map(client => (
+              {allClients.filter(c => c.status === 'active').map(client => (
                 <tr key={client.id} className="hover:bg-muted/20 transition-colors">
                   <td className="py-2.5 px-4 text-sm text-foreground font-medium">{client.name}</td>
                   <td className="py-2.5 px-4 text-sm text-muted-foreground">{client.activeProjects}</td>
