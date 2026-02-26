@@ -6,12 +6,11 @@ import {
   BarChart3,
   FileText,
   Settings,
-  Zap,
   LogOut,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
-
+import logoGrupoTG from '@/assets/logo-grupo-tg.jpg';
 const navItems = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { id: 'clients', label: 'Clientes', icon: Users },
@@ -38,11 +37,9 @@ export function AppSidebar({ currentPage, onNavigate }: AppSidebarProps) {
       {/* Logo */}
       <div className="px-6 py-5 border-b border-sidebar-border">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg gradient-primary flex items-center justify-center shadow-primary">
-            <Zap className="w-4 h-4 text-white" />
-          </div>
+          <img src={logoGrupoTG} alt="Grupo TG" className="w-8 h-8 rounded-lg object-cover" />
           <div>
-            <p className="text-sm font-bold text-sidebar-accent-foreground leading-tight">AssessoriaPro</p>
+            <p className="text-sm font-bold text-sidebar-accent-foreground leading-tight">Grupo TG</p>
             <p className="text-xs text-sidebar-foreground/60 leading-tight">Gestão Operacional</p>
           </div>
         </div>
