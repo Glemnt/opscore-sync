@@ -1,6 +1,7 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -10,9 +11,10 @@ import { useTasks } from '@/contexts/TasksContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSquads } from '@/contexts/SquadsContext';
 import { clients } from '@/data/mockData';
-import { priorityConfig, taskTypeConfig } from '@/lib/config';
+import { priorityConfig, taskTypeConfig, taskStatusConfig } from '@/lib/config';
 import { cn } from '@/lib/utils';
-import { Send, Clock, User, CalendarDays, Flag, MessageSquare, Trash2 } from 'lucide-react';
+import { Send, Clock, User, CalendarDays, Flag, MessageSquare, Trash2, Tag, Briefcase } from 'lucide-react';
+import { Avatar } from '@/components/ui/shared';
 
 interface TaskDetailModalProps {
   task: Task | null;
@@ -31,6 +33,14 @@ export function TaskDetailModal({ task, open, onOpenChange }: TaskDetailModalPro
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [task?.chatNotes?.length]);
 
+  const squadMembers = useMemo(() => {
+    if (!task) return [];
+    const client = clients.find((c) => c.id === task.clientId);
+    if (!client) return [];
+    const squad = squads.find((s) => s.id === client.squadId);
+    return squad?.members ?? [];
+  }, [task, squads]);
+
   if (!task) return null;
 
   const subtasks = task.subtasks ?? [];
@@ -39,8 +49,8 @@ export function TaskDetailModal({ task, open, onOpenChange }: TaskDetailModalPro
   const chatNotes = task.chatNotes ?? [];
   const priorityConf = priorityConfig[task.priority];
   const typeConf = taskTypeConfig[task.type];
+  const isLate = new Date(task.deadline) < new Date() && task.status !== 'done';
 
-  // Permission check: can delete if leader of client's squad or admin
   const canDelete = (() => {
     if (!currentUser) return false;
     if (currentUser.accessLevel === 3) return true;
@@ -80,36 +90,93 @@ export function TaskDetailModal({ task, open, onOpenChange }: TaskDetailModalPro
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-hidden flex flex-col">
-        <DialogHeader>
-          <DialogTitle className="text-lg">{task.title}</DialogTitle>
+      <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-hidden flex flex-col gap-0">
+        {/* Header with title and type badge */}
+        <DialogHeader className="pb-4 border-b border-border">
+          <div className="flex items-start gap-3">
+            <div className="flex-1 min-w-0">
+              <DialogTitle className="text-lg leading-snug mb-2">{task.title}</DialogTitle>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className={cn('text-xs px-2 py-0.5 rounded-md font-medium', typeConf.color)}>
+                  {typeConf.label}
+                </span>
+                <span className="text-xs text-muted-foreground flex items-center gap-1">
+                  <Briefcase className="w-3 h-3" />
+                  {task.clientName}
+                </span>
+                {isLate && (
+                  <span className="text-xs px-2 py-0.5 rounded-md font-medium bg-destructive/10 text-destructive border border-destructive/20">
+                    Atrasada
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto space-y-5 pr-1">
-          {/* Metadata */}
-          <div className="grid grid-cols-2 gap-3 text-sm">
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <User className="w-4 h-4" />
-              <span>{task.responsible}</span>
+        <div className="flex-1 overflow-y-auto space-y-5 pr-1 pt-4">
+          {/* Info Cards */}
+          <div className="grid grid-cols-2 gap-3">
+            {/* Responsável - editable */}
+            <div className="bg-muted/50 rounded-xl p-3 space-y-1.5">
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium uppercase tracking-wide">
+                <User className="w-3.5 h-3.5" />
+                Responsável
+              </div>
+              <Select value={task.responsible} onValueChange={(v) => updateTask(task.id, { responsible: v })}>
+                <SelectTrigger className="h-9 bg-background border-border">
+                  <div className="flex items-center gap-2">
+                    <Avatar name={task.responsible} size="sm" />
+                    <SelectValue />
+                  </div>
+                </SelectTrigger>
+                <SelectContent>
+                  {squadMembers.map((m) => (
+                    <SelectItem key={m} value={m}>
+                      <div className="flex items-center gap-2">
+                        <Avatar name={m} size="sm" />
+                        {m}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <CalendarDays className="w-4 h-4" />
-              <span>{new Date(task.deadline).toLocaleDateString('pt-BR')}</span>
+
+            {/* Prazo */}
+            <div className="bg-muted/50 rounded-xl p-3 space-y-1.5">
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium uppercase tracking-wide">
+                <CalendarDays className="w-3.5 h-3.5" />
+                Prazo
+              </div>
+              <p className={cn('text-sm font-semibold', isLate ? 'text-destructive' : 'text-foreground')}>
+                {new Date(task.deadline).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })}
+              </p>
             </div>
-            <div className="flex items-center gap-2">
-              <Flag className="w-4 h-4 text-muted-foreground" />
-              <span className={cn('text-xs px-2 py-0.5 rounded-md font-medium border', priorityConf.className)}>
+
+            {/* Prioridade */}
+            <div className="bg-muted/50 rounded-xl p-3 space-y-1.5">
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium uppercase tracking-wide">
+                <Flag className="w-3.5 h-3.5" />
+                Prioridade
+              </div>
+              <span className={cn('inline-flex items-center gap-1 text-sm px-2.5 py-1 rounded-lg font-semibold border', priorityConf.className)}>
                 {priorityConf.icon} {priorityConf.label}
               </span>
             </div>
-            <div className="flex items-center gap-2">
-              <Clock className="w-4 h-4 text-muted-foreground" />
-              <span className={cn('text-xs px-2 py-0.5 rounded-md font-medium', typeConf.color)}>
-                {typeConf.label}
-              </span>
-            </div>
-            <div className="flex items-center gap-2 text-muted-foreground text-xs">
-              <span>Cliente: {task.clientName}</span>
+
+            {/* Tempo */}
+            <div className="bg-muted/50 rounded-xl p-3 space-y-1.5">
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium uppercase tracking-wide">
+                <Clock className="w-3.5 h-3.5" />
+                Tempo
+              </div>
+              <div className="text-sm font-semibold text-foreground">
+                {task.estimatedTime}h estimado
+                {task.realTime != null && (
+                  <span className="text-muted-foreground font-normal"> · {task.realTime}h real</span>
+                )}
+              </div>
             </div>
           </div>
 
@@ -148,14 +215,22 @@ export function TaskDetailModal({ task, open, onOpenChange }: TaskDetailModalPro
             </div>
           )}
 
-          {/* Chat Notes */}
+          {/* Observações / Chat Notes */}
           <div className="space-y-3">
             <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
               <MessageSquare className="w-4 h-4" />
               Observações
             </h4>
+
+            {/* Comments field (task.comments) */}
+            {task.comments && (
+              <div className="bg-accent/30 rounded-lg p-3 text-sm text-foreground border border-accent/50">
+                {task.comments}
+              </div>
+            )}
+
             <div className="space-y-2 max-h-48 overflow-y-auto">
-              {chatNotes.length === 0 && (
+              {chatNotes.length === 0 && !task.comments && (
                 <p className="text-xs text-muted-foreground italic">Nenhuma observação ainda.</p>
               )}
               {chatNotes.map((note) => (
