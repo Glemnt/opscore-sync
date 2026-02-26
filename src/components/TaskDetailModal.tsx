@@ -125,10 +125,7 @@ export function TaskDetailModal({ task, open, onOpenChange }: TaskDetailModalPro
               </div>
               <Select value={task.responsible} onValueChange={(v) => updateTask(task.id, { responsible: v })}>
                 <SelectTrigger className="h-9 bg-background border-border">
-                  <div className="flex items-center gap-2">
-                    <Avatar name={task.responsible} size="sm" />
-                    <SelectValue />
-                  </div>
+                  <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   {squadMembers.map((m) => (
