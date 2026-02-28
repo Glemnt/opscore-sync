@@ -1,34 +1,31 @@
 
 
-## Bug Fix: Fluxos não persistem no banco de dados
+## Vincular membros dos Squads aos colaboradores de Configurações
 
-### Problema encontrado
-Os fluxos **não estão sendo salvos** no banco. O toast "Fluxo criado!" aparece, mas o insert falha silenciosamente porque:
+### Problema atual
+Na página de Squads, os membros são digitados manualmente como texto livre (campo "Membros separados por vírgula"). Não há vínculo com os colaboradores cadastrados em Configurações (`app_users`).
 
-1. `CreateFlowView` gera `id: \`flow_${Date.now()}\`` — que **não é UUID válido** para a coluna `flows.id` (tipo `uuid`)
-2. `assignFlowToClient` gera `id: \`task_flow_${Date.now()}_${i}\`` — mesmo problema para `tasks.id`
-3. O toast de sucesso é chamado **antes** da mutation completar, mascarando o erro
+### Solução
+Substituir o campo de texto livre por um seletor multi-select que lista os `app_users` cadastrados. O campo `leader` também passará a ser um select dos colaboradores.
 
-### Correções
+### Arquivos a editar
 
-**1. `src/components/FlowManagerDialog.tsx` — CreateFlowView**
-- Remover geração manual de ID (`flow_${Date.now()}`)
-- Usar `crypto.randomUUID()` ou omitir o `id` e deixar o banco gerar via `gen_random_uuid()`
-- Converter `handleSave` para async e aguardar resultado da mutation antes de mostrar toast
+| Ação | Arquivo |
+|------|---------|
+| Editar | `src/pages/ProjectsPage.tsx` — substituir inputs de texto (líder e membros) por selects baseados em `app_users` |
 
-**2. `src/hooks/useFlowsQuery.ts` — useAddFlow**
-- Não incluir `id` no insert (deixar o DB gerar o UUID automaticamente)
+### Implementação
 
-**3. `src/contexts/TasksContext.tsx` — assignFlowToClient**
-- Remover geração manual de ID das tasks criadas pelo fluxo
-- Usar `crypto.randomUUID()` ou omitir o `id`
-
-**4. `src/components/FlowManagerDialog.tsx` — Tratamento de erros**
-- Todas as 3 views (Create, Edit, Assign) devem tratar erros da mutation com `try/catch` ou `onError`
-- Toast de sucesso só após confirmação da operação
+**1. `src/pages/ProjectsPage.tsx` — Dialog de criação/edição de Squad**
+- Importar `useAppUsersQuery` para obter a lista de colaboradores
+- Substituir o `<Input>` de "Líder" por um `<Select>` com as opções dos `app_users`
+- Substituir o `<Input>` de "Membros (separados por vírgula)" por uma lista de botões toggle (chips) — um para cada `app_user` — similar ao padrão já usado no `SettingsPage` para selecionar squads
+- O `squadLeader` passa a armazenar o **nome** do colaborador selecionado (mantendo compatibilidade com o campo `leader text` do banco)
+- O `squadMembers` passa a ser um array de nomes selecionados via chips
+- O líder selecionado é automaticamente incluído na lista de membros
 
 ### Detalhes técnicos
-- As tabelas `flows` e `tasks` têm `id uuid DEFAULT gen_random_uuid()` — omitir o ID no insert é a solução mais limpa
-- As RLS policies de `flows` permitem INSERT/SELECT/UPDATE/DELETE para todos os usuários autenticados — sem restrição de acesso
-- A UI do Kanban (TasksPage) não tem restrição de `accessLevel` no dropdown de Fluxos — já acessível a todos
+- A tabela `squads` armazena `leader text` e `members text[]` — continuará usando nomes como strings, sem necessidade de migration
+- Os `app_users` são lidos via `useAppUsersQuery` que já existe e retorna `AppUserProfile[]` com campo `name`
+- O ID do squad gerado em `addSquad` usa `sq_${Date.now()}` — isso deveria ser UUID, mas é um bug separado (a coluna `squads.id` é `uuid`)
 
