@@ -1,30 +1,28 @@
 
 
-## Sincronizar `user_roles` ao alterar `access_level`
+## Resumo visual de saúde dos clientes no Dashboard
 
-### Problema
-A UI de edição de usuários já existe na página de Configurações, mas quando o admin altera o `access_level` de um usuário para 3 (Admin) ou rebaixa de 3, a tabela `user_roles` não é atualizada. Isso significa que o usuário promovido a nível 3 não recebe a role `admin` no RBAC, e portanto não consegue executar operações administrativas.
+### O que será feito
+Adicionar um card no Dashboard mostrando a distribuição de saúde dos clientes ativos: quantos estão verdes, amarelos, vermelhos e não avaliados (branco).
 
-### Solução
+### Localização
+O card será inserido na primeira linha de stats do `DashboardPage.tsx`, substituindo o grid `grid-cols-2 lg:grid-cols-4` por `grid-cols-2 lg:grid-cols-5`, ou adicionando o card de saúde na seção de Churn (primeira coluna do grid de 3 colunas), reorganizando para melhor aproveitamento visual.
 
-**`supabase/functions/manage-users/index.ts`** — No bloco `action === "update"`, após atualizar `app_users`, sincronizar `user_roles`:
+**Abordagem escolhida**: Adicionar uma nova row compacta logo abaixo dos stats cards com o resumo de saúde, usando 4 indicadores coloridos inline (verde, amarelo, vermelho, branco/não avaliado).
 
-1. Buscar o `auth_user_id` do usuário sendo editado
-2. Se `accessLevel === 3`: inserir role `admin` em `user_roles` (upsert/ignore conflict)
-3. Se `accessLevel < 3`: remover role `admin` de `user_roles` (se existir)
+### Alteração
 
-```text
-update app_users (name, role, access_level, squad_ids)
-    ↓
-fetch auth_user_id from app_users
-    ↓
-if accessLevel === 3 → INSERT INTO user_roles (admin) ON CONFLICT DO NOTHING
-if accessLevel < 3  → DELETE FROM user_roles WHERE role = 'admin'
-```
+**`src/pages/DashboardPage.tsx`**:
+1. Criar um `useMemo` que conta clientes ativos por `healthColor`:
+   - `green` → "Saudável"
+   - `yellow` → "Atenção"
+   - `red` → "Crítico"
+   - `white`/`null`/`undefined` → "Não avaliado"
+2. Renderizar um card compacto com 4 indicadores coloridos (círculo + contagem + label), posicionado entre os stats cards e a seção de Churn/Receita por Plataforma.
 
 ### Detalhes técnicos
-- Apenas o bloco `update` do edge function `manage-users` precisa ser alterado
-- Usar `adminClient` (service role) para manipular `user_roles`
-- Tratar caso em que `auth_user_id` é null (usuário legado sem auth vinculado)
-- Nenhuma mudança no frontend necessária — a UI já funciona corretamente
+- Dados vêm de `clients` (já filtrado por visibilidade via `getVisibleClients()`)
+- Filtrar apenas `status === 'active'`
+- Campo `healthColor` do tipo `Client` já mapeado do banco (`health_color` enum: green, yellow, red, white)
+- Nenhuma mudança no backend necessária
 
