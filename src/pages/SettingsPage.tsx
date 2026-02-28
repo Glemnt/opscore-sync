@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Plus, Shield, ShieldCheck, ShieldAlert } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSquads } from '@/contexts/SquadsContext';
+import { useAppUsersQuery, useCreateAppUser } from '@/hooks/useAppUsersQuery';
 import { AccessLevel, TeamRole } from '@/types';
 import { PageHeader } from '@/components/ui/shared';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -11,6 +12,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const roleLabels: Record<TeamRole, string> = {
   cs: 'CS',
@@ -27,34 +29,39 @@ const levelLabels: Record<AccessLevel, { label: string; icon: typeof Shield }> =
 };
 
 export function SettingsPage() {
-  const { users, addUser } = useAuth();
   const { squads } = useSquads();
+  const { data: users = [], isLoading } = useAppUsersQuery();
+  const createUser = useCreateAppUser();
   const [open, setOpen] = useState(false);
   const [name, setName] = useState('');
-  const [login, setLogin] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState<TeamRole>('operacional');
   const [accessLevel, setAccessLevel] = useState<AccessLevel>(1);
   const [selectedSquads, setSelectedSquads] = useState<string[]>([]);
 
   const resetForm = () => {
-    setName(''); setLogin(''); setPassword(''); setRole('operacional'); setAccessLevel(1); setSelectedSquads([]);
+    setName(''); setEmail(''); setPassword(''); setRole('operacional'); setAccessLevel(1); setSelectedSquads([]);
   };
 
   const handleSubmit = () => {
-    if (!name.trim() || !login.trim() || !password.trim()) return;
-    const newUser = {
-      id: `u_${Date.now()}`,
-      name: name.trim(),
-      login: login.trim(),
-      role,
-      accessLevel,
-      squadIds: accessLevel === 3 ? squads.map((s) => s.id) : selectedSquads,
-      authUserId: null,
-    };
-    addUser(newUser);
-    resetForm();
-    setOpen(false);
+    if (!name.trim() || !email.trim() || !password.trim()) return;
+    createUser.mutate(
+      {
+        name: name.trim(),
+        email: email.trim(),
+        password: password.trim(),
+        role,
+        accessLevel,
+        squadIds: accessLevel === 3 ? squads.map((s) => s.id) : selectedSquads,
+      },
+      {
+        onSuccess: () => {
+          resetForm();
+          setOpen(false);
+        },
+      }
+    );
   };
 
   const toggleSquad = (id: string) => {
@@ -86,28 +93,44 @@ export function SettingsPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {users.map((u) => {
-              const lvl = levelLabels[u.accessLevel];
-              const LvlIcon = lvl.icon;
-              return (
-                <TableRow key={u.id}>
-                  <TableCell className="font-medium text-foreground">{u.name}</TableCell>
-                  <TableCell className="text-muted-foreground">{u.login}</TableCell>
-                  <TableCell className="text-muted-foreground">{roleLabels[u.role]}</TableCell>
-                  <TableCell>
-                    <span className="flex items-center gap-1.5 text-sm">
-                      <LvlIcon className="w-4 h-4 text-primary" />
-                      {lvl.label}
-                    </span>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground text-xs">
-                    {u.accessLevel === 3
-                      ? 'Todos'
-                      : u.squadIds.map((sid) => squads.find((s) => s.id === sid)?.name).filter(Boolean).join(', ') || '—'}
-                  </TableCell>
+            {isLoading ? (
+              Array.from({ length: 3 }).map((_, i) => (
+                <TableRow key={i}>
+                  {Array.from({ length: 5 }).map((_, j) => (
+                    <TableCell key={j}><Skeleton className="h-4 w-24" /></TableCell>
+                  ))}
                 </TableRow>
-              );
-            })}
+              ))
+            ) : users.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                  Nenhum usuário encontrado
+                </TableCell>
+              </TableRow>
+            ) : (
+              users.map((u) => {
+                const lvl = levelLabels[u.accessLevel];
+                const LvlIcon = lvl.icon;
+                return (
+                  <TableRow key={u.id}>
+                    <TableCell className="font-medium text-foreground">{u.name}</TableCell>
+                    <TableCell className="text-muted-foreground">{u.login}</TableCell>
+                    <TableCell className="text-muted-foreground">{roleLabels[u.role]}</TableCell>
+                    <TableCell>
+                      <span className="flex items-center gap-1.5 text-sm">
+                        <LvlIcon className="w-4 h-4 text-primary" />
+                        {lvl.label}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground text-xs">
+                      {u.accessLevel === 3
+                        ? 'Todos'
+                        : u.squadIds.map((sid) => squads.find((s) => s.id === sid)?.name).filter(Boolean).join(', ') || '—'}
+                    </TableCell>
+                  </TableRow>
+                );
+              })
+            )}
           </TableBody>
         </Table>
       </div>
@@ -124,8 +147,8 @@ export function SettingsPage() {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
-                <Label>Login</Label>
-                <Input value={login} onChange={(e) => setLogin(e.target.value)} placeholder="Login" />
+                <Label>Email</Label>
+                <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="email@exemplo.com" />
               </div>
               <div className="space-y-2">
                 <Label>Senha</Label>
@@ -182,7 +205,9 @@ export function SettingsPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => { resetForm(); setOpen(false); }}>Cancelar</Button>
-            <Button onClick={handleSubmit} className="gradient-primary shadow-primary">Criar Usuário</Button>
+            <Button onClick={handleSubmit} disabled={createUser.isPending} className="gradient-primary shadow-primary">
+              {createUser.isPending ? 'Criando...' : 'Criar Usuário'}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -9,11 +9,9 @@ interface AuthContextType {
   currentUser: AppUserProfile | null;
   session: Session | null;
   loading: boolean;
-  users: AppUserProfile[];
   login: (email: string, password: string) => Promise<boolean>;
   logout: () => Promise<void>;
   signup: (email: string, password: string, name: string) => Promise<{ error?: string }>;
-  addUser: (user: AppUserProfile) => void;
   getVisibleClients: (clients: Client[]) => Client[];
 }
 
@@ -22,7 +20,6 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [currentUser, setCurrentUser] = useState<AppUserProfile | null>(null);
-  const [users, setUsers] = useState<AppUserProfile[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchAppUser = useCallback(async (userId: string) => {
@@ -101,10 +98,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return {};
   }, []);
 
-  const addUser = useCallback((user: AppUserProfile) => {
-    setUsers((prev) => [...prev, user]);
-  }, []);
-
   const getVisibleClients = useCallback((clients: Client[]): Client[] => {
     if (!currentUser) return [];
     if (currentUser.accessLevel === 3) return clients;
@@ -112,7 +105,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [currentUser]);
 
   return (
-    <AuthContext.Provider value={{ currentUser, session, loading, users, login, logout, signup, addUser, getVisibleClients }}>
+    <AuthContext.Provider value={{ currentUser, session, loading, login, logout, signup, getVisibleClients }}>
       {children}
     </AuthContext.Provider>
   );
