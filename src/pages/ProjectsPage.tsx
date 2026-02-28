@@ -16,6 +16,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useAppUsersQuery } from '@/hooks/useAppUsersQuery';
 
 type KanbanColumn = { id: string; label: string; status: ClientStatus | string };
 type ProjectKanbanColumn = { id: string; label: string; status: ProjectStatus | string };
@@ -33,6 +35,7 @@ export function ProjectsPage() {
   const { addTask } = useTasks();
   const { data: projects = [] } = useProjectsQuery();
   const { updateClientField, getVisibleClients } = useClients();
+  const { data: appUsers = [] } = useAppUsersQuery();
   const clients = getVisibleClients();
   const [selectedSquad, setSelectedSquad] = useState<Squad | null>(null);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
@@ -45,13 +48,13 @@ export function ProjectsPage() {
   const [editingSquad, setEditingSquad] = useState<Squad | null>(null);
   const [squadName, setSquadName] = useState('');
   const [squadLeader, setSquadLeader] = useState('');
-  const [squadMembers, setSquadMembers] = useState('');
+  const [squadMemberNames, setSquadMemberNames] = useState<string[]>([]);
 
   const openAddSquad = () => {
     setEditingSquad(null);
     setSquadName('');
     setSquadLeader('');
-    setSquadMembers('');
+    setSquadMemberNames([]);
     setSquadDialogOpen(true);
   };
 
@@ -60,7 +63,7 @@ export function ProjectsPage() {
     setEditingSquad(squad);
     setSquadName(squad.name);
     setSquadLeader(squad.leader);
-    setSquadMembers(squad.members.join(', '));
+    setSquadMemberNames(squad.members.filter((m) => m !== squad.leader));
     setSquadDialogOpen(true);
   };
 
@@ -69,20 +72,22 @@ export function ProjectsPage() {
     removeSquad(id);
   };
 
+  const toggleMember = (name: string) => {
+    setSquadMemberNames((prev) =>
+      prev.includes(name) ? prev.filter((n) => n !== name) : [...prev, name]
+    );
+  };
+
   const handleSaveSquad = () => {
     if (!squadName.trim() || !squadLeader.trim()) return;
-    const members = squadMembers.split(',').map((m) => m.trim()).filter(Boolean);
-    if (!members.includes(squadLeader.trim())) {
-      members.unshift(squadLeader.trim());
-    }
+    const members = [squadLeader.trim(), ...squadMemberNames.filter((m) => m !== squadLeader.trim())];
     if (editingSquad) {
       updateSquad(editingSquad.id, { name: squadName.trim(), leader: squadLeader.trim(), members });
-      // Update selectedSquad reference if editing the currently selected one
       if (selectedSquad?.id === editingSquad.id) {
         setSelectedSquad({ ...editingSquad, name: squadName.trim(), leader: squadLeader.trim(), members });
       }
     } else {
-      addSquad({ id: `sq_${Date.now()}`, name: squadName.trim(), leader: squadLeader.trim(), members });
+      addSquad({ id: crypto.randomUUID(), name: squadName.trim(), leader: squadLeader.trim(), members });
     }
     setSquadDialogOpen(false);
   };
@@ -176,11 +181,44 @@ export function ProjectsPage() {
               </div>
               <div className="space-y-2">
                 <Label>Líder</Label>
-                <Input value={squadLeader} onChange={(e) => setSquadLeader(e.target.value)} placeholder="Nome do líder" />
+                <Select value={squadLeader} onValueChange={setSquadLeader}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o líder" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {appUsers.map((u) => (
+                      <SelectItem key={u.id} value={u.name}>{u.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2">
-                <Label>Membros (separados por vírgula)</Label>
-                <Input value={squadMembers} onChange={(e) => setSquadMembers(e.target.value)} placeholder="Ana Silva, Carlos Mendes" />
+                <Label>Membros</Label>
+                <div className="flex flex-wrap gap-2">
+                  {appUsers
+                    .filter((u) => u.name !== squadLeader)
+                    .map((u) => {
+                      const selected = squadMemberNames.includes(u.name);
+                      return (
+                        <button
+                          key={u.id}
+                          type="button"
+                          onClick={() => toggleMember(u.name)}
+                          className={cn(
+                            'px-3 py-1.5 rounded-full text-xs font-medium border transition-colors',
+                            selected
+                              ? 'bg-primary text-primary-foreground border-primary'
+                              : 'bg-muted text-muted-foreground border-border hover:border-primary/40'
+                          )}
+                        >
+                          {u.name}
+                        </button>
+                      );
+                    })}
+                  {appUsers.length === 0 && (
+                    <p className="text-xs text-muted-foreground">Nenhum colaborador cadastrado. Adicione em Configurações.</p>
+                  )}
+                </div>
               </div>
             </div>
             <DialogFooter>
