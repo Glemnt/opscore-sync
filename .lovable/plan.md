@@ -1,31 +1,22 @@
 
 
-## Diagnóstico e Correção
+## Filtro por tipo de demanda na página Demandas
 
-### Causa raiz
-Os logs mostram que as chamadas recentes ao `manage-users` retornaram **401 (Unauthorized)**, não um erro de lógica. O log de autenticação confirma: `"session id (ad02a1e2-...) doesn't exist"`. Ou seja, a sessão expirou entre a promoção (que funcionou com status 200) e a tentativa de rebaixamento.
+### O que será feito
+Adicionar um filtro por tipo de demanda (tags) no Kanban da página `TasksPage`, usando os tipos já existentes em `taskTypeConfig` (Anúncio, Copy, Design, etc.) + tipos customizados criados pelo usuário.
 
-A mensagem genérica "Edge Function returned a non-2xx status code" aparece porque o SDK do frontend não extrai o corpo da resposta de erro — ele só repassa a mensagem padrão.
+### Alteração
 
-### Solução
+**`src/pages/TasksPage.tsx`**:
+1. Adicionar estado `selectedType` (default `'all'`)
+2. Coletar todos os tipos únicos das tasks visíveis (para incluir tipos customizados que não estão no `taskTypeConfig`)
+3. Renderizar um `<select>` ao lado do filtro de responsável com as opções de tipo
+4. Adicionar a condição `matchType` no filtro `filtered`
 
-Dois ajustes:
+A UI será um dropdown similar ao de responsável, mostrando o label do tipo (usando `taskTypeConfig` quando disponível, ou o próprio valor como fallback para tipos customizados).
 
-1. **Melhorar o tratamento de erro no frontend** (`src/hooks/useAppUsersQuery.ts`): Nas mutations `useUpdateAppUser` e `useDeleteAppUser`, quando `supabase.functions.invoke` retorna erro, extrair o corpo da resposta para mostrar a mensagem real (ex: "Unauthorized", "Forbidden: admin only") em vez do genérico do SDK.
-
-2. **Ação imediata**: Você precisa **fazer login novamente** no preview para renovar a sessão, e então a operação de rebaixamento funcionará normalmente.
-
-### Detalhe técnico
-
-No `supabase.functions.invoke`, quando o status é non-2xx, o SDK retorna `{ error: FunctionsHttpError }`. O corpo real fica em `error.context` (a Response). Para extrair:
-
-```text
-const { data, error } = await supabase.functions.invoke(...)
-if (error) {
-  const body = await error.context?.json?.();
-  throw new Error(body?.error || error.message);
-}
-```
-
-Isso será aplicado nas 3 mutations: `useCreateAppUser`, `useUpdateAppUser`, `useDeleteAppUser`.
+### Detalhes técnicos
+- Não precisa de mudança no banco de dados — o campo `type` já existe na tabela `tasks`
+- `taskTypeConfig` de `src/lib/config.ts` já mapeia os tipos padrão para labels/cores
+- Tipos customizados (criados no `AddTaskDialog`) terão fallback para exibir o próprio valor como label
 
