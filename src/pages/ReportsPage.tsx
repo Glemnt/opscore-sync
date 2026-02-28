@@ -56,18 +56,25 @@ const reportCards = [
 
 export function ReportsPage() {
   const { toast } = useToast();
-  const { clients: allClients } = useClients();
-  const { tasks } = useTasks();
+  const { clients: allClients, getVisibleClients } = useClients();
+  const visibleClients = getVisibleClients();
+  const { tasks: allTasks } = useTasks();
   const { squads } = useSquads();
-  const { data: teamMembers = [] } = useTeamMembersQuery();
+  const { data: allTeamMembers = [] } = useTeamMembersQuery();
   const { data: projects = [] } = useProjectsQuery();
+
+  // Filter by visible clients
+  const visibleClientIds = new Set(visibleClients.map((c) => c.id));
+  const tasks = allTasks.filter((t) => visibleClientIds.has(t.clientId));
+  const visibleSquadIds = new Set(visibleClients.map((c) => c.squadId).filter(Boolean));
+  const teamMembers = allTeamMembers.filter((m) => !m.squadId || visibleSquadIds.has(m.squadId));
   const [loading, setLoading] = useState(false);
   const [dialogType, setDialogType] = useState<string | null>(null);
   const [selectedClient, setSelectedClient] = useState('');
   const [selectedTaskType, setSelectedTaskType] = useState('');
   const [selectedMember, setSelectedMember] = useState('');
 
-  const activeClients = allClients.filter(c => c.status === 'active');
+  const activeClients = visibleClients.filter(c => c.status === 'active');
 
   const handleCardClick = async (cardId: string) => {
     if (cardId === 'team') {
@@ -233,7 +240,7 @@ export function ReportsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {allClients.filter(c => c.status === 'active').map(client => (
+              {visibleClients.filter(c => c.status === 'active').map(client => (
                 <tr key={client.id} className="hover:bg-muted/20 transition-colors">
                   <td className="py-2.5 px-4 text-sm text-foreground font-medium">{client.name}</td>
                   <td className="py-2.5 px-4 text-sm text-muted-foreground">{client.activeProjects}</td>

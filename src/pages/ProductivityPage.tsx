@@ -5,9 +5,19 @@ import { teamRoleConfig } from '@/lib/config';
 import { TeamMember } from '@/types';
 import { cn } from '@/lib/utils';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, RadarChart, Radar, PolarGrid, PolarAngleAxis } from 'recharts';
+import { useAuth } from '@/contexts/AuthContext';
+import { useClients } from '@/contexts/ClientsContext';
 
 export function ProductivityPage() {
-  const { data: teamMembers = [] } = useTeamMembersQuery();
+  const { currentUser } = useAuth();
+  const { getVisibleClients } = useClients();
+  const clients = getVisibleClients();
+  const { data: allTeamMembers = [] } = useTeamMembersQuery();
+
+  // Filter team members by visible squads
+  const visibleSquadIds = new Set(clients.map((c) => c.squadId).filter(Boolean));
+  const isAdmin = currentUser?.accessLevel === 3;
+  const teamMembers = isAdmin ? allTeamMembers : allTeamMembers.filter((m) => !m.squadId || visibleSquadIds.has(m.squadId));
 
   const performanceData = teamMembers.map(m => ({
     name: m.name.split(' ')[0],
