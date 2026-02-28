@@ -7,9 +7,11 @@ import {
   FileText,
   Settings,
   LogOut,
+  Shield,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
+import { useSquadsQuery } from '@/hooks/useSquadsQuery';
 import logoGrupoTG from '@/assets/logo-grupo-tg.jpg';
 const navItems = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -27,10 +29,23 @@ interface AppSidebarProps {
 
 export function AppSidebar({ currentPage, onNavigate }: AppSidebarProps) {
   const { currentUser, logout } = useAuth();
+  const { data: squads = [] } = useSquadsQuery();
 
   const roleLabels: Record<string, string> = {
     cs: 'CS', operacional: 'Operacional', design: 'Design', copy: 'Copy', gestao: 'Gestão',
   };
+
+  const accessLevelConfig: Record<number, { label: string; className: string }> = {
+    1: { label: 'Operacional', className: 'bg-muted text-muted-foreground' },
+    2: { label: 'Tático', className: 'bg-blue-500/20 text-blue-300' },
+    3: { label: 'Admin', className: 'bg-purple-500/20 text-purple-300' },
+  };
+
+  const userSquadNames = currentUser
+    ? squads.filter((s) => currentUser.squadIds.includes(s.id)).map((s) => s.name)
+    : [];
+
+  const accessInfo = currentUser ? accessLevelConfig[currentUser.accessLevel] : null;
 
   return (
     <aside className="w-64 h-full flex flex-col gradient-sidebar shrink-0">
@@ -110,6 +125,24 @@ export function AppSidebar({ currentPage, onNavigate }: AppSidebarProps) {
               <LogOut className="w-3.5 h-3.5" />
             </button>
           </div>
+          {currentUser && (userSquadNames.length > 0 || accessInfo) && (
+            <div className="mt-2 flex items-center gap-1.5 flex-wrap px-9">
+              {userSquadNames.length > 0 && (
+                <span className="text-[10px] text-sidebar-foreground/60 truncate max-w-[120px]" title={userSquadNames.join(', ')}>
+                  {userSquadNames.join(', ')}
+                </span>
+              )}
+              {userSquadNames.length > 0 && accessInfo && (
+                <span className="text-sidebar-foreground/30 text-[10px]">·</span>
+              )}
+              {accessInfo && (
+                <span className={cn('inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium', accessInfo.className)}>
+                  <Shield className="w-2.5 h-2.5" />
+                  {accessInfo.label}
+                </span>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </aside>
