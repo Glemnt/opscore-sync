@@ -1,20 +1,26 @@
 
 
-## Plano: Criar usuário admin para teste
+## Problema
 
-### Etapa 1 — Habilitar auto-confirm de email
-Usar a ferramenta de configuração de auth para ativar auto-confirm de email, permitindo login imediato sem verificação.
+A `SettingsPage` usa `useAuth().users`, que é apenas um `useState([])` local — nunca busca dados do banco. O admin existe no banco (`admin@grupotg.com`), mas a lista `users` no contexto começa vazia e só cresce via `addUser` local (em memória).
 
-### Etapa 2 — Criar usuário via signup no código
-Usar o formulário de signup da aplicação para criar o usuário com email e senha. O `AuthContext.signup` já insere automaticamente na tabela `app_users` com role `operacional` e `access_level = 1`, e na `user_roles` com role `user`.
+## Solução
 
-### Etapa 3 — Promover a admin via SQL (insert tool)
-Após o signup, executar duas operações de dados:
-1. `UPDATE app_users SET access_level = 3, role = 'gestao' WHERE login = '<email>'`
-2. `INSERT INTO user_roles (user_id, role) VALUES ('<auth_user_id>', 'admin')` — usando o `auth_user_id` da tabela `app_users`
+1. **Criar hook `useAppUsersQuery.ts`** — busca todos os registros de `app_users` via `useQuery`
+2. **Atualizar `SettingsPage`** — usar o novo hook ao invés de `useAuth().users`; o formulário "Novo Usuário" deve usar `supabase.auth.signUp` + insert em `app_users` (como o signup faz), com mutation que invalida o cache
+3. **Remover `users` e `addUser` do `AuthContext`** — não são mais necessários; o estado local nunca refletia o banco
 
-### Fluxo prático
-1. Ativar auto-confirm
-2. Acessar a página de login no preview, alternar para "Cadastre-se", preencher nome/email/senha
-3. Após signup bem-sucedido, promover o usuário via SQL
+### Arquivos
+
+| Ação | Arquivo |
+|------|---------|
+| Criar | `src/hooks/useAppUsersQuery.ts` |
+| Editar | `src/pages/SettingsPage.tsx` |
+| Editar | `src/contexts/AuthContext.tsx` (remover `users`, `addUser`) |
+
+### Detalhes técnicos
+
+- O hook faz `supabase.from('app_users').select('*')` e mapeia com `mapDbAppUser`
+- O formulário de novo usuário continuará chamando `supabase.auth.signUp` para criar o auth user e depois inserir em `app_users` com o `access_level` e `role` escolhidos no form (admin pode criar usuários com qualquer nível)
+- A RLS de `app_users` para SELECT já permite leitura (`USING (true)`) para authenticated
 
