@@ -6,11 +6,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Progress } from '@/components/ui/progress';
-import { Task, ChatNote } from '@/types';
+import { Task, ChatNote, Priority, TaskType } from '@/types';
 import { useTasks } from '@/contexts/TasksContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSquads } from '@/contexts/SquadsContext';
 import { useClients } from '@/contexts/ClientsContext';
+import { useAppUsersQuery } from '@/hooks/useAppUsersQuery';
 import { priorityConfig, taskTypeConfig, taskStatusConfig } from '@/lib/config';
 import { cn } from '@/lib/utils';
 import { Send, Clock, User, CalendarDays, Flag, MessageSquare, Trash2, Tag, Briefcase } from 'lucide-react';
@@ -27,20 +28,31 @@ export function TaskDetailModal({ task, open, onOpenChange }: TaskDetailModalPro
   const { currentUser } = useAuth();
   const { squads } = useSquads();
   const { clients } = useClients();
+  const { data: appUsers = [] } = useAppUsersQuery();
   const [newNote, setNewNote] = useState('');
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [titleDraft, setTitleDraft] = useState('');
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [task?.chatNotes?.length]);
 
-  const squadMembers = useMemo(() => {
-    if (!task) return [];
+  const responsibleOptions = useMemo(() => {
+    if (!task) return appUsers;
     const client = clients.find((c) => c.id === task.clientId);
-    if (!client) return [];
+    if (!client?.squadId) return appUsers;
+    return appUsers.filter(u => u.squadIds?.includes(client.squadId!));
+  }, [task, clients, appUsers]);
+
+  const canDelete = useMemo(() => {
+    if (!currentUser || !task) return false;
+    if (currentUser.accessLevel === 3) return true;
+    const client = clients.find((c) => c.id === task.clientId);
+    if (!client) return false;
     const squad = squads.find((s) => s.id === client.squadId);
-    return squad?.members ?? [];
-  }, [task, squads]);
+    return squad?.leader === currentUser.name;
+  }, [currentUser, task, clients, squads]);
 
   if (!task) return null;
 
@@ -51,15 +63,6 @@ export function TaskDetailModal({ task, open, onOpenChange }: TaskDetailModalPro
   const priorityConf = priorityConfig[task.priority];
   const typeConf = taskTypeConfig[task.type];
   const isLate = new Date(task.deadline) < new Date() && task.status !== 'done';
-
-  const canDelete = (() => {
-    if (!currentUser) return false;
-    if (currentUser.accessLevel === 3) return true;
-    const client = clients.find((c) => c.id === task.clientId);
-    if (!client) return false;
-    const squad = squads.find((s) => s.id === client.squadId);
-    return squad?.leader === currentUser.name;
-  })();
 
   const toggleSubtask = (subtaskId: string) => {
     const userName = currentUser?.name ?? 'Usuário';
@@ -89,6 +92,16 @@ export function TaskDetailModal({ task, open, onOpenChange }: TaskDetailModalPro
     onOpenChange(false);
   };
 
+  const saveTitle = () => {
+    const trimmed = titleDraft.trim();
+    if (trimmed && trimmed !== task.title) {
+      updateTask(task.id, { title: trimmed });
+    }
+    setEditingTitle(false);
+  };
+
+  const deadlineISO = task.deadline ? task.deadline.slice(0, 10) : '';
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-hidden flex flex-col gap-0">
@@ -96,11 +109,35 @@ export function TaskDetailModal({ task, open, onOpenChange }: TaskDetailModalPro
         <DialogHeader className="pb-4 border-b border-border">
           <div className="flex items-start gap-3">
             <div className="flex-1 min-w-0">
-              <DialogTitle className="text-lg leading-snug mb-2">{task.title}</DialogTitle>
+              {editingTitle ? (
+                <Input
+                  autoFocus
+                  value={titleDraft}
+                  onChange={(e) => setTitleDraft(e.target.value)}
+                  onBlur={saveTitle}
+                  onKeyDown={(e) => { if (e.key === 'Enter') saveTitle(); if (e.key === 'Escape') setEditingTitle(false); }}
+                  className="text-lg font-semibold mb-2"
+                />
+              ) : (
+                <DialogTitle
+                  className="text-lg leading-snug mb-2 cursor-pointer hover:text-primary transition-colors"
+                  onClick={() => { setTitleDraft(task.title); setEditingTitle(true); }}
+                >
+                  {task.title}
+                </DialogTitle>
+              )}
               <div className="flex items-center gap-2 flex-wrap">
-                <span className={cn('text-xs px-2 py-0.5 rounded-md font-medium', typeConf.color)}>
-                  {typeConf.label}
-                </span>
+                {/* Type - editable select */}
+                <Select value={task.type} onValueChange={(v) => updateTask(task.id, { type: v as TaskType })}>
+                  <SelectTrigger className={cn('h-7 w-auto text-xs px-2 py-0.5 rounded-md font-medium border-0', typeConf.color)}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(taskTypeConfig).map(([key, conf]) => (
+                      <SelectItem key={key} value={key}>{conf.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <span className="text-xs text-muted-foreground flex items-center gap-1">
                   <Briefcase className="w-3 h-3" />
                   {task.clientName}
@@ -118,7 +155,7 @@ export function TaskDetailModal({ task, open, onOpenChange }: TaskDetailModalPro
         <div className="flex-1 overflow-y-auto space-y-5 pr-1 pt-4">
           {/* Info Cards */}
           <div className="grid grid-cols-2 gap-3">
-            {/* Responsável - editable */}
+            {/* Responsável - editable with app_users */}
             <div className="bg-muted/50 rounded-xl p-3 space-y-1.5">
               <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium uppercase tracking-wide">
                 <User className="w-3.5 h-3.5" />
@@ -129,11 +166,11 @@ export function TaskDetailModal({ task, open, onOpenChange }: TaskDetailModalPro
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {squadMembers.map((m) => (
-                    <SelectItem key={m} value={m}>
+                  {responsibleOptions.map((u) => (
+                    <SelectItem key={u.id} value={u.name}>
                       <div className="flex items-center gap-2">
-                        <Avatar name={m} size="sm" />
-                        {m}
+                        <Avatar name={u.name} size="sm" />
+                        {u.name}
                       </div>
                     </SelectItem>
                   ))}
@@ -141,39 +178,71 @@ export function TaskDetailModal({ task, open, onOpenChange }: TaskDetailModalPro
               </Select>
             </div>
 
-            {/* Prazo */}
+            {/* Prazo - editable */}
             <div className="bg-muted/50 rounded-xl p-3 space-y-1.5">
               <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium uppercase tracking-wide">
                 <CalendarDays className="w-3.5 h-3.5" />
                 Prazo
               </div>
-              <p className={cn('text-sm font-semibold', isLate ? 'text-destructive' : 'text-foreground')}>
-                {new Date(task.deadline).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })}
-              </p>
+              <Input
+                type="date"
+                value={deadlineISO}
+                onChange={(e) => {
+                  if (e.target.value) updateTask(task.id, { deadline: e.target.value });
+                }}
+                className={cn('h-9 bg-background border-border', isLate && 'text-destructive')}
+              />
             </div>
 
-            {/* Prioridade */}
+            {/* Prioridade - editable */}
             <div className="bg-muted/50 rounded-xl p-3 space-y-1.5">
               <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium uppercase tracking-wide">
                 <Flag className="w-3.5 h-3.5" />
                 Prioridade
               </div>
-              <span className={cn('inline-flex items-center gap-1 text-sm px-2.5 py-1 rounded-lg font-semibold border', priorityConf.className)}>
-                {priorityConf.icon} {priorityConf.label}
-              </span>
+              <Select value={task.priority} onValueChange={(v) => updateTask(task.id, { priority: v as Priority })}>
+                <SelectTrigger className="h-9 bg-background border-border">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(priorityConfig).map(([key, conf]) => (
+                    <SelectItem key={key} value={key}>
+                      <span className="flex items-center gap-1.5">{conf.icon} {conf.label}</span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
-            {/* Tempo */}
+            {/* Tempo - editable */}
             <div className="bg-muted/50 rounded-xl p-3 space-y-1.5">
               <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium uppercase tracking-wide">
                 <Clock className="w-3.5 h-3.5" />
                 Tempo
               </div>
-              <div className="text-sm font-semibold text-foreground">
-                {task.estimatedTime}h estimado
-                {task.realTime != null && (
-                  <span className="text-muted-foreground font-normal"> · {task.realTime}h real</span>
-                )}
+              <div className="flex items-center gap-2">
+                <div className="flex-1">
+                  <label className="text-[10px] text-muted-foreground">Estimado (h)</label>
+                  <Input
+                    type="number"
+                    min={0}
+                    step={0.5}
+                    value={task.estimatedTime}
+                    onChange={(e) => updateTask(task.id, { estimatedTime: parseFloat(e.target.value) || 0 })}
+                    className="h-8 bg-background border-border text-sm"
+                  />
+                </div>
+                <div className="flex-1">
+                  <label className="text-[10px] text-muted-foreground">Real (h)</label>
+                  <Input
+                    type="number"
+                    min={0}
+                    step={0.5}
+                    value={task.realTime ?? ''}
+                    onChange={(e) => updateTask(task.id, { realTime: e.target.value ? parseFloat(e.target.value) : null })}
+                    className="h-8 bg-background border-border text-sm"
+                  />
+                </div>
               </div>
               {isLate && (() => {
                 const diffMs = new Date().getTime() - new Date(task.deadline).getTime();
@@ -229,7 +298,6 @@ export function TaskDetailModal({ task, open, onOpenChange }: TaskDetailModalPro
               Observações
             </h4>
 
-            {/* Comments field (task.comments) */}
             {task.comments && (
               <div className="bg-accent/30 rounded-lg p-3 text-sm text-foreground border border-accent/50">
                 {task.comments}
