@@ -1,24 +1,41 @@
 
-## Resultado do Teste de Controle de Acesso
+## Resultado do Teste — Página de Produtividade
 
-### Usuário de teste
-- **Ana Silva** — Operacional, Nível 1, vinculada ao **Squad Alpha**
+### O que foi verificado
 
-### Resultados por página
+Não foi possível completar o teste via browser porque a senha da usuária Ana Silva não é conhecida por mim (o teste anterior foi feito na sessão do usuário no preview). Porém, a análise de código + dados confirma o comportamento:
 
-| Página | Resultado | Detalhes |
-|--------|-----------|----------|
-| **Sidebar** | OK | "Configurações" não aparece para não-admin |
-| **Dashboard** | OK | 2 clientes ativos (vs 3 admin), MRR R$14.000 (vs R$17.200), 3 demandas atrasadas (vs 5), plataformas filtradas |
-| **Clientes** | OK | Mostra apenas FitSupply Brasil, PetAmor Shop, Moda Bella Store — todos Squad Alpha |
-| **Squads** | OK | Mostra apenas Squad Alpha; sem botões de criar/editar/excluir |
-| **Relatórios** | OK | Tabela "Resumo por Cliente" mostra apenas clientes do Squad Alpha |
-| **Produtividade** | Parcial | Mostra todos os 8 team members porque nenhum tem `squad_id` preenchido no banco. O filtro funciona corretamente (`!m.squadId || visibleSquadIds.has(m.squadId)`), mas como todos têm `squad_id = null`, passam pelo filtro |
+### Lógica de filtragem (linha 20)
+```typescript
+const teamMembers = isAdmin 
+  ? allTeamMembers 
+  : allTeamMembers.filter((m) => !m.squadId || visibleSquadIds.has(m.squadId));
+```
 
-### Problema identificado
-A tabela `team_members` tem todos os registros com `squad_id = null`. Para o filtro de Produtividade funcionar corretamente, é necessário vincular cada team member ao seu squad. Isso pode ser feito:
-- Adicionando um campo de "Squad" ao editar team members
-- Ou sincronizando automaticamente com base nos `members[]` da tabela `squads`
+### Dados no banco
 
-### Conclusão
-O controle de acesso está **funcionando corretamente** em todas as páginas. O único gap é a ausência de dados `squad_id` nos `team_members`, que é um problema de dados, não de código.
+| Team Member | squad_id | Squad |
+|---|---|---|
+| Ana Silva | Squad Alpha | Visível para Ana |
+| Diego Rocha | Squad Alpha | Visível para Ana |
+| Carlos Mendes | Squad Beta | Oculto |
+| Mariana Feitosa | Squad Beta | Oculto |
+| Pedro Alves | Squad Gamma | Oculto |
+| Beatriz Costa | Squad Gamma | Oculto |
+| Lucas Matos | null | Visível (fallback) |
+| Carla Dias | null | Visível (fallback) |
+
+### Resultado esperado para Ana Silva (Squad Alpha)
+Ana verá **4 membros**: Ana Silva, Diego Rocha, Lucas Matos e Carla Dias. Os membros sem squad (`null`) passam pelo filtro `!m.squadId`.
+
+### Problema potencial
+Membros com `squad_id = null` (Lucas Matos, Carla Dias) são visíveis para **todos** os usuários. Se isso não for desejado, o filtro na linha 20 deve ser alterado para excluir membros sem squad para não-admins:
+
+```typescript
+const teamMembers = isAdmin 
+  ? allTeamMembers 
+  : allTeamMembers.filter((m) => m.squadId && visibleSquadIds.has(m.squadId));
+```
+
+### Recomendação
+Para testar no browser, faça login como Ana Silva no preview e navegue até a página de Produtividade. Você deve ver apenas 4 membros (2 do Squad Alpha + 2 sem squad). Se quiser restringir para mostrar apenas membros com squad atribuído, posso ajustar o filtro.
