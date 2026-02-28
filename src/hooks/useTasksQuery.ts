@@ -31,8 +31,9 @@ export function useAddTask() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (task: Task) => {
+      const taskId = task.id && task.id.match(/^[0-9a-f]{8}-/) ? task.id : crypto.randomUUID();
       const { error } = await supabase.from('tasks').insert({
-        id: task.id,
+        id: taskId,
         title: task.title,
         client_id: task.clientId,
         client_name: task.clientName,
