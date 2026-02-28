@@ -1,28 +1,22 @@
 
 
-## Indicação visual de Squad e Nível de Acesso na Sidebar
+## Correção: Adicionar Novo Cliente
 
-### Mudança
+### Problema
+O `AddClientDialog` gera IDs no formato `c_${Date.now()}` (ex: `c_1709123456789`), mas a coluna `id` na tabela `clients` é do tipo `uuid`. O insert falha silenciosamente no banco de dados.
 
-**`src/components/AppSidebar.tsx`** — No bloco do footer (seção do usuário logado), adicionar:
-- Nome do squad do usuário (buscado da lista de squads via `useSquadsQuery`)
-- Badge com o nível de acesso (1 = Operacional, 2 = Tático, 3 = Admin)
+O mesmo problema ocorre com os IDs das tasks criadas automaticamente (`t_${Date.now()}_0`).
 
-Layout no footer:
-```text
-┌──────────────────────────┐
-│ [Avatar] Nome do Usuário │
-│          Cargo           │
-│  🏷 Squad Alpha · Admin │
-└──────────────────────────┘
-```
+### Solução
 
-### Detalhes técnicos
-- Importar `useSquadsQuery` para buscar nomes dos squads
-- Mapear `currentUser.squadIds` para nomes de squads
-- Mostrar badge colorido para nível de acesso:
-  - Nível 1: cinza ("Operacional")
-  - Nível 2: azul ("Tático")  
-  - Nível 3: roxo ("Admin")
-- Se o usuário pertence a múltiplos squads, listar separados por vírgula
+**`src/components/AddClientDialog.tsx`**:
+- Substituir `c_${Date.now()}` por `crypto.randomUUID()` para gerar UUIDs válidos
+- Substituir `t_${Date.now()}_${idx}` por `crypto.randomUUID()` para tasks
+- Substituir `st_${Date.now()}_${idx}_${i}` por `crypto.randomUUID()` para subtasks
+
+### Mudanças
+Apenas 3 linhas precisam ser alteradas no arquivo `AddClientDialog.tsx`:
+- Linha 72: `const clientId = crypto.randomUUID();`
+- Linha 114: `id: crypto.randomUUID(),`  
+- Linha 108: `id: crypto.randomUUID(),`
 
