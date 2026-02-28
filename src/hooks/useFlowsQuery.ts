@@ -17,9 +17,9 @@ export function useFlowsQuery() {
 export function useAddFlow() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (flow: Flow) => {
+    mutationFn: async (flow: Omit<Flow, 'id'> & { id?: string }) => {
       const { error } = await supabase.from('flows').insert({
-        id: flow.id, name: flow.name, steps: flow.steps,
+        name: flow.name, steps: flow.steps,
       });
       if (error) throw error;
     },
@@ -72,9 +72,9 @@ export function useCustomTemplatesQuery() {
 export function useAddTemplate() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (t: CustomTemplate) => {
+    mutationFn: async (t: Omit<CustomTemplate, 'id'> & { id?: string }) => {
       const { error } = await supabase.from('custom_templates').insert({
-        id: t.id, name: t.name, subtasks: t.subtasks,
+        name: t.name, subtasks: t.subtasks,
       });
       if (error) throw error;
     },

@@ -69,7 +69,7 @@ export function TasksProvider({ children }: { children: ReactNode }) {
     const clientName = client?.clientName ?? clientId;
     flow.steps.forEach((step, i) => {
       addTaskMut.mutate({
-        id: `task_flow_${Date.now()}_${i}`,
+        id: crypto.randomUUID(),
         title: `${flow.name} - ${step}`,
         clientId,
         clientName,

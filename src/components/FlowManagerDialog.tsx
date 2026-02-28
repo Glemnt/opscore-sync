@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useTasks } from '@/contexts/TasksContext';
+import { useAddFlow } from '@/hooks/useFlowsQuery';
 import { useClients } from '@/contexts/ClientsContext';
 import { toast } from 'sonner';
 
@@ -30,7 +31,8 @@ export function FlowManagerDialog({ open, onOpenChange, mode }: Props) {
 }
 
 function CreateFlowView({ onClose }: { onClose: () => void }) {
-  const { addFlow } = useTasks();
+  const { flows } = useTasks();
+  const addFlowMut = useAddFlow();
   const [name, setName] = useState('');
   const [steps, setSteps] = useState<string[]>(['']);
 
@@ -38,14 +40,16 @@ function CreateFlowView({ onClose }: { onClose: () => void }) {
   const handleRemoveStep = (i: number) => setSteps((s) => s.filter((_, idx) => idx !== i));
   const handleStepChange = (i: number, v: string) => setSteps((s) => s.map((x, idx) => (idx === i ? v : x)));
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const trimmedName = name.trim();
     const validSteps = steps.map((s) => s.trim()).filter(Boolean);
     if (!trimmedName) { toast.error('Informe o nome do fluxo'); return; }
     if (validSteps.length === 0) { toast.error('Adicione pelo menos uma etapa'); return; }
-    addFlow({ id: `flow_${Date.now()}`, name: trimmedName, steps: validSteps, createdAt: new Date().toISOString() });
-    toast.success('Fluxo criado!');
-    onClose();
+    try {
+      await addFlowMut.mutateAsync({ name: trimmedName, steps: validSteps, createdAt: new Date().toISOString() } as any);
+      toast.success('Fluxo criado!');
+      onClose();
+    } catch { toast.error('Erro ao criar fluxo'); }
   };
 
   return (
@@ -182,9 +186,11 @@ function AssignFlowView({ onClose }: { onClose: () => void }) {
 
   const handleAssign = () => {
     if (!clientId || !flowId) { toast.error('Selecione cliente e fluxo'); return; }
-    assignFlowToClient(clientId, flowId);
-    toast.success('Fluxo atribuído ao cliente!');
-    onClose();
+    try {
+      assignFlowToClient(clientId, flowId);
+      toast.success('Fluxo atribuído ao cliente!');
+      onClose();
+    } catch { toast.error('Erro ao atribuir fluxo'); }
   };
 
   return (
