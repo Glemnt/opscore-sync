@@ -10,8 +10,8 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { useTasks } from '@/contexts/TasksContext';
-import { useSquads } from '@/contexts/SquadsContext';
 import { useClients } from '@/contexts/ClientsContext';
+import { useAppUsersQuery } from '@/hooks/useAppUsersQuery';
 
 import { taskTypeConfig, priorityConfig } from '@/lib/config';
 import { Task, TaskType, TaskStatus, Priority } from '@/types';
@@ -26,8 +26,8 @@ interface AddTaskDialogProps {
 
 export function AddTaskDialog({ open, onOpenChange, defaultStatus = 'backlog' }: AddTaskDialogProps) {
   const { addTask } = useTasks();
-  const { squads } = useSquads();
   const { getVisibleClients } = useClients();
+  const { data: appUsers = [] } = useAppUsersQuery();
   const visibleClients = getVisibleClients();
   const [customTypes, setCustomTypes] = useState<Record<string, { label: string; color: string }>>({});
   const [showNewType, setShowNewType] = useState(false);
@@ -79,11 +79,10 @@ export function AddTaskDialog({ open, onOpenChange, defaultStatus = 'backlog' }:
   };
 
 
-  const squadMembers = useMemo(() => {
-    if (!selectedClient) return [];
-    const squad = squads.find((s) => s.id === selectedClient.squadId);
-    return squad?.members ?? [];
-  }, [selectedClient, squads]);
+  const responsibleOptions = useMemo(() => {
+    if (!selectedClient?.squadId) return appUsers;
+    return appUsers.filter(u => u.squadIds?.includes(selectedClient.squadId!));
+  }, [selectedClient, appUsers]);
 
   const resetForm = () => {
     setClientId('');
@@ -237,11 +236,11 @@ export function AddTaskDialog({ open, onOpenChange, defaultStatus = 'backlog' }:
           {/* Responsável */}
           <div className="space-y-1.5">
             <Label>Responsável *</Label>
-            <Select value={responsible} onValueChange={setResponsible} disabled={!clientId}>
+            <Select value={responsible} onValueChange={setResponsible}>
               <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
               <SelectContent>
-                {squadMembers.map((m) => (
-                  <SelectItem key={m} value={m}>{m}</SelectItem>
+                {responsibleOptions.map((u) => (
+                  <SelectItem key={u.id} value={u.name}>{u.name}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
