@@ -1,22 +1,22 @@
 
 
-## Filtro por tipo de demanda na página Demandas
+## Ativar botão "Adicionar" dentro das colunas do Kanban
 
-### O que será feito
-Adicionar um filtro por tipo de demanda (tags) no Kanban da página `TasksPage`, usando os tipos já existentes em `taskTypeConfig` (Anúncio, Copy, Design, etc.) + tipos customizados criados pelo usuário.
+### Problema
+O botão "Adicionar" dentro de cada coluna do Kanban não tem `onClick` — é apenas visual.
 
-### Alteração
+### Solução
+Fazer o botão abrir o dialog `AddTaskDialog` já com o status da coluna pré-selecionado, para que a demanda seja criada diretamente naquela coluna.
+
+### Alterações
+
+**`src/components/AddTaskDialog.tsx`**:
+- Adicionar prop opcional `defaultStatus?: TaskStatus` (default `'backlog'`)
+- Usar `defaultStatus` no `handleSubmit` ao criar o `newTask` em vez de `'backlog'` fixo
 
 **`src/pages/TasksPage.tsx`**:
-1. Adicionar estado `selectedType` (default `'all'`)
-2. Coletar todos os tipos únicos das tasks visíveis (para incluir tipos customizados que não estão no `taskTypeConfig`)
-3. Renderizar um `<select>` ao lado do filtro de responsável com as opções de tipo
-4. Adicionar a condição `matchType` no filtro `filtered`
-
-A UI será um dropdown similar ao de responsável, mostrando o label do tipo (usando `taskTypeConfig` quando disponível, ou o próprio valor como fallback para tipos customizados).
-
-### Detalhes técnicos
-- Não precisa de mudança no banco de dados — o campo `type` já existe na tabela `tasks`
-- `taskTypeConfig` de `src/lib/config.ts` já mapeia os tipos padrão para labels/cores
-- Tipos customizados (criados no `AddTaskDialog`) terão fallback para exibir o próprio valor como label
+- Adicionar estado `addToStatus` para rastrear em qual coluna o botão foi clicado
+- No botão "Adicionar" de cada coluna, adicionar `onClick` que seta `addToStatus` para o status da coluna e abre o dialog
+- Passar `defaultStatus={addToStatus}` para `AddTaskDialog`
+- Resetar `addToStatus` quando o dialog fechar
 
