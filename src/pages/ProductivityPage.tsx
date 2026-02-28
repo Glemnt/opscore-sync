@@ -17,7 +17,7 @@ export function ProductivityPage() {
   // Filter team members by visible squads
   const visibleSquadIds = new Set(clients.map((c) => c.squadId).filter(Boolean));
   const isAdmin = currentUser?.accessLevel === 3;
-  const teamMembers = isAdmin ? allTeamMembers : allTeamMembers.filter((m) => !m.squadId || visibleSquadIds.has(m.squadId));
+  const teamMembers = isAdmin ? allTeamMembers : allTeamMembers.filter((m) => m.squadId && visibleSquadIds.has(m.squadId));
 
   const performanceData = teamMembers.map(m => ({
     name: m.name.split(' ')[0],
