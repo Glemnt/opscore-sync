@@ -55,3 +55,53 @@ export function useCreateAppUser() {
     },
   });
 }
+
+interface UpdateUserInput {
+  userId: string;
+  name: string;
+  role: TeamRole;
+  accessLevel: AccessLevel;
+  squadIds: string[];
+}
+
+export function useUpdateAppUser() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (input: UpdateUserInput) => {
+      const { data, error } = await supabase.functions.invoke('manage-users', {
+        body: { action: 'update', ...input },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['app_users'] });
+      toast.success('Usuário atualizado com sucesso');
+    },
+    onError: (err: Error) => {
+      toast.error(`Erro ao atualizar: ${err.message}`);
+    },
+  });
+}
+
+export function useDeleteAppUser() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (userId: string) => {
+      const { data, error } = await supabase.functions.invoke('manage-users', {
+        body: { action: 'delete', userId },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['app_users'] });
+      toast.success('Usuário excluído com sucesso');
+    },
+    onError: (err: Error) => {
+      toast.error(`Erro ao excluir: ${err.message}`);
+    },
+  });
+}
