@@ -1,26 +1,30 @@
 
 
-## Problema
+## Correção: Signup deslogando o admin
 
-A `SettingsPage` usa `useAuth().users`, que é apenas um `useState([])` local — nunca busca dados do banco. O admin existe no banco (`admin@grupotg.com`), mas a lista `users` no contexto começa vazia e só cresce via `addUser` local (em memória).
+### Problema
+`useCreateAppUser` usa `supabase.auth.signUp()` que automaticamente faz login como o novo usuário, substituindo a sessão do admin.
 
-## Solução
-
-1. **Criar hook `useAppUsersQuery.ts`** — busca todos os registros de `app_users` via `useQuery`
-2. **Atualizar `SettingsPage`** — usar o novo hook ao invés de `useAuth().users`; o formulário "Novo Usuário" deve usar `supabase.auth.signUp` + insert em `app_users` (como o signup faz), com mutation que invalida o cache
-3. **Remover `users` e `addUser` do `AuthContext`** — não são mais necessários; o estado local nunca refletia o banco
+### Solução
+Criar uma **edge function** `create-user` que usa o `supabase-admin` (service role) para criar o usuário via `admin.createUser()`, sem afetar a sessão do admin logado.
 
 ### Arquivos
 
 | Ação | Arquivo |
 |------|---------|
-| Criar | `src/hooks/useAppUsersQuery.ts` |
-| Editar | `src/pages/SettingsPage.tsx` |
-| Editar | `src/contexts/AuthContext.tsx` (remover `users`, `addUser`) |
+| Criar | `supabase/functions/create-user/index.ts` |
+| Editar | `src/hooks/useAppUsersQuery.ts` |
 
-### Detalhes técnicos
+### Implementação
 
-- O hook faz `supabase.from('app_users').select('*')` e mapeia com `mapDbAppUser`
-- O formulário de novo usuário continuará chamando `supabase.auth.signUp` para criar o auth user e depois inserir em `app_users` com o `access_level` e `role` escolhidos no form (admin pode criar usuários com qualquer nível)
-- A RLS de `app_users` para SELECT já permite leitura (`USING (true)`) para authenticated
+1. **Edge function `create-user`**:
+   - Recebe `{ name, email, password, role, accessLevel, squadIds }`
+   - Valida que o chamador é admin via `has_role`
+   - Usa `supabaseAdmin.auth.admin.createUser({ email, password, email_confirm: true })`
+   - Insere em `app_users` e `user_roles` com service role
+   - Retorna o usuário criado
+
+2. **Atualizar `useCreateAppUser`**:
+   - Trocar `supabase.auth.signUp` por chamada à edge function via `supabase.functions.invoke('create-user', { body })`
+   - A sessão do admin permanece intacta
 
