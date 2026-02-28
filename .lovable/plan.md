@@ -1,37 +1,34 @@
 
 
-## Editar e Excluir Usuários na Página de Configurações
+## Bug Fix: Fluxos não persistem no banco de dados
 
-### Arquivos
+### Problema encontrado
+Os fluxos **não estão sendo salvos** no banco. O toast "Fluxo criado!" aparece, mas o insert falha silenciosamente porque:
 
-| Ação | Arquivo |
-|------|---------|
-| Editar | `supabase/functions/create-user/index.ts` → renomear lógica para `manage-user` ou adicionar actions `update` e `delete` |
-| Criar | `supabase/functions/manage-users/index.ts` — edge function com actions `update` e `delete` |
-| Editar | `src/hooks/useAppUsersQuery.ts` — adicionar mutations `useUpdateAppUser` e `useDeleteAppUser` |
-| Editar | `src/pages/SettingsPage.tsx` — adicionar botões de editar/excluir, dialog de edição, confirmação de exclusão |
+1. `CreateFlowView` gera `id: \`flow_${Date.now()}\`` — que **não é UUID válido** para a coluna `flows.id` (tipo `uuid`)
+2. `assignFlowToClient` gera `id: \`task_flow_${Date.now()}_${i}\`` — mesmo problema para `tasks.id`
+3. O toast de sucesso é chamado **antes** da mutation completar, mascarando o erro
 
-### Implementação
+### Correções
 
-**1. Edge function `manage-users`** (nova)
-- Recebe `{ action, userId, ...data }`
-- Valida que o chamador é admin (mesmo padrão do `create-user`)
-- `action: "update"` → atualiza `app_users` (name, role, access_level, squad_ids) via service role
-- `action: "delete"` → deleta o registro de `app_users`, `user_roles`, e chama `auth.admin.deleteUser()` para remover o auth user
-- Impede que o admin exclua a si mesmo
+**1. `src/components/FlowManagerDialog.tsx` — CreateFlowView**
+- Remover geração manual de ID (`flow_${Date.now()}`)
+- Usar `crypto.randomUUID()` ou omitir o `id` e deixar o banco gerar via `gen_random_uuid()`
+- Converter `handleSave` para async e aguardar resultado da mutation antes de mostrar toast
 
-**2. Hook mutations**
-- `useUpdateAppUser`: invoca `manage-users` com action `update`, invalida cache
-- `useDeleteAppUser`: invoca `manage-users` com action `delete`, invalida cache
+**2. `src/hooks/useFlowsQuery.ts` — useAddFlow**
+- Não incluir `id` no insert (deixar o DB gerar o UUID automaticamente)
 
-**3. UI na SettingsPage**
-- Coluna "Ações" na tabela com ícones de editar (Pencil) e excluir (Trash2)
-- Dialog de edição reutilizando o mesmo formulário do "Novo Usuário" (nome, cargo, nível, squads), preenchido com dados atuais
-- AlertDialog de confirmação antes de excluir
-- Admin não pode excluir a si mesmo (botão desabilitado ou oculto)
+**3. `src/contexts/TasksContext.tsx` — assignFlowToClient**
+- Remover geração manual de ID das tasks criadas pelo fluxo
+- Usar `crypto.randomUUID()` ou omitir o `id`
+
+**4. `src/components/FlowManagerDialog.tsx` — Tratamento de erros**
+- Todas as 3 views (Create, Edit, Assign) devem tratar erros da mutation com `try/catch` ou `onError`
+- Toast de sucesso só após confirmação da operação
 
 ### Detalhes técnicos
-- A exclusão via `auth.admin.deleteUser()` requer service role (já disponível na edge function)
-- RLS de `app_users` já permite ALL para admins via `has_role`
-- O `auth_user_id` do `AppUserProfile` será usado para identificar o auth user a deletar
+- As tabelas `flows` e `tasks` têm `id uuid DEFAULT gen_random_uuid()` — omitir o ID no insert é a solução mais limpa
+- As RLS policies de `flows` permitem INSERT/SELECT/UPDATE/DELETE para todos os usuários autenticados — sem restrição de acesso
+- A UI do Kanban (TasksPage) não tem restrição de `accessLevel` no dropdown de Fluxos — já acessível a todos
 
