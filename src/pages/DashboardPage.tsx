@@ -85,10 +85,12 @@ export function DashboardPage() {
   const clients = getVisibleClients();
   const { data: allProjects = [] } = useProjectsQuery();
   const { tasks: allTasks } = useTasks();
-  const { data: teamMembers = [] } = useTeamMembersQuery();
+  const { data: allTeamMembers = [] } = useTeamMembersQuery();
   const visibleClientIds = new Set(clients.map((c) => c.id));
   const projects = allProjects.filter((p) => visibleClientIds.has(p.clientId));
   const tasks = allTasks.filter((t) => visibleClientIds.has(t.clientId));
+  const visibleSquadIds = new Set(clients.map((c) => c.squadId).filter(Boolean));
+  const teamMembers = allTeamMembers.filter((m) => !m.squadId || visibleSquadIds.has(m.squadId));
 
   // Date filters
   const now = new Date();
@@ -119,15 +121,15 @@ export function DashboardPage() {
     }).length;
   }, [clients, clientsStartDate, clientsEndDate]);
 
-  // Churn in range
+  // Churn in range (filtered by visible clients)
   const churnCount = useMemo(() => {
-    const churned = allClientsList.filter(c => c.status === 'churned');
+    const churned = clients.filter(c => c.status === 'churned');
     if (!churnStartDate || !churnEndDate) return churned.length;
     return churned.filter(c => {
       const d = parseISO(c.startDate);
       return isWithinInterval(d, { start: churnStartDate, end: churnEndDate });
     }).length;
-  }, [allClientsList, churnStartDate, churnEndDate]);
+  }, [clients, churnStartDate, churnEndDate]);
 
   // Revenue by platform
   const platformData = useMemo(() => {
@@ -146,18 +148,18 @@ export function DashboardPage() {
     }));
   }, [clients]);
 
-  // Client evolution by month (last 6 months)
+  // Client evolution by month (last 6 months) — filtered by visible clients
   const clientEvolutionData = useMemo(() => {
     const months: { month: string; entradas: number; saidas: number }[] = [];
     for (let i = 5; i >= 0; i--) {
       const monthStart = startOfMonth(subMonths(now, i));
       const monthEnd = endOfMonth(subMonths(now, i));
       const label = format(monthStart, 'MMM/yy', { locale: ptBR });
-      const entradas = allClientsList.filter(c => {
+      const entradas = clients.filter(c => {
         const d = parseISO(c.startDate);
         return isWithinInterval(d, { start: monthStart, end: monthEnd });
       }).length;
-      const saidas = allClientsList.filter(c => {
+      const saidas = clients.filter(c => {
         if (c.status !== 'churned') return false;
         const d = parseISO(c.startDate);
         return isWithinInterval(d, { start: monthStart, end: monthEnd });
@@ -165,7 +167,7 @@ export function DashboardPage() {
       months.push({ month: label, entradas, saidas });
     }
     return months;
-  }, [allClientsList]);
+  }, [clients]);
 
   const recentProjects = projects.slice(0, 4);
 

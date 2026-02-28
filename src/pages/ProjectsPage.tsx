@@ -100,6 +100,9 @@ export function ProjectsPage() {
   const [dragOverClientCol, setDragOverClientCol] = useState<string | null>(null);
   const [editingColId, setEditingColId] = useState<string | null>(null);
 
+  const isAdmin = currentUser?.accessLevel === 3;
+  const visibleSquads = isAdmin ? squads : squads.filter((s) => currentUser?.squadIds.includes(s.id));
+
   // Step 1: Show squads
   if (!selectedSquad) {
     return (
@@ -108,14 +111,16 @@ export function ProjectsPage() {
           title="Squads"
           subtitle="Selecione um squad para ver os clientes e projetos"
           actions={
-            <Button onClick={openAddSquad} className="gradient-primary shadow-primary">
-              <Plus className="w-4 h-4 mr-2" />
-              Novo Squad
-            </Button>
+            isAdmin ? (
+              <Button onClick={openAddSquad} className="gradient-primary shadow-primary">
+                <Plus className="w-4 h-4 mr-2" />
+                Novo Squad
+              </Button>
+            ) : undefined
           }
         />
         <div className="grid grid-cols-3 gap-4">
-          {squads.map((squad) => {
+          {visibleSquads.map((squad) => {
             const squadClients = clients.filter((c) => c.squadId === squad.id);
             const squadProjects = projects.filter((p) => squadClients.some((c) => c.id === p.clientId));
             const activeProjects = squadProjects.filter((p) => p.status === 'in_progress').length;
@@ -124,23 +129,25 @@ export function ProjectsPage() {
                 key={squad.id}
                 className="bg-card rounded-xl border border-border p-6 shadow-sm-custom hover:shadow-md-custom hover:-translate-y-0.5 transition-all text-left group cursor-pointer relative"
               >
-                {/* Action buttons */}
-                <div className="absolute top-3 right-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button
-                    onClick={(e) => openEditSquad(squad, e)}
-                    className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-                    title="Editar squad"
-                  >
-                    <Pencil className="w-3.5 h-3.5" />
-                  </button>
-                  <button
-                    onClick={(e) => handleDeleteSquad(squad.id, e)}
-                    className="p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
-                    title="Apagar squad"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                </div>
+                {/* Action buttons — admin only */}
+                {isAdmin && (
+                  <div className="absolute top-3 right-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button
+                      onClick={(e) => openEditSquad(squad, e)}
+                      className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                      title="Editar squad"
+                    >
+                      <Pencil className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      onClick={(e) => handleDeleteSquad(squad.id, e)}
+                      className="p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+                      title="Apagar squad"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                )}
 
                 <div onClick={() => setSelectedSquad(squad)} className="h-full">
                   <div className="flex items-center gap-3 mb-4">
