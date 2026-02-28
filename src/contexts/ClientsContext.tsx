@@ -1,10 +1,18 @@
-import { createContext, useContext, useState, ReactNode, useCallback } from 'react';
+import { createContext, useContext, ReactNode, useCallback } from 'react';
 import { Client, ChangeLogEntry, ChatNote } from '@/types';
-import { clients as initialClients } from '@/data/mockData';
 import { useAuth } from '@/contexts/AuthContext';
+import {
+  useClientsQuery,
+  useAddClient,
+  useUpdateClient,
+  useDeleteClient,
+  useAddChangeLog,
+  useAddClientChatNote,
+} from '@/hooks/useClientsQuery';
 
 interface ClientsContextType {
   clients: Client[];
+  isLoading: boolean;
   addClient: (client: Client) => void;
   deleteClient: (clientId: string) => void;
   updateClient: (clientId: string, updates: Partial<Client>) => void;
@@ -17,79 +25,73 @@ const ClientsContext = createContext<ClientsContextType | undefined>(undefined);
 
 export function ClientsProvider({ children }: { children: ReactNode }) {
   const { currentUser } = useAuth();
-  const [clients, setClients] = useState<Client[]>(initialClients);
+  const { data: clients = [], isLoading } = useClientsQuery();
+  const addClientMut = useAddClient();
+  const updateClientMut = useUpdateClient();
+  const deleteClientMut = useDeleteClient();
+  const addChangeLogMut = useAddChangeLog();
+  const addChatNoteMut = useAddClientChatNote();
 
   const addClient = useCallback((client: Client) => {
-    setClients(prev => [...prev, client]);
-  }, []);
+    addClientMut.mutate(client);
+  }, [addClientMut]);
 
   const deleteClient = useCallback((clientId: string) => {
-    setClients(prev => prev.filter(c => c.id !== clientId));
-  }, []);
+    deleteClientMut.mutate(clientId);
+  }, [deleteClientMut]);
 
   const updateClient = useCallback((clientId: string, updates: Partial<Client>) => {
-    setClients(prev => prev.map(c => {
-      if (c.id !== clientId) return c;
-      const newLogs: ChangeLogEntry[] = [];
+    // Log changes
+    const existing = clients.find((c) => c.id === clientId);
+    if (existing) {
       for (const [key, value] of Object.entries(updates)) {
         if (key === 'changeLogs' || key === 'chatNotes') continue;
-        const oldVal = String((c as any)[key] ?? '');
+        const oldVal = String((existing as any)[key] ?? '');
         const newVal = String(value ?? '');
         if (oldVal !== newVal) {
-          newLogs.push({
-            id: `log_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+          addChangeLogMut.mutate({
+            clientId,
             field: key,
             oldValue: oldVal,
             newValue: newVal,
             changedBy: currentUser?.name ?? 'Sistema',
-            changedAt: new Date().toISOString(),
           });
         }
       }
-      return { ...c, ...updates, changeLogs: [...c.changeLogs, ...newLogs] };
-    }));
-  }, [currentUser]);
+    }
+    updateClientMut.mutate({ id: clientId, updates });
+  }, [clients, currentUser, updateClientMut, addChangeLogMut]);
 
   const updateClientField = useCallback((clientId: string, field: string, value: any, fieldLabel: string) => {
-    setClients(prev => prev.map(c => {
-      if (c.id !== clientId) return c;
-      const oldValue = String((c as any)[field] ?? '');
-      const logEntry: ChangeLogEntry = {
-        id: `log_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+    const existing = clients.find((c) => c.id === clientId);
+    if (existing) {
+      addChangeLogMut.mutate({
+        clientId,
         field: fieldLabel,
-        oldValue,
+        oldValue: String((existing as any)[field] ?? ''),
         newValue: String(value),
         changedBy: currentUser?.name ?? 'Sistema',
-        changedAt: new Date().toISOString(),
-      };
-      return {
-        ...c,
-        [field]: value,
-        changeLogs: [...c.changeLogs, logEntry],
-      };
-    }));
-  }, [currentUser]);
+      });
+    }
+    updateClientMut.mutate({ id: clientId, updates: { [field]: value } });
+  }, [clients, currentUser, updateClientMut, addChangeLogMut]);
 
   const addChatNote = useCallback((clientId: string, message: string) => {
-    const note: ChatNote = {
-      id: `note_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+    addChatNoteMut.mutate({
+      clientId,
       message,
       author: currentUser?.name ?? 'Sistema',
-      createdAt: new Date().toISOString(),
-    };
-    setClients(prev => prev.map(c =>
-      c.id === clientId ? { ...c, chatNotes: [...c.chatNotes, note] } : c
-    ));
-  }, [currentUser]);
+    });
+  }, [currentUser, addChatNoteMut]);
 
   const getVisibleClients = useCallback((): Client[] => {
     if (!currentUser) return [];
     if (currentUser.accessLevel === 3) return clients;
-    return clients.filter(c => currentUser.squadIds.includes(c.squadId));
+    return clients.filter((c) => currentUser.squadIds.includes(c.squadId));
   }, [currentUser, clients]);
 
   return (
-    <ClientsContext.Provider value={{ clients, addClient, deleteClient, updateClient, updateClientField, addChatNote, getVisibleClients }}>
+    <ClientsContext.Provider value={{ clients, isLoading, addClient, deleteClient, updateClient, updateClientField, addChatNote, getVisibleClients }}>
       {children}
     </ClientsContext.Provider>
   );

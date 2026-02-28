@@ -3,7 +3,7 @@ import { Plus, Search, Clock, MessageSquare, AlertTriangle, Trash2, Workflow, Ch
 import { useTasks } from '@/contexts/TasksContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSquads } from '@/contexts/SquadsContext';
-import { clients as allClientsData } from '@/data/mockData';
+import { useClients } from '@/contexts/ClientsContext';
 import { PageHeader, StatusBadge, Avatar, ProgressBar } from '@/components/ui/shared';
 import { taskStatusConfig, priorityConfig, taskTypeConfig } from '@/lib/config';
 import { Task, TaskStatus } from '@/types';
@@ -22,7 +22,8 @@ const defaultKanbanCols: { status: TaskStatus; label: string }[] = [
 
 export function TasksPage() {
   const { tasks: allTasks, updateTask, deleteTask } = useTasks();
-  const { currentUser, getVisibleClients } = useAuth();
+  const { currentUser } = useAuth();
+  const { getVisibleClients, clients } = useClients();
   const { squads } = useSquads();
   const visibleClientIds = new Set(getVisibleClients().map((c) => c.id));
   const tasks = allTasks.filter((t) => visibleClientIds.has(t.clientId));
@@ -167,7 +168,7 @@ export function TasksPage() {
                   const canDel = (() => {
                     if (!currentUser) return false;
                     if (currentUser.accessLevel === 3) return true;
-                    const client = allClientsData.find((c) => c.id === task.clientId);
+                    const client = clients.find((c) => c.id === task.clientId);
                     if (!client) return false;
                     const squad = squads.find((s) => s.id === client.squadId);
                     return squad?.leader === currentUser.name;

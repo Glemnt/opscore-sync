@@ -7,7 +7,9 @@ import { StatusBadge } from '@/components/ui/shared';
 import { clientStatusConfig, taskStatusConfig, taskTypeConfig } from '@/lib/config';
 import { Client, Task, ClientStatus, ContractType, Platform } from '@/types';
 import { cn } from '@/lib/utils';
-import { squads, projects, tasks } from '@/data/mockData';
+import { useSquads } from '@/contexts/SquadsContext';
+import { useProjectsQuery } from '@/hooks/useProjectsQuery';
+import { useTasks } from '@/contexts/TasksContext';
 import { useClients } from '@/contexts/ClientsContext';
 import { ClientAIAnalysis } from '@/components/ClientAIAnalysis';
 import {
@@ -23,6 +25,9 @@ interface ClientDetailModalProps {
 
 export function ClientDetailModal({ client, open, onClose }: ClientDetailModalProps) {
   const { updateClientField, addChatNote, deleteClient, updateClient } = useClients();
+  const { squads } = useSquads();
+  const { data: projects = [] } = useProjectsQuery();
+  const { tasks } = useTasks();
   const [editingField, setEditingField] = useState<string | null>(null);
   const [editValue, setEditValue] = useState('');
   const [noteMessage, setNoteMessage] = useState('');

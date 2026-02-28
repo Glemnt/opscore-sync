@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Plus, Search, Calendar, ChevronDown, CheckCircle2, Circle, ArrowLeft, Users2, X, Pencil, Trash2 } from 'lucide-react';
 import { TaskDetailModal } from '@/components/TaskDetailModal';
-import { projects, clients as allClients } from '@/data/mockData';
+import { useProjectsQuery } from '@/hooks/useProjectsQuery';
 import { PageHeader, StatusBadge, Avatar, ProgressBar } from '@/components/ui/shared';
 import { projectStatusConfig, priorityConfig, projectTypeConfig, clientStatusConfig } from '@/lib/config';
 import { Project, ProjectStatus, Squad, Client, ClientStatus, TaskStatus } from '@/types';
@@ -31,6 +31,7 @@ export function ProjectsPage() {
   const { currentUser } = useAuth();
   const { squads, addSquad, removeSquad, updateSquad } = useSquads();
   const { addTask } = useTasks();
+  const { data: projects = [] } = useProjectsQuery();
   const { updateClientField, getVisibleClients } = useClients();
   const clients = getVisibleClients();
   const [selectedSquad, setSelectedSquad] = useState<Squad | null>(null);
@@ -406,6 +407,8 @@ function KanbanView({ filtered, clientId, clientName, squadMembers }: {filtered:
   const { tasks: allTasks, addTask, updateTask, deleteTask } = useTasks();
   const { currentUser } = useAuth();
   const { squads } = useSquads();
+  const { getVisibleClients } = useClients();
+  const clients = getVisibleClients();
   const [localProjects, setLocalProjects] = useState<Project[]>([]);
   const allProjects = [...filtered, ...localProjects];
   const [cols, setCols] = useState<ProjectKanbanColumn[]>([
@@ -525,7 +528,7 @@ function KanbanView({ filtered, clientId, clientName, squadMembers }: {filtered:
                   const canDel = (() => {
                     if (!currentUser) return false;
                     if (currentUser.accessLevel === 3) return true;
-                    const client = allClients.find((c) => c.id === task.clientId);
+                    const client = clients.find((c) => c.id === task.clientId);
                     if (!client) return false;
                     const sq = squads.find((s) => s.id === client.squadId);
                     return sq?.leader === currentUser.name;

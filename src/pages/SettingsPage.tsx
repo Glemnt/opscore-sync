@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { Plus, Shield, ShieldCheck, ShieldAlert } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { squads } from '@/data/mockData';
-import { AppUser, AccessLevel, TeamRole } from '@/types';
+import { useSquads } from '@/contexts/SquadsContext';
+import { AccessLevel, TeamRole } from '@/types';
 import { PageHeader } from '@/components/ui/shared';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -28,6 +28,7 @@ const levelLabels: Record<AccessLevel, { label: string; icon: typeof Shield }> =
 
 export function SettingsPage() {
   const { users, addUser } = useAuth();
+  const { squads } = useSquads();
   const [open, setOpen] = useState(false);
   const [name, setName] = useState('');
   const [login, setLogin] = useState('');
@@ -42,14 +43,14 @@ export function SettingsPage() {
 
   const handleSubmit = () => {
     if (!name.trim() || !login.trim() || !password.trim()) return;
-    const newUser: AppUser = {
+    const newUser = {
       id: `u_${Date.now()}`,
       name: name.trim(),
       login: login.trim(),
-      password,
       role,
       accessLevel,
       squadIds: accessLevel === 3 ? squads.map((s) => s.id) : selectedSquads,
+      authUserId: null,
     };
     addUser(newUser);
     resetForm();

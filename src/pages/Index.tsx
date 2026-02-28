@@ -12,12 +12,27 @@ import { TasksProvider } from '@/contexts/TasksContext';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { ClientsProvider } from '@/contexts/ClientsContext';
 import { SquadsProvider } from '@/contexts/SquadsContext';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: { staleTime: 1000 * 60, retry: 1 },
+  },
+});
 
 function AppContent() {
-  const { currentUser } = useAuth();
+  const { currentUser, session, loading } = useAuth();
   const [currentPage, setCurrentPage] = useState('dashboard');
 
-  if (!currentUser) {
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <p className="text-muted-foreground">Carregando...</p>
+      </div>
+    );
+  }
+
+  if (!session) {
     return <LoginPage />;
   }
 
@@ -29,7 +44,7 @@ function AppContent() {
       case 'tasks': return <TasksPage />;
       case 'productivity': return <ProductivityPage />;
       case 'reports': return <ReportsPage />;
-      case 'settings': return currentUser.accessLevel === 3 ? <SettingsPage /> : <DashboardPage />;
+      case 'settings': return currentUser?.accessLevel === 3 ? <SettingsPage /> : <DashboardPage />;
       default: return <DashboardPage />;
     }
   };
@@ -48,9 +63,11 @@ function AppContent() {
 }
 
 const Index = () => (
-  <AuthProvider>
-    <AppContent />
-  </AuthProvider>
+  <QueryClientProvider client={queryClient}>
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
+  </QueryClientProvider>
 );
 
 export default Index;

@@ -1,15 +1,19 @@
-import { createContext, useContext, useState, ReactNode } from 'react';
+import { createContext, useContext, ReactNode, useCallback } from 'react';
 import { Task, Flow } from '@/types';
-import { tasks as initialTasks } from '@/data/mockData';
+import {
+  useTasksQuery, useAddTask, useUpdateTask, useDeleteTask,
+} from '@/hooks/useTasksQuery';
+import {
+  useFlowsQuery, useAddFlow, useUpdateFlow, useDeleteFlow,
+  useCustomTemplatesQuery, useAddTemplate, useUpdateTemplate, useRemoveTemplate,
+  type CustomTemplate,
+} from '@/hooks/useFlowsQuery';
 
-export interface CustomTemplate {
-  id: string;
-  name: string;
-  subtasks: string[];
-}
+export type { CustomTemplate };
 
 interface TasksContextType {
   tasks: Task[];
+  isLoading: boolean;
   addTask: (task: Task) => void;
   updateTask: (id: string, updates: Partial<Task>) => void;
   deleteTask: (id: string) => void;
@@ -28,55 +32,43 @@ interface TasksContextType {
 const TasksContext = createContext<TasksContextType | undefined>(undefined);
 
 export function TasksProvider({ children }: { children: ReactNode }) {
-  const [tasks, setTasks] = useState<Task[]>(initialTasks);
-  const [customTemplates, setCustomTemplates] = useState<CustomTemplate[]>([]);
-  const [flows, setFlows] = useState<Flow[]>([]);
-  const [clientFlows, setClientFlows] = useState<Record<string, string[]>>({});
+  const { data: tasks = [], isLoading } = useTasksQuery();
+  const addTaskMut = useAddTask();
+  const updateTaskMut = useUpdateTask();
+  const deleteTaskMut = useDeleteTask();
 
-  const addTask = (task: Task) => {
-    setTasks((prev) => [...prev, task]);
-  };
+  const { data: flows = [] } = useFlowsQuery();
+  const addFlowMut = useAddFlow();
+  const updateFlowMut = useUpdateFlow();
+  const deleteFlowMut = useDeleteFlow();
 
-  const updateTask = (id: string, updates: Partial<Task>) => {
-    setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, ...updates } : t)));
-  };
+  const { data: customTemplates = [] } = useCustomTemplatesQuery();
+  const addTemplateMut = useAddTemplate();
+  const updateTemplateMut = useUpdateTemplate();
+  const removeTemplateMut = useRemoveTemplate();
 
-  const deleteTask = (id: string) => {
-    setTasks((prev) => prev.filter((t) => t.id !== id));
-  };
+  // clientFlows loaded from DB would need a separate query, keeping simple for now
+  const clientFlows: Record<string, string[]> = {};
 
-  const addTemplate = (template: CustomTemplate) => {
-    setCustomTemplates((prev) => [...prev, template]);
-  };
+  const addTask = useCallback((task: Task) => addTaskMut.mutate(task), [addTaskMut]);
+  const updateTask = useCallback((id: string, updates: Partial<Task>) => updateTaskMut.mutate({ id, updates }), [updateTaskMut]);
+  const deleteTask = useCallback((id: string) => deleteTaskMut.mutate(id), [deleteTaskMut]);
 
-  const removeTemplate = (id: string) => {
-    setCustomTemplates((prev) => prev.filter((t) => t.id !== id));
-  };
+  const addFlow = useCallback((flow: Flow) => addFlowMut.mutate(flow), [addFlowMut]);
+  const updateFlow = useCallback((id: string, updates: Partial<Omit<Flow, 'id'>>) => updateFlowMut.mutate({ id, updates }), [updateFlowMut]);
+  const deleteFlow = useCallback((id: string) => deleteFlowMut.mutate(id), [deleteFlowMut]);
 
-  const updateTemplate = (id: string, updates: Partial<Omit<CustomTemplate, 'id'>>) => {
-    setCustomTemplates((prev) => prev.map((t) => (t.id === id ? { ...t, ...updates } : t)));
-  };
+  const addTemplate = useCallback((t: CustomTemplate) => addTemplateMut.mutate(t), [addTemplateMut]);
+  const updateTemplate = useCallback((id: string, updates: Partial<Omit<CustomTemplate, 'id'>>) => updateTemplateMut.mutate({ id, updates }), [updateTemplateMut]);
+  const removeTemplate = useCallback((id: string) => removeTemplateMut.mutate(id), [removeTemplateMut]);
 
-  const addFlow = (flow: Flow) => setFlows((prev) => [...prev, flow]);
-
-  const updateFlow = (id: string, updates: Partial<Omit<Flow, 'id'>>) => {
-    setFlows((prev) => prev.map((f) => (f.id === id ? { ...f, ...updates } : f)));
-  };
-
-  const deleteFlow = (id: string) => setFlows((prev) => prev.filter((f) => f.id !== id));
-
-  const assignFlowToClient = (clientId: string, flowId: string) => {
-    setClientFlows((prev) => ({
-      ...prev,
-      [clientId]: [...(prev[clientId] ?? []), flowId],
-    }));
-    // Create tasks from flow steps
+  const assignFlowToClient = useCallback((clientId: string, flowId: string) => {
     const flow = flows.find((f) => f.id === flowId);
     if (!flow) return;
     const client = tasks.find((t) => t.clientId === clientId);
     const clientName = client?.clientName ?? clientId;
     flow.steps.forEach((step, i) => {
-      addTask({
+      addTaskMut.mutate({
         id: `task_flow_${Date.now()}_${i}`,
         title: `${flow.name} - ${step}`,
         clientId,
@@ -91,10 +83,10 @@ export function TasksProvider({ children }: { children: ReactNode }) {
         createdAt: new Date().toISOString(),
       });
     });
-  };
+  }, [flows, tasks, addTaskMut]);
 
   return (
-    <TasksContext.Provider value={{ tasks, addTask, updateTask, deleteTask, customTemplates, addTemplate, updateTemplate, removeTemplate, flows, addFlow, updateFlow, deleteFlow, clientFlows, assignFlowToClient }}>
+    <TasksContext.Provider value={{ tasks, isLoading, addTask, updateTask, deleteTask, customTemplates, addTemplate, updateTemplate, removeTemplate, flows, addFlow, updateFlow, deleteFlow, clientFlows, assignFlowToClient }}>
       {children}
     </TasksContext.Provider>
   );

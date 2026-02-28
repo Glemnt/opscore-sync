@@ -10,7 +10,7 @@ import { Task, ChatNote } from '@/types';
 import { useTasks } from '@/contexts/TasksContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSquads } from '@/contexts/SquadsContext';
-import { clients } from '@/data/mockData';
+import { useClients } from '@/contexts/ClientsContext';
 import { priorityConfig, taskTypeConfig, taskStatusConfig } from '@/lib/config';
 import { cn } from '@/lib/utils';
 import { Send, Clock, User, CalendarDays, Flag, MessageSquare, Trash2, Tag, Briefcase } from 'lucide-react';
@@ -26,6 +26,7 @@ export function TaskDetailModal({ task, open, onOpenChange }: TaskDetailModalPro
   const { updateTask, deleteTask } = useTasks();
   const { currentUser } = useAuth();
   const { squads } = useSquads();
+  const { clients } = useClients();
   const [newNote, setNewNote] = useState('');
   const chatEndRef = useRef<HTMLDivElement>(null);
 

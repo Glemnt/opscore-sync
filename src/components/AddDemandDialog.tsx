@@ -12,7 +12,7 @@ import { cn } from '@/lib/utils';
 import { Task, TaskType, TaskStatus, Priority, SubTask } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTasks, CustomTemplate } from '@/contexts/TasksContext';
-import { squads } from '@/data/mockData';
+import { useSquads } from '@/contexts/SquadsContext';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface AddDemandDialogProps {
@@ -65,15 +65,16 @@ export function AddDemandDialog({
 }: AddDemandDialogProps) {
   const { currentUser } = useAuth();
   const { customTemplates, addTemplate, updateTemplate, removeTemplate } = useTasks();
+  const { squads } = useSquads();
 
-  const visibleMembers = useMemo(() => {
+  const visibleMembers: string[] = useMemo(() => {
     if (!currentUser) return squadMembers;
     if (currentUser.accessLevel === 3) {
-      return Array.from(new Set(squads.flatMap((s) => s.members)));
+      return Array.from(new Set<string>(squads.flatMap((s) => s.members)));
     }
     const userSquads = squads.filter((s) => currentUser.squadIds.includes(s.id));
-    return Array.from(new Set(userSquads.flatMap((s) => s.members)));
-  }, [currentUser, squadMembers]);
+    return Array.from(new Set<string>(userSquads.flatMap((s) => s.members)));
+  }, [currentUser, squadMembers, squads]);
 
   const [mode, setMode] = useState<'new' | 'template' | 'create_template' | 'edit_template'>('new');
   const [title, setTitle] = useState('');

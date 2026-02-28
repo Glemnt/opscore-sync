@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useTasks } from '@/contexts/TasksContext';
-import { useAuth } from '@/contexts/AuthContext';
+import { useClients } from '@/contexts/ClientsContext';
 import { toast } from 'sonner';
 
 export type FlowDialogMode = 'create' | 'edit' | 'assign';
@@ -175,7 +175,7 @@ function EditFlowView({ onClose }: { onClose: () => void }) {
 
 function AssignFlowView({ onClose }: { onClose: () => void }) {
   const { flows, assignFlowToClient } = useTasks();
-  const { getVisibleClients } = useAuth();
+  const { getVisibleClients } = useClients();
   const clients = getVisibleClients();
   const [clientId, setClientId] = useState('');
   const [flowId, setFlowId] = useState('');
