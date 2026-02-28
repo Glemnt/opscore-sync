@@ -35,6 +35,7 @@ export function TasksPage() {
   const [dragOverCol, setDragOverCol] = useState<string | null>(null);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [showAddDialog, setShowAddDialog] = useState(false);
+  const [addToStatus, setAddToStatus] = useState<TaskStatus>('backlog');
   const [flowDialogOpen, setFlowDialogOpen] = useState(false);
   const [flowMode, setFlowMode] = useState<FlowDialogMode>('create');
 
@@ -198,7 +199,10 @@ export function TasksPage() {
                     />
                   );
                 })}
-                <button className="w-full py-2.5 border-2 border-dashed border-border rounded-xl text-xs text-muted-foreground hover:border-primary/40 hover:text-primary transition-colors flex items-center justify-center gap-1.5">
+                <button
+                  onClick={() => { setAddToStatus(col.status); setShowAddDialog(true); }}
+                  className="w-full py-2.5 border-2 border-dashed border-border rounded-xl text-xs text-muted-foreground hover:border-primary/40 hover:text-primary transition-colors flex items-center justify-center gap-1.5"
+                >
                   <Plus className="w-3.5 h-3.5" />
                   Adicionar
                 </button>
@@ -227,7 +231,7 @@ export function TasksPage() {
         onOpenChange={(open) => { if (!open) setSelectedTask(null); }}
       />
 
-      <AddTaskDialog open={showAddDialog} onOpenChange={setShowAddDialog} />
+      <AddTaskDialog open={showAddDialog} onOpenChange={(open) => { setShowAddDialog(open); if (!open) setAddToStatus('backlog'); }} defaultStatus={addToStatus} />
       <FlowManagerDialog open={flowDialogOpen} onOpenChange={setFlowDialogOpen} mode={flowMode} />
     </div>
   );
