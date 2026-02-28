@@ -1,14 +1,19 @@
 import { useState, useMemo, useRef } from 'react';
-import { Building2, Calendar, Clock, User, CheckCircle2, AlertCircle, ClipboardList, Circle, Send, History, Edit3, Save, X, FileText, Upload, Eye, Trash2 } from 'lucide-react';
+import { Building2, Calendar, Clock, User, CheckCircle2, AlertCircle, ClipboardList, Circle, Send, History, Edit3, Save, X, FileText, Upload, Eye, Trash2, Pencil } from 'lucide-react';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { StatusBadge } from '@/components/ui/shared';
 import { clientStatusConfig, taskStatusConfig, taskTypeConfig } from '@/lib/config';
-import { Client, Task } from '@/types';
+import { Client, Task, ClientStatus, ContractType, Platform } from '@/types';
 import { cn } from '@/lib/utils';
 import { squads, projects, tasks } from '@/data/mockData';
 import { useClients } from '@/contexts/ClientsContext';
 import { ClientAIAnalysis } from '@/components/ClientAIAnalysis';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 
 interface ClientDetailModalProps {
   client: Client | null;
@@ -17,11 +22,13 @@ interface ClientDetailModalProps {
 }
 
 export function ClientDetailModal({ client, open, onClose }: ClientDetailModalProps) {
-  const { updateClientField, addChatNote } = useClients();
+  const { updateClientField, addChatNote, deleteClient, updateClient } = useClients();
   const [editingField, setEditingField] = useState<string | null>(null);
   const [editValue, setEditValue] = useState('');
   const [noteMessage, setNoteMessage] = useState('');
   const [showLogs, setShowLogs] = useState(false);
+  const [editMode, setEditMode] = useState(false);
+  const [editData, setEditData] = useState<Partial<Client>>({});
 
   const nextPaymentDate = useMemo(() => {
     if (!client) return '';
@@ -131,40 +138,145 @@ export function ClientDetailModal({ client, open, onClose }: ClientDetailModalPr
               <span className="text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground font-medium">
                 {client.contractType === 'mrr' ? 'MRR' : `TCV ${client.contractDurationMonths}m`}
               </span>
+              <button
+                onClick={() => { setEditMode(true); setEditData({ name: client.name, companyName: client.companyName, segment: client.segment, status: client.status, platforms: client.platforms ?? (client.platform ? [client.platform] : []), contractType: client.contractType, paymentDay: client.paymentDay, contractDurationMonths: client.contractDurationMonths, notes: client.notes, monthlyRevenue: client.monthlyRevenue, responsible: client.responsible }); }}
+                className="p-1.5 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
+                title="Editar cliente"
+              >
+                <Pencil className="w-4 h-4" />
+              </button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <button className="p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors" title="Apagar cliente">
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Tem certeza que deseja apagar este cliente?</AlertDialogTitle>
+                    <AlertDialogDescription>Esta ação não pode ser desfeita. Todos os dados do cliente "{client.name}" serão removidos.</AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => { deleteClient(client.id); onClose(); }}>Apagar</AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </div>
           </div>
+
+          {/* Edit Mode Form */}
+          {editMode && (
+            <div className="mt-4 p-4 bg-muted/50 rounded-lg border border-border space-y-3">
+              <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Editar Cliente</h4>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-xs">Nome</Label>
+                  <Input value={editData.name ?? ''} onChange={e => setEditData(p => ({ ...p, name: e.target.value }))} className="h-8 text-sm" />
+                </div>
+                <div>
+                  <Label className="text-xs">Empresa</Label>
+                  <Input value={editData.companyName ?? ''} onChange={e => setEditData(p => ({ ...p, companyName: e.target.value }))} className="h-8 text-sm" />
+                </div>
+                <div>
+                  <Label className="text-xs">Segmento</Label>
+                  <Input value={editData.segment ?? ''} onChange={e => setEditData(p => ({ ...p, segment: e.target.value }))} className="h-8 text-sm" />
+                </div>
+                <div>
+                  <Label className="text-xs">Responsável</Label>
+                  <Input value={editData.responsible ?? ''} onChange={e => setEditData(p => ({ ...p, responsible: e.target.value }))} className="h-8 text-sm" />
+                </div>
+                <div>
+                  <Label className="text-xs">Status</Label>
+                  <select value={editData.status ?? 'active'} onChange={e => setEditData(p => ({ ...p, status: e.target.value as ClientStatus }))} className="w-full h-8 px-2 text-sm bg-background border border-input rounded-md text-foreground">
+                    <option value="active">Ativo</option>
+                    <option value="onboarding">Onboarding</option>
+                    <option value="paused">Pausado</option>
+                    <option value="churned">Churned</option>
+                  </select>
+                </div>
+                <div>
+                  <Label className="text-xs">Mensalidade (R$)</Label>
+                  <Input type="number" value={editData.monthlyRevenue ?? ''} onChange={e => setEditData(p => ({ ...p, monthlyRevenue: Number(e.target.value) }))} className="h-8 text-sm" />
+                </div>
+                <div>
+                  <Label className="text-xs">Tipo de Contrato</Label>
+                  <select value={editData.contractType ?? 'mrr'} onChange={e => setEditData(p => ({ ...p, contractType: e.target.value as ContractType }))} className="w-full h-8 px-2 text-sm bg-background border border-input rounded-md text-foreground">
+                    <option value="mrr">MRR</option>
+                    <option value="tcv">TCV</option>
+                  </select>
+                </div>
+                <div>
+                  <Label className="text-xs">Dia de Pagamento</Label>
+                  <Input type="number" min={1} max={31} value={editData.paymentDay ?? 10} onChange={e => setEditData(p => ({ ...p, paymentDay: Number(e.target.value) }))} className="h-8 text-sm" />
+                </div>
+                {editData.contractType === 'tcv' && (
+                  <div>
+                    <Label className="text-xs">Duração (meses)</Label>
+                    <Input type="number" value={editData.contractDurationMonths ?? 3} onChange={e => setEditData(p => ({ ...p, contractDurationMonths: Number(e.target.value) }))} className="h-8 text-sm" />
+                  </div>
+                )}
+              </div>
+              <div>
+                <Label className="text-xs">Plataformas</Label>
+                <div className="flex flex-wrap gap-2 mt-1.5">
+                  {([['mercado_livre', 'Mercado Livre'], ['shopee', 'Shopee'], ['shein', 'Shein']] as const).map(([value, label]) => {
+                    const selected = (editData.platforms ?? []).includes(value);
+                    return (
+                      <button key={value} type="button" onClick={() => setEditData(p => ({ ...p, platforms: selected ? (p.platforms ?? []).filter(x => x !== value) : [...(p.platforms ?? []), value] }))}
+                        className={cn('px-3 py-1.5 text-xs rounded-lg border transition-all font-medium', selected ? 'border-primary bg-primary/10 text-primary ring-1 ring-primary/30' : 'border-border bg-card text-muted-foreground hover:border-primary/40')}>
+                        {label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+              <div>
+                <Label className="text-xs">Observações</Label>
+                <textarea value={editData.notes ?? ''} onChange={e => setEditData(p => ({ ...p, notes: e.target.value }))} className="w-full h-20 px-3 py-2 text-sm bg-background border border-input rounded-md text-foreground resize-none" />
+              </div>
+              <div className="flex items-center gap-2 justify-end">
+                <button onClick={() => setEditMode(false)} className="px-3 py-1.5 text-sm rounded-lg border border-border text-muted-foreground hover:bg-muted transition-colors">Cancelar</button>
+                <button onClick={() => { updateClient(client.id, editData); setEditMode(false); }} className="px-3 py-1.5 text-sm rounded-lg bg-primary text-primary-foreground hover:opacity-90 transition-opacity font-medium">Salvar</button>
+              </div>
+            </div>
+          )}
 
           {/* Editable info grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
-            <EditableField field="startDate" label="Entrada" value={formatDate(client.startDate)} type="date" />
-            <EditableField field="monthlyRevenue" label="Mensalidade" value={client.monthlyRevenue ? `R$ ${client.monthlyRevenue.toLocaleString('pt-BR')}` : '—'} type="number" />
-            <EditableField field="squadId" label="Squad" value={squad?.name ?? '—'} />
-            <EditableField field="responsible" label="Responsável" value={client.responsible || '—'} />
-          </div>
+          {!editMode && (
+            <>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
+                <EditableField field="startDate" label="Entrada" value={formatDate(client.startDate)} type="date" />
+                <EditableField field="monthlyRevenue" label="Mensalidade" value={client.monthlyRevenue ? `R$ ${client.monthlyRevenue.toLocaleString('pt-BR')}` : '—'} type="number" />
+                <EditableField field="squadId" label="Squad" value={squad?.name ?? '—'} />
+                <EditableField field="responsible" label="Responsável" value={client.responsible || '—'} />
+              </div>
 
-          {/* Health color selector */}
-          <div className="mt-3">
-            <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1.5">Saúde do Cliente</p>
-            <div className="flex items-center gap-2">
-              {([
-                { value: 'green' as const, color: 'bg-success', label: 'Saudável' },
-                { value: 'yellow' as const, color: 'bg-warning', label: 'Atenção' },
-                { value: 'red' as const, color: 'bg-destructive', label: 'Crítico' },
-                { value: 'white' as const, color: 'bg-border', label: 'Não avaliado' },
-              ]).map((opt) => (
-                <button
-                  key={opt.value}
-                  onClick={() => updateClientField(client.id, 'healthColor', opt.value, 'Saúde do Cliente')}
-                  title={opt.label}
-                  className={cn(
-                    'w-6 h-6 rounded-full border-2 transition-all',
-                    opt.color,
-                    client.healthColor === opt.value ? 'border-foreground scale-110 ring-2 ring-primary/30' : 'border-border hover:scale-105'
-                  )}
-                />
-              ))}
-            </div>
-          </div>
+              {/* Health color selector */}
+              <div className="mt-3">
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1.5">Saúde do Cliente</p>
+                <div className="flex items-center gap-2">
+                  {([
+                    { value: 'green' as const, color: 'bg-success', label: 'Saudável' },
+                    { value: 'yellow' as const, color: 'bg-warning', label: 'Atenção' },
+                    { value: 'red' as const, color: 'bg-destructive', label: 'Crítico' },
+                    { value: 'white' as const, color: 'bg-border', label: 'Não avaliado' },
+                  ]).map((opt) => (
+                    <button
+                      key={opt.value}
+                      onClick={() => updateClientField(client.id, 'healthColor', opt.value, 'Saúde do Cliente')}
+                      title={opt.label}
+                      className={cn(
+                        'w-6 h-6 rounded-full border-2 transition-all',
+                        opt.color,
+                        client.healthColor === opt.value ? 'border-foreground scale-110 ring-2 ring-primary/30' : 'border-border hover:scale-105'
+                      )}
+                    />
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
 
           {/* Contract file */}
           <ContractSection client={client} updateClientField={updateClientField} />
