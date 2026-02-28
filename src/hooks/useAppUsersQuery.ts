@@ -43,7 +43,10 @@ export function useCreateAppUser() {
           squadIds: input.squadIds,
         },
       });
-      if (error) throw error;
+      if (error) {
+        const body = await (error as any).context?.json?.().catch(() => null);
+        throw new Error(body?.error || error.message);
+      }
       if (data?.error) throw new Error(data.error);
     },
     onSuccess: () => {
@@ -72,7 +75,10 @@ export function useUpdateAppUser() {
       const { data, error } = await supabase.functions.invoke('manage-users', {
         body: { action: 'update', ...input },
       });
-      if (error) throw error;
+      if (error) {
+        const body = await (error as any).context?.json?.().catch(() => null);
+        throw new Error(body?.error || error.message);
+      }
       if (data?.error) throw new Error(data.error);
     },
     onSuccess: () => {
@@ -93,7 +99,10 @@ export function useDeleteAppUser() {
       const { data, error } = await supabase.functions.invoke('manage-users', {
         body: { action: 'delete', userId },
       });
-      if (error) throw error;
+      if (error) {
+        const body = await (error as any).context?.json?.().catch(() => null);
+        throw new Error(body?.error || error.message);
+      }
       if (data?.error) throw new Error(data.error);
     },
     onSuccess: () => {
