@@ -1,56 +1,53 @@
 
 
-## Plano: Criar todas as tabelas e migrar dados para o banco
+## Plano: Etapa 2 — Hooks + Refatoração dos Contexts
 
-Este é o primeiro passo da migração. Vou criar todas as tabelas necessárias no banco de dados, inserir os dados iniciais, e depois atualizar o código para ler/escrever do banco.
+### Problema com tipos gerados
+O arquivo `types.ts` gerado automaticamente está vazio (sem tabelas). Vou criar tipos manuais para as rows do banco em um arquivo separado e usar casting nas queries do Supabase.
 
-Como é um projeto grande, vou dividir em **3 mensagens**:
+### Arquivos a criar
 
----
+1. **`src/types/database.ts`** — Tipos manuais para as rows do banco (DbClient, DbTask, DbProject, DbSquad, etc.) e funções de mapeamento para os tipos existentes do app (`Client`, `Task`, etc.)
 
-### Mensagem 1 (esta) — Criar schema do banco
+2. **`src/hooks/useClientsQuery.ts`** — Hook com `useQuery` para listar clients + change_logs + chat_notes, e `useMutation` para add/update/delete/addChatNote
 
-Executar uma migração SQL criando:
+3. **`src/hooks/useTasksQuery.ts`** — Hook com `useQuery` para tasks + subtasks + chat_notes, e `useMutation` para CRUD + flows + templates
 
-1. **Enums**: `client_status`, `project_status`, `task_status`, `priority_level`, `task_type`, `project_type`, `team_role`, `contract_type`, `platform_type`, `health_color`, `app_role`
-2. **Tabelas**: `squads`, `clients`, `client_change_logs`, `client_chat_notes`, `projects`, `project_checklist_items`, `tasks`, `subtasks`, `task_chat_notes`, `flows`, `custom_templates`, `client_flows`, `app_users`, `team_members`, `user_roles`
-3. **RLS**: Habilitar em todas as tabelas com políticas para usuários autenticados
-4. **Função `has_role`**: Para verificação segura de roles sem recursão
-5. **Seed**: Inserir todos os dados de `mockData.ts` nas tabelas
+4. **`src/hooks/useProjectsQuery.ts`** — Hook com `useQuery` para projects + checklist_items
 
----
+5. **`src/hooks/useSquadsQuery.ts`** — Hook com `useQuery`/`useMutation` para squads
 
-### Mensagem 2 — Criar hooks e atualizar contexts
+6. **`src/hooks/useTeamMembersQuery.ts`** — Hook para team_members
 
-- Criar hooks com `@tanstack/react-query` para cada entidade (`useClientsQuery`, `useTasksQuery`, `useProjectsQuery`, `useSquadsQuery`, etc.)
-- Refatorar `ClientsContext`, `TasksContext`, `SquadsContext` para usar o banco
-- Atualizar `AuthContext` para usar autenticação do Lovable Cloud
+7. **`src/hooks/useFlowsQuery.ts`** — Hook para flows e custom_templates
 
----
+### Arquivos a refatorar
 
-### Mensagem 3 — Atualizar páginas e remover mockData
+8. **`src/contexts/AuthContext.tsx`** — Trocar login local por `supabase.auth.signInWithPassword`. Usar `onAuthStateChange` + `getSession`. Buscar `app_users` pelo `auth_user_id`. Manter `getVisibleClients` com base no `accessLevel` + `squadIds`.
 
-- Remover todas as importações diretas de `mockData.ts` nas 15 files que usam
-- Adicionar loading/error states nas páginas
-- Atualizar `LoginPage` para usar autenticação real
+9. **`src/contexts/ClientsContext.tsx`** — Substituir `useState(initialClients)` por `useClientsQuery()`. Todas as mutations passam pelo hook. Remover import de `mockData`.
 
----
+10. **`src/contexts/TasksContext.tsx`** — Substituir `useState(initialTasks)` por `useTasksQuery()`. Flows e templates via hooks separados. Remover import de `mockData`.
 
-### Detalhes técnicos do schema
+11. **`src/contexts/SquadsContext.tsx`** — Substituir `useState(initialSquads)` por `useSquadsQuery()`. Remover import de `mockData`.
 
-```text
-squads ──< clients ──< client_change_logs
-                   ──< client_chat_notes
-                   ──< projects ──< project_checklist_items
-                   ──< tasks ──< subtasks
-                             ──< task_chat_notes
-                   ──< client_flows >── flows
+12. **`src/pages/LoginPage.tsx`** — Alterar form para usar `supabase.auth.signInWithPassword(email, password)`. Adicionar opção de signup. Adicionar reset de senha.
 
-app_users (linked to auth.users)
-user_roles (linked to auth.users)
-team_members
-custom_templates
-```
+13. **`src/pages/Index.tsx`** — Usar `supabase.auth.onAuthStateChange` para controlar autenticação ao invés de `currentUser` do contexto local.
 
-Todas as tabelas usam `uuid` como primary key com `gen_random_uuid()` default, exceto onde IDs existentes precisam ser preservados para o seed.
+### Detalhes técnicos
+
+- Como `types.ts` está vazio, todas as queries usarão `supabase.from('table_name').select('*')` com cast manual `as unknown as DbRow[]`
+- Cada hook exporta `{ data, isLoading, error }` + mutations nomeadas
+- Os contexts continuarão existindo como wrappers finos sobre os hooks, para manter a API de consumo nas páginas estável (evitar refatorar 15+ páginas nesta etapa)
+- O campo `login` da tabela `app_users` será usado como email para autenticação
+- Será necessário criar pelo menos 1 usuário auth real para testar (signup no form ou via seed)
+
+### Ordem de implementação
+
+1. Criar `types/database.ts` com tipos e mappers
+2. Criar todos os hooks (5-6 arquivos)
+3. Refatorar os 4 contexts
+4. Atualizar LoginPage com auth real
+5. Atualizar Index.tsx
 
