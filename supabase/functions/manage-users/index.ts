@@ -59,6 +59,31 @@ Deno.serve(async (req) => {
         .eq("id", userId);
       if (error) throw error;
 
+      // Sync user_roles based on accessLevel
+      const { data: appUser, error: fetchErr } = await adminClient
+        .from("app_users")
+        .select("auth_user_id")
+        .eq("id", userId)
+        .single();
+      if (fetchErr) throw fetchErr;
+
+      if (appUser.auth_user_id) {
+        if (accessLevel === 3) {
+          await adminClient
+            .from("user_roles")
+            .upsert(
+              { user_id: appUser.auth_user_id, role: "admin" },
+              { onConflict: "user_id,role" }
+            );
+        } else {
+          await adminClient
+            .from("user_roles")
+            .delete()
+            .eq("user_id", appUser.auth_user_id)
+            .eq("role", "admin");
+        }
+      }
+
       return new Response(JSON.stringify({ success: true }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
