@@ -1,22 +1,30 @@
 
 
-## Correção: Adicionar Novo Cliente
+## Sincronizar `user_roles` ao alterar `access_level`
 
 ### Problema
-O `AddClientDialog` gera IDs no formato `c_${Date.now()}` (ex: `c_1709123456789`), mas a coluna `id` na tabela `clients` é do tipo `uuid`. O insert falha silenciosamente no banco de dados.
-
-O mesmo problema ocorre com os IDs das tasks criadas automaticamente (`t_${Date.now()}_0`).
+A UI de edição de usuários já existe na página de Configurações, mas quando o admin altera o `access_level` de um usuário para 3 (Admin) ou rebaixa de 3, a tabela `user_roles` não é atualizada. Isso significa que o usuário promovido a nível 3 não recebe a role `admin` no RBAC, e portanto não consegue executar operações administrativas.
 
 ### Solução
 
-**`src/components/AddClientDialog.tsx`**:
-- Substituir `c_${Date.now()}` por `crypto.randomUUID()` para gerar UUIDs válidos
-- Substituir `t_${Date.now()}_${idx}` por `crypto.randomUUID()` para tasks
-- Substituir `st_${Date.now()}_${idx}_${i}` por `crypto.randomUUID()` para subtasks
+**`supabase/functions/manage-users/index.ts`** — No bloco `action === "update"`, após atualizar `app_users`, sincronizar `user_roles`:
 
-### Mudanças
-Apenas 3 linhas precisam ser alteradas no arquivo `AddClientDialog.tsx`:
-- Linha 72: `const clientId = crypto.randomUUID();`
-- Linha 114: `id: crypto.randomUUID(),`  
-- Linha 108: `id: crypto.randomUUID(),`
+1. Buscar o `auth_user_id` do usuário sendo editado
+2. Se `accessLevel === 3`: inserir role `admin` em `user_roles` (upsert/ignore conflict)
+3. Se `accessLevel < 3`: remover role `admin` de `user_roles` (se existir)
+
+```text
+update app_users (name, role, access_level, squad_ids)
+    ↓
+fetch auth_user_id from app_users
+    ↓
+if accessLevel === 3 → INSERT INTO user_roles (admin) ON CONFLICT DO NOTHING
+if accessLevel < 3  → DELETE FROM user_roles WHERE role = 'admin'
+```
+
+### Detalhes técnicos
+- Apenas o bloco `update` do edge function `manage-users` precisa ser alterado
+- Usar `adminClient` (service role) para manipular `user_roles`
+- Tratar caso em que `auth_user_id` é null (usuário legado sem auth vinculado)
+- Nenhuma mudança no frontend necessária — a UI já funciona corretamente
 
