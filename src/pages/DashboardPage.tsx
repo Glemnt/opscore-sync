@@ -105,6 +105,17 @@ export function DashboardPage() {
     return isLate;
   }).length;
 
+  // Health summary
+  const healthSummary = useMemo(() => {
+    const active = clients.filter(c => c.status === 'active');
+    const counts = { green: 0, yellow: 0, red: 0, white: 0 };
+    active.forEach(c => {
+      const h = c.healthColor ?? 'white';
+      counts[h] = (counts[h] || 0) + 1;
+    });
+    return counts;
+  }, [clients]);
+
   // MRR
   const mrr = useMemo(() => {
     return clients
@@ -203,6 +214,25 @@ export function DashboardPage() {
           </div>
           <p className="text-2xl font-bold text-foreground mb-2">{clientsAdded}</p>
           <DateRangeFilter startDate={clientsStartDate} endDate={clientsEndDate} onStartChange={setClientsStartDate} onEndChange={setClientsEndDate} />
+        </div>
+      </div>
+
+      {/* Health Summary */}
+      <div className="bg-card rounded-xl border border-border p-4 shadow-sm-custom mb-6">
+        <h3 className="text-xs font-semibold text-muted-foreground mb-3">Saúde dos Clientes Ativos</h3>
+        <div className="flex items-center gap-6">
+          {[
+            { key: 'green', label: 'Saudável', color: 'bg-emerald-500' },
+            { key: 'yellow', label: 'Atenção', color: 'bg-amber-400' },
+            { key: 'red', label: 'Crítico', color: 'bg-red-500' },
+            { key: 'white', label: 'Não avaliado', color: 'bg-muted-foreground/30' },
+          ].map(item => (
+            <div key={item.key} className="flex items-center gap-2">
+              <div className={`w-3 h-3 rounded-full ${item.color}`} />
+              <span className="text-xl font-bold text-foreground">{healthSummary[item.key as keyof typeof healthSummary]}</span>
+              <span className="text-xs text-muted-foreground">{item.label}</span>
+            </div>
+          ))}
         </div>
       </div>
 
