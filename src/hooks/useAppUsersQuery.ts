@@ -33,32 +33,18 @@ export function useCreateAppUser() {
 
   return useMutation({
     mutationFn: async (input: CreateUserInput) => {
-      // 1. Create auth user
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: input.email,
-        password: input.password,
-        options: { emailRedirectTo: window.location.origin },
+      const { data, error } = await supabase.functions.invoke('create-user', {
+        body: {
+          name: input.name,
+          email: input.email,
+          password: input.password,
+          role: input.role,
+          accessLevel: input.accessLevel,
+          squadIds: input.squadIds,
+        },
       });
-      if (authError) throw authError;
-      if (!authData.user) throw new Error('Falha ao criar usuário');
-
-      // 2. Insert app_users row (admin RLS allows this)
-      const { error: appError } = await supabase.from('app_users').insert({
-        auth_user_id: authData.user.id,
-        name: input.name,
-        login: input.email,
-        role: input.role,
-        access_level: input.accessLevel,
-        squad_ids: input.squadIds,
-      });
-      if (appError) throw appError;
-
-      // 3. Insert user role
-      const { error: roleError } = await supabase.from('user_roles').insert({
-        user_id: authData.user.id,
-        role: 'user',
-      });
-      if (roleError) throw roleError;
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['app_users'] });
