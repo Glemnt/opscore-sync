@@ -6,6 +6,8 @@ import { useAuth } from '@/contexts/AuthContext';
 interface ClientsContextType {
   clients: Client[];
   addClient: (client: Client) => void;
+  deleteClient: (clientId: string) => void;
+  updateClient: (clientId: string, updates: Partial<Client>) => void;
   updateClientField: (clientId: string, field: string, value: any, fieldLabel: string) => void;
   addChatNote: (clientId: string, message: string) => void;
   getVisibleClients: () => Client[];
@@ -20,6 +22,33 @@ export function ClientsProvider({ children }: { children: ReactNode }) {
   const addClient = useCallback((client: Client) => {
     setClients(prev => [...prev, client]);
   }, []);
+
+  const deleteClient = useCallback((clientId: string) => {
+    setClients(prev => prev.filter(c => c.id !== clientId));
+  }, []);
+
+  const updateClient = useCallback((clientId: string, updates: Partial<Client>) => {
+    setClients(prev => prev.map(c => {
+      if (c.id !== clientId) return c;
+      const newLogs: ChangeLogEntry[] = [];
+      for (const [key, value] of Object.entries(updates)) {
+        if (key === 'changeLogs' || key === 'chatNotes') continue;
+        const oldVal = String((c as any)[key] ?? '');
+        const newVal = String(value ?? '');
+        if (oldVal !== newVal) {
+          newLogs.push({
+            id: `log_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+            field: key,
+            oldValue: oldVal,
+            newValue: newVal,
+            changedBy: currentUser?.name ?? 'Sistema',
+            changedAt: new Date().toISOString(),
+          });
+        }
+      }
+      return { ...c, ...updates, changeLogs: [...c.changeLogs, ...newLogs] };
+    }));
+  }, [currentUser]);
 
   const updateClientField = useCallback((clientId: string, field: string, value: any, fieldLabel: string) => {
     setClients(prev => prev.map(c => {
@@ -60,7 +89,7 @@ export function ClientsProvider({ children }: { children: ReactNode }) {
   }, [currentUser, clients]);
 
   return (
-    <ClientsContext.Provider value={{ clients, addClient, updateClientField, addChatNote, getVisibleClients }}>
+    <ClientsContext.Provider value={{ clients, addClient, deleteClient, updateClient, updateClientField, addChatNote, getVisibleClients }}>
       {children}
     </ClientsContext.Provider>
   );
