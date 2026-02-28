@@ -69,7 +69,7 @@ export function AddClientDialog({ open, onClose }: AddClientDialogProps) {
   const handleSubmit = () => {
     if (!name.trim() || !companyName.trim()) return;
 
-    const clientId = `c_${Date.now()}`;
+    const clientId = crypto.randomUUID();
     const clientName = name.trim();
 
     const newClient: Client = {
@@ -105,13 +105,13 @@ export function AddClientDialog({ open, onClose }: AddClientDialogProps) {
       if (!tpl) return;
 
       const subtasks: SubTask[] = tpl.subtasks.map((label, i) => ({
-        id: `st_${Date.now()}_${idx}_${i}`,
+        id: crypto.randomUUID(),
         label,
         done: false,
       }));
 
       const newTask: Task = {
-        id: `t_${Date.now()}_${idx}`,
+        id: crypto.randomUUID(),
         title: tpl.name,
         clientId,
         clientName,
