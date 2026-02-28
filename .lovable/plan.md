@@ -1,22 +1,19 @@
 
 
-## Ativar botão "Adicionar" dentro das colunas do Kanban
+## Corrigir seleção de responsável na criação de demanda
 
 ### Problema
-O botão "Adicionar" dentro de cada coluna do Kanban não tem `onClick` — é apenas visual.
+O dropdown de "Responsável" no `AddTaskDialog` usa `squad.members` (array de nomes de texto do squad do cliente). Se o squad não tiver membros cadastrados, ou se o usuário desejado não estiver naquele squad, não é possível selecionar.
 
 ### Solução
-Fazer o botão abrir o dialog `AddTaskDialog` já com o status da coluna pré-selecionado, para que a demanda seja criada diretamente naquela coluna.
+Usar a lista de `app_users` (usuários reais do sistema) como fonte do dropdown de responsável, em vez de depender apenas dos membros do squad. Quando um cliente é selecionado, filtrar os app_users cujos `squadIds` incluem o squad do cliente. Se nenhum cliente estiver selecionado, mostrar todos os app_users.
 
-### Alterações
+### Alteração
 
 **`src/components/AddTaskDialog.tsx`**:
-- Adicionar prop opcional `defaultStatus?: TaskStatus` (default `'backlog'`)
-- Usar `defaultStatus` no `handleSubmit` ao criar o `newTask` em vez de `'backlog'` fixo
-
-**`src/pages/TasksPage.tsx`**:
-- Adicionar estado `addToStatus` para rastrear em qual coluna o botão foi clicado
-- No botão "Adicionar" de cada coluna, adicionar `onClick` que seta `addToStatus` para o status da coluna e abre o dialog
-- Passar `defaultStatus={addToStatus}` para `AddTaskDialog`
-- Resetar `addToStatus` quando o dialog fechar
+1. Importar `useAppUsersQuery` de `@/hooks/useAppUsersQuery`
+2. Chamar `const { data: appUsers = [] } = useAppUsersQuery()`
+3. Substituir o `squadMembers` memo por um que filtra `appUsers` pelo `squadId` do cliente selecionado (verificando se o squad do cliente está no array `squadIds` do usuário). Se nenhum cliente selecionado, retornar todos
+4. No dropdown de responsável, renderizar os `appUsers` filtrados com `value={user.name}` e exibir `user.name`
+5. Remover o `disabled={!clientId}` do select de responsável para permitir seleção mesmo sem cliente
 
