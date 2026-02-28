@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { Plus, Search, Building2, Calendar, User, X, Users, Circle } from 'lucide-react';
 import { mockAnalysisData } from '@/components/ClientAIAnalysis';
-import { squads, projects, tasks } from '@/data/mockData';
+import { useSquads } from '@/contexts/SquadsContext';
+import { useProjectsQuery } from '@/hooks/useProjectsQuery';
+import { useTasks } from '@/contexts/TasksContext';
 import { PageHeader, StatusBadge } from '@/components/ui/shared';
 import { clientStatusConfig } from '@/lib/config';
 import { Client, ClientStatus } from '@/types';
@@ -20,6 +22,9 @@ const statusFilters: { label: string; value: ClientStatus | 'all' }[] = [
 
 export function ClientsPage() {
   const { getVisibleClients } = useClients();
+  const { squads } = useSquads();
+  const { data: projects = [] } = useProjectsQuery();
+  const { tasks } = useTasks();
   const clients = getVisibleClients();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<ClientStatus | 'all'>('all');
@@ -148,6 +153,8 @@ export function ClientsPage() {
 
 function ClientCard({ client, onClick }: { client: Client; onClick: () => void }) {
   const statusConf = clientStatusConfig[client.status];
+  const { squads } = useSquads();
+  const { tasks } = useTasks();
   const squad = squads.find((s) => s.id === client.squadId);
   const pendingTasks = tasks.filter((t) => t.clientId === client.id && t.status !== 'done');
   const analysis = mockAnalysisData[client.id];

@@ -9,9 +9,9 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
-import { useAuth } from '@/contexts/AuthContext';
 import { useTasks } from '@/contexts/TasksContext';
 import { useSquads } from '@/contexts/SquadsContext';
+import { useClients } from '@/contexts/ClientsContext';
 
 import { taskTypeConfig, priorityConfig } from '@/lib/config';
 import { Task, TaskType, Priority } from '@/types';
@@ -24,9 +24,9 @@ interface AddTaskDialogProps {
 }
 
 export function AddTaskDialog({ open, onOpenChange }: AddTaskDialogProps) {
-  const { getVisibleClients } = useAuth();
   const { addTask } = useTasks();
   const { squads } = useSquads();
+  const { getVisibleClients } = useClients();
   const visibleClients = getVisibleClients();
   const [customTypes, setCustomTypes] = useState<Record<string, { label: string; color: string }>>({});
   const [showNewType, setShowNewType] = useState(false);

@@ -4,11 +4,12 @@ import { ptBR } from 'date-fns/locale';
 import {
   Users, AlertTriangle, TrendingUp, Activity, DollarSign, UserMinus, UserPlus, CalendarIcon
 } from 'lucide-react';
-import { projects as allProjects, tasks as allTasks, teamMembers } from '@/data/mockData';
+import { useTasks } from '@/contexts/TasksContext';
+import { useProjectsQuery } from '@/hooks/useProjectsQuery';
+import { useTeamMembersQuery } from '@/hooks/useTeamMembersQuery';
 import { PageHeader, StatCard, StatusBadge, Avatar, ProgressBar } from '@/components/ui/shared';
 import { projectStatusConfig, priorityConfig } from '@/lib/config';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Legend } from 'recharts';
-import { useAuth } from '@/contexts/AuthContext';
 import { useClients } from '@/contexts/ClientsContext';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -80,9 +81,11 @@ function DateRangeFilter({ startDate, endDate, onStartChange, onEndChange }: {
 }
 
 export function DashboardPage() {
-  const { getVisibleClients } = useAuth();
-  const { clients: allClientsList } = useClients();
+  const { getVisibleClients, clients: allClientsList } = useClients();
   const clients = getVisibleClients();
+  const { data: allProjects = [] } = useProjectsQuery();
+  const { tasks: allTasks } = useTasks();
+  const { data: teamMembers = [] } = useTeamMembersQuery();
   const visibleClientIds = new Set(clients.map((c) => c.id));
   const projects = allProjects.filter((p) => visibleClientIds.has(p.clientId));
   const tasks = allTasks.filter((t) => visibleClientIds.has(t.clientId));

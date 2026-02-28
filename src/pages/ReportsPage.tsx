@@ -1,7 +1,11 @@
 import { useState } from 'react';
 import { FileText, Download, Users, Building2, Tag, BarChart3, Loader2 } from 'lucide-react';
 import { PageHeader } from '@/components/ui/shared';
-import { clients as allClients, teamMembers, tasks, projects, squads } from '@/data/mockData';
+import { useClients } from '@/contexts/ClientsContext';
+import { useTasks } from '@/contexts/TasksContext';
+import { useSquads } from '@/contexts/SquadsContext';
+import { useTeamMembersQuery } from '@/hooks/useTeamMembersQuery';
+import { useProjectsQuery } from '@/hooks/useProjectsQuery';
 import { teamRoleConfig, taskTypeConfig } from '@/lib/config';
 import { cn } from '@/lib/utils';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
@@ -52,6 +56,11 @@ const reportCards = [
 
 export function ReportsPage() {
   const { toast } = useToast();
+  const { clients: allClients } = useClients();
+  const { tasks } = useTasks();
+  const { squads } = useSquads();
+  const { data: teamMembers = [] } = useTeamMembersQuery();
+  const { data: projects = [] } = useProjectsQuery();
   const [loading, setLoading] = useState(false);
   const [dialogType, setDialogType] = useState<string | null>(null);
   const [selectedClient, setSelectedClient] = useState('');

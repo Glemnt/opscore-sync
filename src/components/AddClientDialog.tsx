@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { squads } from '@/data/mockData';
+import { useSquads } from '@/contexts/SquadsContext';
 import { useClients } from '@/contexts/ClientsContext';
 import { useTasks } from '@/contexts/TasksContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -39,6 +39,7 @@ export function AddClientDialog({ open, onClose }: AddClientDialogProps) {
   const [paymentDay, setPaymentDay] = useState('10');
   const [contractDuration, setContractDuration] = useState('3');
   const [segment, setSegment] = useState('');
+  const { squads } = useSquads();
   const [squadId, setSquadId] = useState(squads[0]?.id ?? '');
   const [monthlyRevenue, setMonthlyRevenue] = useState('');
   const [platforms, setPlatforms] = useState<Platform[]>(['mercado_livre']);
