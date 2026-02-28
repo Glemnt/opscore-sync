@@ -14,16 +14,17 @@ import { useSquads } from '@/contexts/SquadsContext';
 import { useClients } from '@/contexts/ClientsContext';
 
 import { taskTypeConfig, priorityConfig } from '@/lib/config';
-import { Task, TaskType, Priority } from '@/types';
+import { Task, TaskType, TaskStatus, Priority } from '@/types';
 import { cn } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
 
 interface AddTaskDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  defaultStatus?: TaskStatus;
 }
 
-export function AddTaskDialog({ open, onOpenChange }: AddTaskDialogProps) {
+export function AddTaskDialog({ open, onOpenChange, defaultStatus = 'backlog' }: AddTaskDialogProps) {
   const { addTask } = useTasks();
   const { squads } = useSquads();
   const { getVisibleClients } = useClients();
@@ -114,7 +115,7 @@ export function AddTaskDialog({ open, onOpenChange }: AddTaskDialogProps) {
       type,
       estimatedTime: parseFloat(estimatedTime) || 0,
       deadline: deadline.toISOString().split('T')[0],
-      status: 'backlog',
+      status: defaultStatus,
       priority,
       comments,
       createdAt: new Date().toISOString().split('T')[0],
