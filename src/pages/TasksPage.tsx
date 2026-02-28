@@ -29,6 +29,7 @@ export function TasksPage() {
   const tasks = allTasks.filter((t) => visibleClientIds.has(t.clientId));
   const [search, setSearch] = useState('');
   const [responsible, setResponsible] = useState('all');
+  const [selectedType, setSelectedType] = useState('all');
   const [cols, setCols] = useState(defaultKanbanCols);
   const [editingCol, setEditingCol] = useState<string | null>(null);
   const [dragOverCol, setDragOverCol] = useState<string | null>(null);
@@ -38,12 +39,14 @@ export function TasksPage() {
   const [flowMode, setFlowMode] = useState<FlowDialogMode>('create');
 
   const responsibles = ['all', ...Array.from(new Set(tasks.map(t => t.responsible)))];
+  const allTypes = ['all', ...Array.from(new Set(tasks.map(t => t.type)))];
 
   const filtered = tasks.filter(t => {
     const matchSearch = t.title.toLowerCase().includes(search.toLowerCase()) ||
       t.clientName.toLowerCase().includes(search.toLowerCase());
     const matchResp = responsible === 'all' || t.responsible === responsible;
-    return matchSearch && matchResp;
+    const matchType = selectedType === 'all' || t.type === selectedType;
+    return matchSearch && matchResp && matchType;
   });
 
   const isLate = (task: Task) => new Date(task.deadline) < new Date() && task.status !== 'done';
@@ -117,6 +120,17 @@ export function TasksPage() {
         >
           {responsibles.map(r => (
             <option key={r} value={r}>{r === 'all' ? 'Todos responsáveis' : r}</option>
+          ))}
+        </select>
+        <select
+          value={selectedType}
+          onChange={e => setSelectedType(e.target.value)}
+          className="px-3 py-2 text-sm bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 text-foreground"
+        >
+          {allTypes.map(t => (
+            <option key={t} value={t}>
+              {t === 'all' ? 'Todos os tipos' : (taskTypeConfig[t as keyof typeof taskTypeConfig]?.label ?? t)}
+            </option>
           ))}
         </select>
       </div>
