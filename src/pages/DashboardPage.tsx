@@ -91,6 +91,13 @@ export function DashboardPage() {
   const { tasks: allTasks } = useTasks();
   const { data: allTeamMembers = [] } = useTeamMembersQuery();
   const { data: clientStatuses = [] } = useClientStatusesQuery();
+  const churnKeys = useMemo(() => {
+    return new Set(
+      clientStatuses
+        .filter(s => s.label.toLowerCase().includes('churn'))
+        .map(s => s.key)
+    );
+  }, [clientStatuses]);
   const visibleClientIds = new Set(clients.map((c) => c.id));
   const projects = allProjects.filter((p) => visibleClientIds.has(p.clientId));
   const tasks = allTasks.filter((t) => visibleClientIds.has(t.clientId));
@@ -104,7 +111,7 @@ export function DashboardPage() {
   const [churnStartDate, setChurnStartDate] = useState<Date | undefined>(startOfMonth(now));
   const [churnEndDate, setChurnEndDate] = useState<Date | undefined>(endOfMonth(now));
 
-  const activeClients = clients.filter(c => c.status !== 'churned').length;
+  const activeClients = clients.filter(c => !churnKeys.has(c.status)).length;
   const lateTasks = tasks.filter(t => {
     const isLate = new Date(t.deadline) < new Date() && t.status !== 'done';
     return isLate;
@@ -112,7 +119,7 @@ export function DashboardPage() {
 
   // Health summary
   const healthSummary = useMemo(() => {
-    const active = clients.filter(c => c.status !== 'churned');
+    const active = clients.filter(c => !churnKeys.has(c.status));
     const counts = { green: 0, yellow: 0, red: 0, white: 0 };
     active.forEach(c => {
       const h = c.healthColor ?? 'white';
@@ -134,7 +141,7 @@ export function DashboardPage() {
   // MRR
   const mrr = useMemo(() => {
     return clients
-      .filter(c => c.status !== 'churned')
+      .filter(c => !churnKeys.has(c.status))
       .reduce((sum, c) => sum + (c.monthlyRevenue || 0), 0);
   }, [clients]);
 
@@ -149,7 +156,7 @@ export function DashboardPage() {
 
   // Churn in range (filtered by visible clients)
   const churnCount = useMemo(() => {
-    const churned = clients.filter(c => c.status === 'churned');
+    const churned = clients.filter(c => churnKeys.has(c.status));
     if (!churnStartDate || !churnEndDate) return churned.length;
     return churned.filter(c => {
       const d = parseISO(c.startDate);
@@ -160,7 +167,7 @@ export function DashboardPage() {
   // Revenue by platform
   const platformData = useMemo(() => {
     const map: Record<string, number> = {};
-    clients.filter(c => c.status !== 'churned').forEach(c => {
+    clients.filter(c => !churnKeys.has(c.status)).forEach(c => {
       const plats = c.platforms?.length ? c.platforms : (c.platform ? [c.platform] : ['mercado_livre']);
       const rev = (c.monthlyRevenue || 0) / plats.length;
       plats.forEach(p => {
@@ -186,7 +193,7 @@ export function DashboardPage() {
         return isWithinInterval(d, { start: monthStart, end: monthEnd });
       }).length;
       const saidas = clients.filter(c => {
-        if (c.status !== 'churned') return false;
+        if (!churnKeys.has(c.status)) return false;
         const d = parseISO(c.startDate);
         return isWithinInterval(d, { start: monthStart, end: monthEnd });
       }).length;
