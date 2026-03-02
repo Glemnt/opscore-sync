@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, Search, Building2, Calendar, User, X, Users, Circle, ShoppingBag, Settings2 } from 'lucide-react';
+import { Plus, Search, Building2, Calendar, User, X, Users, Circle, ShoppingBag, Settings2, Trash2 } from 'lucide-react';
 import { mockAnalysisData } from '@/components/ClientAIAnalysis';
 import { useSquads } from '@/contexts/SquadsContext';
 import { usePlatformsQuery } from '@/hooks/usePlatformsQuery';
@@ -11,8 +11,9 @@ import { cn } from '@/lib/utils';
 import { useClients } from '@/contexts/ClientsContext';
 import { AddClientDialog } from '@/components/AddClientDialog';
 import { ClientDetailModal } from '@/components/ClientDetailModal';
-import { useClientStatusesQuery, useClientStatusesMap, useAddClientStatus } from '@/hooks/useClientStatusesQuery';
+import { useClientStatusesQuery, useClientStatusesMap, useAddClientStatus, useDeleteClientStatus } from '@/hooks/useClientStatusesQuery';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -49,6 +50,8 @@ export function ClientsPage() {
   const { data: clientStatuses = [] } = useClientStatusesQuery();
   const statusMap = useClientStatusesMap();
   const addStatusMutation = useAddClientStatus();
+  const deleteStatusMutation = useDeleteClientStatus();
+  const [deletingStatusKey, setDeletingStatusKey] = useState<string | null>(null);
 
   const statusFilters = [
     { label: 'Todos', value: 'all' },
@@ -139,16 +142,26 @@ export function ClientsPage() {
 
         <div className="flex items-center gap-1.5 bg-card border border-border rounded-lg p-1">
           {statusFilters.map((f) => (
-            <button
-              key={f.value}
-              onClick={() => setStatusFilter(f.value)}
-              className={cn(
-                'px-3 py-1.5 rounded-md text-xs font-medium transition-all',
-                statusFilter === f.value ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+            <div key={f.value} className="relative group flex items-center">
+              <button
+                onClick={() => setStatusFilter(f.value)}
+                className={cn(
+                  'px-3 py-1.5 rounded-md text-xs font-medium transition-all',
+                  statusFilter === f.value ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                )}
+              >
+                {f.label}
+              </button>
+              {f.value !== 'all' && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); setDeletingStatusKey(f.value); }}
+                  className="ml-0.5 p-0.5 rounded text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                  title="Excluir status"
+                >
+                  <X className="w-3 h-3" />
+                </button>
               )}
-            >
-              {f.label}
-            </button>
+            </div>
           ))}
           <button
             onClick={() => setAddStatusOpen(true)}
@@ -220,6 +233,36 @@ export function ClientsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Status Confirm */}
+      <AlertDialog open={!!deletingStatusKey} onOpenChange={(open) => { if (!open) setDeletingStatusKey(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir status</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir o status <strong>{deletingStatusKey ? (statusMap[deletingStatusKey]?.label ?? deletingStatusKey) : ''}</strong>? Clientes com esse status não serão afetados, mas o filtro será removido.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (deletingStatusKey) {
+                  deleteStatusMutation.mutate(deletingStatusKey, {
+                    onSuccess: () => {
+                      if (statusFilter === deletingStatusKey) setStatusFilter('all');
+                      setDeletingStatusKey(null);
+                    },
+                  });
+                }
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

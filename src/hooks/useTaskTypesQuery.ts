@@ -43,3 +43,17 @@ export function useAddTaskType() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['task_types'] }),
   });
 }
+
+export function useDeleteTaskType() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from('task_types' as any)
+        .delete()
+        .eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['task_types'] }),
+  });
+}
