@@ -64,7 +64,7 @@ export function AddDemandDialog({
   squadMembers,
 }: AddDemandDialogProps) {
   const { currentUser } = useAuth();
-  const { customTemplates, addTemplate, updateTemplate, removeTemplate } = useTasks();
+  const { customTemplates, addTemplate, updateTemplate, removeTemplate, flows } = useTasks();
   const { squads } = useSquads();
 
   const visibleMembers: string[] = useMemo(() => {
@@ -91,7 +91,8 @@ export function AddDemandDialog({
   const [tplSubtasks, setTplSubtasks] = useState<string[]>([]);
   const [tplNewSubtask, setTplNewSubtask] = useState('');
 
-  const allTemplates = [...DEFAULT_TEMPLATES, ...customTemplates];
+  const flowsAsTemplates = flows.map(f => ({ id: f.id, name: f.name, subtasks: f.steps }));
+  const allTemplates = [...DEFAULT_TEMPLATES, ...customTemplates, ...flowsAsTemplates];
 
   const handleSelectTemplate = (templateName: string) => {
     setSelectedTemplate(templateName);
