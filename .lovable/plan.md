@@ -1,24 +1,24 @@
 
 
-## Correção: Página branca ao abrir cliente "Teste"
+## Exibir observação no card de demanda da página Squads
 
-### Causa raiz
-O componente `TimelineItem` em `ClientDetailModal.tsx` (linha 451) acessa `taskTypeConfig[task.type]` sem fallback. Quando uma demanda tem um tipo customizado (criado pelo usuário e salvo no banco), ele não existe no `taskTypeConfig` estático, resultando em `undefined`. Na linha 466, `typeConf.color` crasheia a aplicação inteira.
+### Problema
+O componente `DemandCard` em `ProjectsPage.tsx` (página Squads) não exibe o campo `task.comments` (observação). Na página Demandas (`TasksPage.tsx`), o card já exibe a observação com ícone `MessageSquare` — mas o `DemandCard` da página Squads não tem essa seção.
 
 ### Alteração
 
-**`src/components/ClientDetailModal.tsx`** — componente `TimelineItem` (linha 451)
+**`src/pages/ProjectsPage.tsx`** — componente `DemandCard` (linha 655, após o bloco de subtarefas)
 
-Substituir:
-```typescript
-const typeConf = taskTypeConfig[task.type];
+Adicionar o mesmo bloco de exibição de comentários usado na `TasksPage`:
+
+```tsx
+{task.comments && (
+  <div className="flex items-start gap-1.5 text-xs text-muted-foreground bg-muted/50 rounded-lg p-2 mb-2">
+    <MessageSquare className="w-3 h-3 mt-0.5 shrink-0" />
+    <span className="line-clamp-2">{task.comments}</span>
+  </div>
+)}
 ```
 
-Por uso do hook `useTaskTypesMap` (já usado em `TasksPage.tsx`) com fallback seguro:
-```typescript
-const typesMap = useTaskTypesMap();
-const typeConf = taskTypeConfig[task.type] ?? typesMap[task.type] ?? { label: task.type, color: 'bg-muted text-muted-foreground' };
-```
-
-Isso garante que tipos customizados do banco são resolvidos corretamente, e qualquer tipo desconhecido recebe um fallback visual em vez de crashear.
+Também importar `MessageSquare` do lucide-react (já importado parcialmente no arquivo).
 
