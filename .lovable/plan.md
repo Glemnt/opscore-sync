@@ -1,45 +1,35 @@
 
 
-## Adicionar exclusão onde falta
+## Reordenar colunas do Kanban via drag-and-drop
 
-### Levantamento de lacunas
+### Problema
+As colunas do Kanban (tanto em Demandas quanto em Projetos) não podem ser reordenadas. A ordem atual depende de `created_at` ou `label`, sem campo de posição.
 
-Analisei todas as entidades que podem ser criadas ou editadas e identifiquei onde falta a opção de excluir:
+### Alterações
 
-| Entidade | Criar | Editar | Excluir | Onde |
-|----------|-------|--------|---------|------|
-| Tipos de Demanda (task_types) | ✅ AddTaskDialog | ❌ | ❌ | AddTaskDialog, SettingsPage |
-| Status de Cliente (client_statuses) | ✅ ClientsPage | ❌ | ❌ | ClientsPage (filtros) |
-| Plataformas | ✅ SettingsPage | ❌ | ✅ | SettingsPage |
-| Status de Demanda (task_statuses) | ✅ TasksPage | ✅ rename | ✅ | TasksPage |
-| Status de Cliente (client_statuses) | ✅ ProjectsPage | ✅ rename | ✅ | ProjectsPage Kanban |
-| Squads | ✅ | ✅ | ✅ | ProjectsPage |
-| Usuários | ✅ | ✅ | ✅ | SettingsPage |
-| Fluxos | ✅ | ✅ | ✅ | FlowManagerDialog |
+**1. Migration SQL**
+- Adicionar coluna `sort_order INTEGER NOT NULL DEFAULT 0` nas tabelas `task_statuses` e `client_statuses`
+- Atualizar os registros existentes para ter `sort_order` sequencial baseado na ordem atual (`created_at` para task_statuses, `label` para client_statuses)
 
-### Itens que precisam de exclusão
+**2. Hooks de reordenação**
+- `useTaskStatusesQuery.ts`: ordenar por `sort_order` em vez de `created_at`; adicionar mutation `useReorderTaskStatuses` que recebe array de `{key, sort_order}` e faz upsert em batch
+- `useClientStatusesQuery.ts`: ordenar por `sort_order` em vez de `label`; adicionar mutation `useReorderClientStatuses`
+- Ao criar nova coluna, definir `sort_order` como `max + 1`
 
-**1. Tipos de Demanda (task_types)** — Podem ser criados no AddTaskDialog mas não podem ser excluídos em lugar nenhum.
+**3. Drag-and-drop nas colunas do Kanban**
+- `TasksPage.tsx`: adicionar `draggable` nos headers das colunas (separado do drag de cards), com `onDragStart`/`onDragOver`/`onDrop` que detectam se o item arrastado é uma coluna (via dataTransfer type diferente, ex: `column-key`) e reordenam localmente + persistem via mutation
+- `ProjectsPage.tsx`: mesma lógica para as colunas de status de clientes
+- Visual: indicador de drop entre colunas (linha vertical colorida) ao arrastar uma coluna
 
-**2. Status de Cliente na ClientsPage** — Podem ser criados via botão "+" nos filtros mas não podem ser excluídos.
+**4. Diferenciação drag de coluna vs drag de card**
+- Cards usam `dataTransfer.setData('text/plain', taskId)` (já existente)
+- Colunas usarão `dataTransfer.setData('column-key', statusKey)` para distinguir os dois tipos de drag
 
-### Alterações planejadas
-
-**`src/hooks/useTaskTypesQuery.ts`**
-- Adicionar `useDeleteTaskType()` mutation (delete by id ou key)
-
-**`src/pages/SettingsPage.tsx`**
-- Adicionar nova seção "Tipos de Demanda" (similar à seção "Plataformas" existente) com chips mostrando cada tipo e botão de excluir (Trash2)
-- Incluir input + botão para criar novos tipos
-
-**`src/pages/ClientsPage.tsx`**
-- Importar `useDeleteClientStatus` do hook existente
-- Adicionar botão de excluir (X ou Trash2) ao lado de cada filtro de status (exceto "Todos")
-- Adicionar AlertDialog de confirmação antes de excluir
-
-### Detalhes técnicos
-
-- `useDeleteTaskType` fará `DELETE FROM task_types WHERE id = $id`
-- A seção de Tipos de Demanda em SettingsPage reutiliza o mesmo padrão visual da seção Plataformas (chips com Trash2)
-- Na ClientsPage, o botão de excluir status aparece como um pequeno X ao lado do badge no filtro, visível ao hover
+| Arquivo | Alteração |
+|---------|-----------|
+| Migration SQL | `ALTER TABLE task_statuses ADD sort_order`; `ALTER TABLE client_statuses ADD sort_order` |
+| `useTaskStatusesQuery.ts` | Order by `sort_order`, add `useReorderTaskStatuses` |
+| `useClientStatusesQuery.ts` | Order by `sort_order`, add `useReorderClientStatuses` |
+| `TasksPage.tsx` | Column drag-and-drop + visual indicator |
+| `ProjectsPage.tsx` | Column drag-and-drop + visual indicator |
 
