@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Plus, Search, Calendar, ChevronDown, CheckCircle2, Circle, ArrowLeft, Users2, X, Pencil, Trash2 } from 'lucide-react';
+import { Plus, Search, Calendar, ChevronDown, CheckCircle2, Circle, ArrowLeft, Users2, X, Pencil, Trash2, MessageSquare } from 'lucide-react';
 import { TaskDetailModal } from '@/components/TaskDetailModal';
 import { useProjectsQuery } from '@/hooks/useProjectsQuery';
 import { PageHeader, StatusBadge, Avatar, ProgressBar } from '@/components/ui/shared';
@@ -651,6 +651,12 @@ function DemandCard({ task, onClick, canDelete, onDelete }: { task: import('@/ty
             <span>Subtarefas</span>
             <span className="font-medium">{progress}%</span>
           </div>
+        </div>
+      )}
+      {task.comments && (
+        <div className="flex items-start gap-1.5 text-xs text-muted-foreground bg-muted/50 rounded-lg p-2 mb-2">
+          <MessageSquare className="w-3 h-3 mt-0.5 shrink-0" />
+          <span className="line-clamp-2">{task.comments}</span>
         </div>
       )}
       <div className="flex items-center justify-between text-xs text-muted-foreground">
