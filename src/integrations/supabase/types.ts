@@ -165,7 +165,7 @@ export type Database = {
           notes: string
           payment_day: number
           pending_tasks: number
-          platforms: Database["public"]["Enums"]["platform_type"][] | null
+          platforms: string[] | null
           responsible: string
           segment: string
           squad_id: string | null
@@ -187,7 +187,7 @@ export type Database = {
           notes?: string
           payment_day?: number
           pending_tasks?: number
-          platforms?: Database["public"]["Enums"]["platform_type"][] | null
+          platforms?: string[] | null
           responsible?: string
           segment?: string
           squad_id?: string | null
@@ -209,7 +209,7 @@ export type Database = {
           notes?: string
           payment_day?: number
           pending_tasks?: number
-          platforms?: Database["public"]["Enums"]["platform_type"][] | null
+          platforms?: string[] | null
           responsible?: string
           segment?: string
           squad_id?: string | null
@@ -266,6 +266,27 @@ export type Database = {
           id?: string
           name?: string
           steps?: string[]
+        }
+        Relationships: []
+      }
+      platforms: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          slug: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          slug: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          slug?: string
         }
         Relationships: []
       }

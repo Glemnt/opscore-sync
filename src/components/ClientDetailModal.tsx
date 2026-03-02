@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { StatusBadge } from '@/components/ui/shared';
 import { clientStatusConfig, taskStatusConfig, taskTypeConfig } from '@/lib/config';
 import { Client, Task, ClientStatus, ContractType, Platform } from '@/types';
+import { usePlatformsQuery } from '@/hooks/usePlatformsQuery';
 import { cn } from '@/lib/utils';
 import { useSquads } from '@/contexts/SquadsContext';
 import { useProjectsQuery } from '@/hooks/useProjectsQuery';
@@ -27,6 +28,7 @@ export function ClientDetailModal({ client, open, onClose }: ClientDetailModalPr
   const { updateClientField, addChatNote, deleteClient, updateClient } = useClients();
   const { squads } = useSquads();
   const { data: projects = [] } = useProjectsQuery();
+  const { data: platformOptions = [] } = usePlatformsQuery();
   const { tasks } = useTasks();
   const [editingField, setEditingField] = useState<string | null>(null);
   const [editValue, setEditValue] = useState('');
@@ -225,12 +227,12 @@ export function ClientDetailModal({ client, open, onClose }: ClientDetailModalPr
               <div>
                 <Label className="text-xs">Plataformas</Label>
                 <div className="flex flex-wrap gap-2 mt-1.5">
-                  {([['mercado_livre', 'Mercado Livre'], ['shopee', 'Shopee'], ['shein', 'Shein']] as const).map(([value, label]) => {
-                    const selected = (editData.platforms ?? []).includes(value);
+                  {platformOptions.map((plat) => {
+                    const selected = (editData.platforms ?? []).includes(plat.slug);
                     return (
-                      <button key={value} type="button" onClick={() => setEditData(p => ({ ...p, platforms: selected ? (p.platforms ?? []).filter(x => x !== value) : [...(p.platforms ?? []), value] }))}
+                      <button key={plat.id} type="button" onClick={() => setEditData(p => ({ ...p, platforms: selected ? (p.platforms ?? []).filter(x => x !== plat.slug) : [...(p.platforms ?? []), plat.slug] }))}
                         className={cn('px-3 py-1.5 text-xs rounded-lg border transition-all font-medium', selected ? 'border-primary bg-primary/10 text-primary ring-1 ring-primary/30' : 'border-border bg-card text-muted-foreground hover:border-primary/40')}>
-                        {label}
+                        {plat.name}
                       </button>
                     );
                   })}

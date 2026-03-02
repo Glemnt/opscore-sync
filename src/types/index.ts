@@ -6,7 +6,7 @@ export type TaskType = 'anuncio' | 'copy' | 'design' | 'otimizacao' | 'analise' 
 export type ProjectType = 'criacao_anuncio' | 'setup_campanha' | 'otimizacao' | 'relatorio' | 'redesign' | 'consultoria';
 export type TeamRole = 'cs' | 'operacional' | 'design' | 'copy' | 'gestao';
 export type ContractType = 'mrr' | 'tcv';
-export type Platform = 'mercado_livre' | 'shopee' | 'shein';
+export type Platform = string;
 
 export interface ChangeLogEntry {
   id: string;
