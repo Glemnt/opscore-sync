@@ -46,7 +46,7 @@ export function AddTaskDialog({ open, onOpenChange, defaultStatus = 'backlog' }:
   const [comments, setComments] = useState('');
   const [subtaskInput, setSubtaskInput] = useState('');
   const [subtasks, setSubtasks] = useState<string[]>([]);
-  const [platform, setPlatform] = useState('');
+  const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([]);
 
   const selectedClient = visibleClients.find((c) => c.id === clientId);
 
@@ -99,7 +99,7 @@ export function AddTaskDialog({ open, onOpenChange, defaultStatus = 'backlog' }:
     setComments('');
     setSubtaskInput('');
     setSubtasks([]);
-    setPlatform('');
+    setSelectedPlatforms([]);
   };
 
   const handleSubmit = () => {
@@ -123,7 +123,7 @@ export function AddTaskDialog({ open, onOpenChange, defaultStatus = 'backlog' }:
       priority,
       comments,
       createdAt: new Date().toISOString().split('T')[0],
-      platform: platform && platform !== '__none__' ? platform : undefined,
+      platforms: selectedPlatforms.length > 0 ? selectedPlatforms : undefined,
       subtasks: subtasks.map((label, i) => ({
         id: `st_${Date.now()}_${i}`,
         label,
@@ -252,18 +252,28 @@ export function AddTaskDialog({ open, onOpenChange, defaultStatus = 'backlog' }:
             </Select>
           </div>
 
-          {/* Plataforma */}
-          <div className="space-y-1.5">
-            <Label>Plataforma</Label>
-            <Select value={platform} onValueChange={setPlatform}>
-              <SelectTrigger><SelectValue placeholder="Sem plataforma" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="__none__">Sem plataforma</SelectItem>
-                {platforms.map((p) => (
-                  <SelectItem key={p.id} value={p.slug}>{p.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          {/* Plataformas */}
+          <div className="space-y-1.5 sm:col-span-2">
+            <Label>Plataformas</Label>
+            <div className="flex flex-wrap gap-2">
+              {platforms.map((p) => {
+                const active = selectedPlatforms.includes(p.slug);
+                return (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => setSelectedPlatforms(prev => active ? prev.filter(s => s !== p.slug) : [...prev, p.slug])}
+                    className={cn(
+                      'px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors',
+                      active ? 'bg-primary text-primary-foreground border-primary' : 'bg-muted text-muted-foreground border-border hover:border-primary/40'
+                    )}
+                  >
+                    {p.name}
+                  </button>
+                );
+              })}
+              {platforms.length === 0 && <span className="text-xs text-muted-foreground">Nenhuma plataforma cadastrada</span>}
+            </div>
           </div>
 
           {/* Tempo estimado */}

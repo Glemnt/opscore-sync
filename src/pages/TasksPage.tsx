@@ -241,7 +241,8 @@ export function TasksPage() {
 function TaskCard({ task, isLate, onClick, canDelete, onDelete }: { task: Task; isLate: boolean; onClick: () => void; canDelete: boolean; onDelete: () => void }) {
   const typeConf = taskTypeConfig[task.type];
   const { data: platforms = [] } = usePlatformsQuery();
-  const platformName = task.platform ? (platforms.find(p => p.slug === task.platform)?.name ?? task.platform) : null;
+  const taskPlatforms = task.platforms ?? [];
+  const platformNames = taskPlatforms.map(slug => platforms.find(p => p.slug === slug)?.name ?? slug);
   const priorityConf = priorityConfig[task.priority];
   const subtasks = task.subtasks ?? [];
   const progress = subtasks.length > 0 ? Math.round((subtasks.filter(s => s.done).length / subtasks.length) * 100) : -1;
@@ -276,12 +277,12 @@ function TaskCard({ task, isLate, onClick, canDelete, onDelete }: { task: Task; 
         <span className={cn('text-xs px-1.5 py-0.5 rounded-md font-medium', typeConf.color)}>
           {typeConf.label}
         </span>
-        {platformName && (
-          <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground bg-muted/60 rounded-md px-1.5 py-0.5 font-medium">
+        {platformNames.map((name, i) => (
+          <span key={i} className="inline-flex items-center gap-1 text-[10px] text-muted-foreground bg-muted/60 rounded-md px-1.5 py-0.5 font-medium">
             <ShoppingBag className="w-3 h-3" />
-            {platformName}
+            {name}
           </span>
-        )}
+        ))}
         <span className="text-xs text-muted-foreground truncate">{task.clientName}</span>
       </div>
 

@@ -217,23 +217,35 @@ export function TaskDetailModal({ task, open, onOpenChange }: TaskDetailModalPro
               </Select>
             </div>
 
-            {/* Plataforma - editable */}
-            <div className="bg-muted/50 rounded-xl p-3 space-y-1.5">
+            {/* Plataformas - editable multi-select */}
+            <div className="bg-muted/50 rounded-xl p-3 space-y-1.5 col-span-2">
               <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium uppercase tracking-wide">
                 <ShoppingBag className="w-3.5 h-3.5" />
-                Plataforma
+                Plataformas
               </div>
-              <Select value={task.platform || '__none__'} onValueChange={(v) => updateTask(task.id, { platform: v === '__none__' ? '' : v })}>
-                <SelectTrigger className="h-9 bg-background border-border">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__none__">Sem plataforma</SelectItem>
-                  {platforms.map((p) => (
-                    <SelectItem key={p.id} value={p.slug}>{p.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="flex flex-wrap gap-1.5">
+                {platforms.map((p) => {
+                  const active = (task.platforms ?? []).includes(p.slug);
+                  return (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => {
+                        const current = task.platforms ?? [];
+                        const updated = active ? current.filter(s => s !== p.slug) : [...current, p.slug];
+                        updateTask(task.id, { platforms: updated } as any);
+                      }}
+                      className={cn(
+                        'px-2.5 py-1 rounded-md text-xs font-medium border transition-colors',
+                        active ? 'bg-primary text-primary-foreground border-primary' : 'bg-background text-muted-foreground border-border hover:border-primary/40'
+                      )}
+                    >
+                      {p.name}
+                    </button>
+                  );
+                })}
+                {platforms.length === 0 && <span className="text-xs text-muted-foreground">Nenhuma plataforma cadastrada</span>}
+              </div>
             </div>
 
             {/* Tempo - editable */}
