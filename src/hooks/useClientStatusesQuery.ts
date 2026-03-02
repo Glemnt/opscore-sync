@@ -60,3 +60,19 @@ export function useDeleteClientStatus() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['client_statuses'] }),
   });
 }
+
+export function useUpdateClientStatus() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: { key: string; label: string; class_name?: string }) => {
+      const updates: Record<string, string> = { label: input.label };
+      if (input.class_name) updates.class_name = input.class_name;
+      const { error } = await supabase
+        .from('client_statuses' as any)
+        .update(updates as any)
+        .eq('key', input.key);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['client_statuses'] }),
+  });
+}

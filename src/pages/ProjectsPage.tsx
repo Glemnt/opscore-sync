@@ -18,7 +18,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAppUsersQuery } from '@/hooks/useAppUsersQuery';
-import { useClientStatusesQuery, useClientStatusesMap } from '@/hooks/useClientStatusesQuery';
+import { useClientStatusesQuery, useClientStatusesMap, useAddClientStatus, useDeleteClientStatus, useUpdateClientStatus } from '@/hooks/useClientStatusesQuery';
+import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from '@/components/ui/alert-dialog';
 
 type KanbanColumn = { id: string; label: string; status: ClientStatus | string };
 type ProjectKanbanColumn = { id: string; label: string; status: ProjectStatus | string };
@@ -39,12 +40,18 @@ export function ProjectsPage() {
   const { data: appUsers = [] } = useAppUsersQuery();
   const { data: clientStatuses = [] } = useClientStatusesQuery();
   const clientStatusMap = useClientStatusesMap();
+  const addStatusMut = useAddClientStatus();
+  const deleteStatusMut = useDeleteClientStatus();
+  const updateStatusMut = useUpdateClientStatus();
   const clients = getVisibleClients();
   const [selectedSquad, setSelectedSquad] = useState<Squad | null>(null);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [search, setSearch] = useState('');
   const [view, setView] = useState<'kanban' | 'list'>('kanban');
   const [addDemandOpen, setAddDemandOpen] = useState(false);
+  const [addColDialogOpen, setAddColDialogOpen] = useState(false);
+  const [newColLabel, setNewColLabel] = useState('');
+  const [deleteColConfirm, setDeleteColConfirm] = useState<{ id: string; label: string; status: string } | null>(null);
 
   // Squad management state
   const [squadDialogOpen, setSquadDialogOpen] = useState(false);
@@ -255,18 +262,38 @@ export function ProjectsPage() {
     const squadClients = clients.filter((c) => c.squadId === selectedSquad.id);
 
     const handleRenameCol = (id: string, newLabel: string) => {
-      setClientCols((cols) => cols.map((c) => (c.id === id ? { ...c, label: newLabel } : c)));
+      const col = clientCols.find(c => c.id === id);
+      if (col) {
+        updateStatusMut.mutate({ key: col.status as string, label: newLabel });
+      }
       setEditingColId(null);
     };
 
     const handleRemoveCol = (id: string) => {
-      setClientCols((cols) => cols.filter((c) => c.id !== id));
+      const col = clientCols.find(c => c.id === id);
+      if (col) {
+        setDeleteColConfirm({ id: col.id, label: col.label, status: col.status as string });
+      }
+    };
+
+    const confirmRemoveCol = () => {
+      if (deleteColConfirm) {
+        deleteStatusMut.mutate(deleteColConfirm.status);
+        setDeleteColConfirm(null);
+      }
     };
 
     const handleAddCol = () => {
-      const newId = `custom_${Date.now()}`;
-      setClientCols((cols) => [...cols, { id: newId, label: 'Nova Coluna', status: newId }]);
-      setEditingColId(newId);
+      setNewColLabel('');
+      setAddColDialogOpen(true);
+    };
+
+    const confirmAddCol = () => {
+      const label = newColLabel.trim();
+      if (!label) return;
+      const key = label.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+      addStatusMut.mutate({ key, label, class_name: 'bg-muted text-muted-foreground border-border' });
+      setAddColDialogOpen(false);
     };
 
     return (
@@ -374,6 +401,49 @@ export function ProjectsPage() {
             </button>
           </div>
         </div>
+
+        {/* Add Column Dialog */}
+        <Dialog open={addColDialogOpen} onOpenChange={setAddColDialogOpen}>
+          <DialogContent className="max-w-sm">
+            <DialogHeader>
+              <DialogTitle>Nova Coluna</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-3">
+              <Label>Nome da coluna</Label>
+              <Input
+                value={newColLabel}
+                onChange={(e) => setNewColLabel(e.target.value)}
+                placeholder="Ex: Em Revisão"
+                onKeyDown={(e) => e.key === 'Enter' && confirmAddCol()}
+                autoFocus
+              />
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setAddColDialogOpen(false)}>Cancelar</Button>
+              <Button onClick={confirmAddCol} disabled={!newColLabel.trim() || addStatusMut.isPending}>
+                {addStatusMut.isPending ? 'Criando...' : 'Criar'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Delete Column Confirmation */}
+        <AlertDialog open={!!deleteColConfirm} onOpenChange={(open) => !open && setDeleteColConfirm(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Excluir coluna "{deleteColConfirm?.label}"?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Esta ação não pode ser desfeita. Os clientes nesta coluna não serão excluídos, mas ficarão sem status definido.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction onClick={confirmRemoveCol} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                Excluir
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     );
   }
