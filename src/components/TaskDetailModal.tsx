@@ -67,8 +67,8 @@ export function TaskDetailModal({ task, open, onOpenChange }: TaskDetailModalPro
   const doneCount = subtasks.filter((s) => s.done).length;
   const progress = subtasks.length > 0 ? Math.round((doneCount / subtasks.length) * 100) : 0;
   const chatNotes = task.chatNotes ?? [];
-  const priorityConf = priorityConfig[task.priority];
-  const typeConf = taskTypeConfig[task.type];
+  const priorityConf = priorityConfig[task.priority] ?? { label: task.priority, className: '', icon: '●' };
+  const typeConf = taskTypeConfig[task.type] ?? { label: task.type, color: 'bg-gray-100 text-gray-700' };
   const isLate = new Date(task.deadline) < new Date() && task.status !== 'done';
 
   const toggleSubtask = (subtaskId: string) => {
