@@ -32,6 +32,7 @@ export function TasksPage() {
   const [search, setSearch] = useState('');
   const [responsible, setResponsible] = useState('all');
   const [selectedType, setSelectedType] = useState('all');
+  const [selectedPlatform, setSelectedPlatform] = useState('all');
   const [cols, setCols] = useState(defaultKanbanCols);
   const [editingCol, setEditingCol] = useState<string | null>(null);
   const [dragOverCol, setDragOverCol] = useState<string | null>(null);
@@ -42,6 +43,7 @@ export function TasksPage() {
   const [flowMode, setFlowMode] = useState<FlowDialogMode>('create');
 
   const taskTypeMap = useTaskTypesMap();
+  const { data: platforms = [] } = usePlatformsQuery();
   const responsibles = ['all', ...Array.from(new Set(tasks.map(t => t.responsible)))];
   const allTypes = ['all', ...Array.from(new Set(tasks.map(t => t.type)))];
 
@@ -50,7 +52,8 @@ export function TasksPage() {
       t.clientName.toLowerCase().includes(search.toLowerCase());
     const matchResp = responsible === 'all' || t.responsible === responsible;
     const matchType = selectedType === 'all' || t.type === selectedType;
-    return matchSearch && matchResp && matchType;
+    const matchPlatform = selectedPlatform === 'all' || (t.platforms ?? []).includes(selectedPlatform);
+    return matchSearch && matchResp && matchType && matchPlatform;
   });
 
   const isLate = (task: Task) => new Date(task.deadline) < new Date() && task.status !== 'done';
@@ -135,6 +138,16 @@ export function TasksPage() {
             <option key={t} value={t}>
               {t === 'all' ? 'Todos os tipos' : (taskTypeMap[t]?.label ?? t)}
             </option>
+          ))}
+        </select>
+        <select
+          value={selectedPlatform}
+          onChange={e => setSelectedPlatform(e.target.value)}
+          className="px-3 py-2 text-sm bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 text-foreground"
+        >
+          <option value="all">Todas plataformas</option>
+          {platforms.map(p => (
+            <option key={p.id} value={p.slug}>{p.name}</option>
           ))}
         </select>
       </div>
