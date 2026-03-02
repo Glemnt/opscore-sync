@@ -194,7 +194,7 @@ export type Database = {
           segment: string
           squad_id: string | null
           start_date: string
-          status: Database["public"]["Enums"]["client_status"]
+          status: string
           updated_at: string
         }
         Insert: {
@@ -216,7 +216,7 @@ export type Database = {
           segment?: string
           squad_id?: string | null
           start_date?: string
-          status?: Database["public"]["Enums"]["client_status"]
+          status?: string
           updated_at?: string
         }
         Update: {
@@ -238,7 +238,7 @@ export type Database = {
           segment?: string
           squad_id?: string | null
           start_date?: string
-          status?: Database["public"]["Enums"]["client_status"]
+          status?: string
           updated_at?: string
         }
         Relationships: [
