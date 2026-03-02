@@ -102,7 +102,7 @@ export function DashboardPage() {
   const [churnStartDate, setChurnStartDate] = useState<Date | undefined>(startOfMonth(now));
   const [churnEndDate, setChurnEndDate] = useState<Date | undefined>(endOfMonth(now));
 
-  const activeClients = clients.filter(c => c.status === 'active').length;
+  const activeClients = clients.filter(c => c.status !== 'churned').length;
   const lateTasks = tasks.filter(t => {
     const isLate = new Date(t.deadline) < new Date() && t.status !== 'done';
     return isLate;
@@ -110,7 +110,7 @@ export function DashboardPage() {
 
   // Health summary
   const healthSummary = useMemo(() => {
-    const active = clients.filter(c => c.status === 'active');
+    const active = clients.filter(c => c.status !== 'churned');
     const counts = { green: 0, yellow: 0, red: 0, white: 0 };
     active.forEach(c => {
       const h = c.healthColor ?? 'white';
