@@ -1,33 +1,34 @@
 
 
-## Corrigir métricas do Dashboard para excluir apenas clientes em status "Churn"
+## Adicionar/Editar Fluxo do Cliente na Página de Clientes
 
-### Problema
-As colunas do Kanban de Projetos foram renomeadas pelo usuário (ex: "Churned" virou "Performance"), mas as **keys** permanecem as mesmas (`churned`, `paused`, etc.). O Dashboard usa `status !== 'churned'` hardcoded para calcular MRR e clientes ativos, então clientes na coluna "Performance" (key=`churned`) são excluídos das métricas.
+### Situação Atual
+- A tabela `client_flows` já existe no banco (client_id + flow_id)
+- O `TasksContext` tem `clientFlows` mas está hardcoded como `{}` (nunca consulta o banco)
+- `assignFlowToClient` cria tarefas a partir do fluxo mas não persiste a associação na tabela `client_flows`
+- Não há UI para visualizar ou gerenciar fluxos associados a um cliente
 
-### Solução
-Em vez de filtrar pelo key hardcoded `'churned'`, o Dashboard deve buscar os status cadastrados e identificar qual(is) têm o **label** contendo "churn" (case-insensitive). Apenas clientes nesses status serão excluídos das métricas.
+### Alterações
 
-### Alterações em `src/pages/DashboardPage.tsx`
+**1. Hook `src/hooks/useClientFlowsQuery.ts`** (novo)
+- `useClientFlowsQuery()`: busca todos os registros de `client_flows` com join em `flows` para trazer o nome
+- `useAddClientFlow()`: insere na tabela `client_flows`
+- `useRemoveClientFlow()`: deleta da tabela `client_flows`
 
-1. Criar um `Set` de keys cujo label contenha "churn" (case-insensitive):
-   ```ts
-   const churnKeys = useMemo(() => {
-     return new Set(
-       clientStatuses
-         .filter(s => s.label.toLowerCase().includes('churn'))
-         .map(s => s.key)
-     );
-   }, [clientStatuses]);
-   ```
+**2. `src/components/ClientDetailModal.tsx`**
+- Adicionar seção "Fluxos" entre o grid de informações editáveis e a seção de demandas
+- Exibir os fluxos associados ao cliente como chips com botão de remover (X)
+- Adicionar botão "+" que abre um dropdown/select com os fluxos disponíveis (vindos de `useFlowsQuery`)
+- Ao adicionar um fluxo, persiste na `client_flows` e opcionalmente pergunta se deseja criar as demandas automaticamente
 
-2. Substituir todas as ocorrências de `c.status !== 'churned'` e `c.status === 'churned'` para usar `churnKeys`:
-   - Linha 107: `activeClients` → `!churnKeys.has(c.status)`
-   - Linha 115: `healthSummary` → `!churnKeys.has(c.status)`
-   - Linha 137: `mrr` → `!churnKeys.has(c.status)`
-   - Linha 152: `churnCount` → `churnKeys.has(c.status)`
-   - Linha 163: `platformData` → `!churnKeys.has(c.status)`
-   - Linha 189: `clientEvolutionData` → `churnKeys.has(c.status)`
+**3. `src/components/AddClientDialog.tsx`**
+- Na aba "Fluxo de Demandas", além de selecionar templates para criar tarefas, também persistir a associação do fluxo selecionado na `client_flows` ao criar o cliente
 
-Nenhuma alteração de banco de dados necessária.
+**4. Card do cliente em `ClientsPage.tsx`**
+- Exibir badge com o nome do fluxo associado no card do cliente (similar ao badge de plataformas)
+
+### Detalhes técnicos
+- O hook `useClientFlowsQuery` retornará `Record<string, string[]>` (clientId → flowIds) para fácil lookup
+- A seção de fluxos no modal usará os dados de `useFlowsQuery` para listar opções disponíveis e `useClientFlowsQuery` para mostrar os já associados
+- A remoção de fluxo remove apenas a associação, não exclui as tarefas já criadas
 
