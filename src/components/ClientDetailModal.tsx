@@ -7,6 +7,7 @@ import { StatusBadge } from '@/components/ui/shared';
 import { clientStatusConfig, taskStatusConfig, taskTypeConfig } from '@/lib/config';
 import { Client, Task, ClientStatus, ContractType, Platform } from '@/types';
 import { usePlatformsQuery } from '@/hooks/usePlatformsQuery';
+import { useTaskTypesMap } from '@/hooks/useTaskTypesQuery';
 import { cn } from '@/lib/utils';
 import { useSquads } from '@/contexts/SquadsContext';
 import { useProjectsQuery } from '@/hooks/useProjectsQuery';
@@ -448,7 +449,8 @@ export function ClientDetailModal({ client, open, onClose }: ClientDetailModalPr
 
 function TimelineItem({ task, isLast }: { task: Task; isLast: boolean }) {
   const statusConf = taskStatusConfig[task.status];
-  const typeConf = taskTypeConfig[task.type];
+  const typesMap = useTaskTypesMap();
+  const typeConf = taskTypeConfig[task.type] ?? typesMap[task.type] ?? { label: task.type, color: 'bg-muted text-muted-foreground' };
   const isDone = task.status === 'done';
   const formatDate = (date: string) => new Date(date).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
 
