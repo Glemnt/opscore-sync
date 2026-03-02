@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Plus, Search, Building2, Calendar, User, X, Users, Circle } from 'lucide-react';
+import { Plus, Search, Building2, Calendar, User, X, Users, Circle, ShoppingBag } from 'lucide-react';
 import { mockAnalysisData } from '@/components/ClientAIAnalysis';
 import { useSquads } from '@/contexts/SquadsContext';
+import { usePlatformsQuery } from '@/hooks/usePlatformsQuery';
 import { useProjectsQuery } from '@/hooks/useProjectsQuery';
 import { useTasks } from '@/contexts/TasksContext';
 import { PageHeader, StatusBadge } from '@/components/ui/shared';
@@ -155,6 +156,7 @@ function ClientCard({ client, onClick }: { client: Client; onClick: () => void }
   const statusConf = clientStatusConfig[client.status];
   const { squads } = useSquads();
   const { tasks } = useTasks();
+  const { data: platforms = [] } = usePlatformsQuery();
   const squad = squads.find((s) => s.id === client.squadId);
   const pendingTasks = tasks.filter((t) => t.clientId === client.id && t.status !== 'done');
   const analysis = mockAnalysisData[client.id];
@@ -191,6 +193,20 @@ function ClientCard({ client, onClick }: { client: Client; onClick: () => void }
         <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground bg-muted/60 rounded-md px-2 py-1 mb-3 inline-flex font-medium">
           <Users className="w-3 h-3 shrink-0" />
           {squad.name}
+        </div>
+      )}
+
+      {client.platforms && client.platforms.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 mb-3">
+          {client.platforms.map((slug) => {
+            const plat = platforms.find((p) => p.slug === slug);
+            return (
+              <span key={slug} className="inline-flex items-center gap-1 text-[10px] text-muted-foreground bg-muted/60 rounded-md px-2 py-1 font-medium">
+                <ShoppingBag className="w-3 h-3 shrink-0" />
+                {plat?.name ?? slug}
+              </span>
+            );
+          })}
         </div>
       )}
 
