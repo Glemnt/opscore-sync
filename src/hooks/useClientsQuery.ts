@@ -40,7 +40,7 @@ export function useAddClient() {
         responsible: client.responsible,
         squad_id: client.squadId || null,
         start_date: client.startDate,
-        status: client.status,
+        status: client.status as any,
         notes: client.notes,
         logo: client.logo ?? null,
         monthly_revenue: client.monthlyRevenue ?? null,
@@ -51,7 +51,7 @@ export function useAddClient() {
         contract_duration_months: client.contractDurationMonths ?? null,
         platforms: (client.platforms as any) ?? null,
         health_color: client.healthColor ?? null,
-      });
+      } as any);
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['clients'] }),
