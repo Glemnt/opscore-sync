@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useSquads } from '@/contexts/SquadsContext';
 import { useAppUsersQuery, useCreateAppUser, useUpdateAppUser, useDeleteAppUser } from '@/hooks/useAppUsersQuery';
 import { usePlatformsQuery, useAddPlatform, useDeletePlatform } from '@/hooks/usePlatformsQuery';
+import { useTaskTypesQuery, useAddTaskType, useDeleteTaskType } from '@/hooks/useTaskTypesQuery';
 import { AccessLevel, TeamRole } from '@/types';
 import type { AppUserProfile } from '@/types/database';
 import { PageHeader } from '@/components/ui/shared';
@@ -43,6 +44,11 @@ export function SettingsPage() {
   const addPlatform = useAddPlatform();
   const deletePlatform = useDeletePlatform();
   const [newPlatformName, setNewPlatformName] = useState('');
+
+  const { data: taskTypes = [], isLoading: taskTypesLoading } = useTaskTypesQuery();
+  const addTaskType = useAddTaskType();
+  const deleteTaskType = useDeleteTaskType();
+  const [newTaskTypeLabel, setNewTaskTypeLabel] = useState('');
 
   // Create dialog
   const [openCreate, setOpenCreate] = useState(false);
@@ -310,7 +316,69 @@ export function SettingsPage() {
               ))
             )}
           </div>
+      </div>
+
+      {/* Task Types Section */}
+      <div className="mt-8">
+        <h3 className="text-lg font-semibold text-foreground mb-4">Tipos de Demanda</h3>
+        <div className="bg-card rounded-xl border border-border shadow-sm-custom p-5">
+          <div className="flex items-center gap-2 mb-4">
+            <Input
+              value={newTaskTypeLabel}
+              onChange={(e) => setNewTaskTypeLabel(e.target.value)}
+              placeholder="Nome do novo tipo"
+              className="max-w-xs"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  const label = newTaskTypeLabel.trim();
+                  if (!label) return;
+                  const key = label.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+                  addTaskType.mutate({ key, label, color: 'bg-gray-100 text-gray-700' }, {
+                    onSuccess: () => { setNewTaskTypeLabel(''); toast.success('Tipo adicionado'); },
+                    onError: (err: any) => toast.error(err.message || 'Erro ao adicionar'),
+                  });
+                }
+              }}
+            />
+            <Button
+              onClick={() => {
+                const label = newTaskTypeLabel.trim();
+                if (!label) return;
+                const key = label.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+                addTaskType.mutate({ key, label, color: 'bg-gray-100 text-gray-700' }, {
+                  onSuccess: () => { setNewTaskTypeLabel(''); toast.success('Tipo adicionado'); },
+                  onError: (err: any) => toast.error(err.message || 'Erro ao adicionar'),
+                });
+              }}
+              disabled={!newTaskTypeLabel.trim() || addTaskType.isPending}
+              className="gradient-primary shadow-primary"
+            >
+              <Plus className="w-4 h-4 mr-1" />
+              Adicionar
+            </Button>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {taskTypesLoading ? (
+              Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-8 w-28" />)
+            ) : taskTypes.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Nenhum tipo cadastrado</p>
+            ) : (
+              taskTypes.map((t) => (
+                <div key={t.id} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border bg-muted/50 text-sm font-medium text-foreground">
+                  {t.label}
+                  <button
+                    onClick={() => deleteTaskType.mutate(t.id, { onSuccess: () => toast.success('Tipo removido') })}
+                    className="ml-1 text-muted-foreground hover:text-destructive transition-colors"
+                    title="Remover tipo"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ))
+            )}
+          </div>
         </div>
+      </div>
       </div>
 
       {/* Create Dialog */}
