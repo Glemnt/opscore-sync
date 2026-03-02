@@ -14,7 +14,8 @@ import { useClients } from '@/contexts/ClientsContext';
 import { useAppUsersQuery } from '@/hooks/useAppUsersQuery';
 import { usePlatformsQuery } from '@/hooks/usePlatformsQuery';
 
-import { taskTypeConfig, priorityConfig } from '@/lib/config';
+import { priorityConfig } from '@/lib/config';
+import { useTaskTypesQuery, useAddTaskType } from '@/hooks/useTaskTypesQuery';
 import { Task, TaskType, TaskStatus, Priority } from '@/types';
 import { cn } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
@@ -31,7 +32,8 @@ export function AddTaskDialog({ open, onOpenChange, defaultStatus = 'backlog' }:
   const { data: appUsers = [] } = useAppUsersQuery();
   const { data: platforms = [] } = usePlatformsQuery();
   const visibleClients = getVisibleClients();
-  const [customTypes, setCustomTypes] = useState<Record<string, { label: string; color: string }>>({});
+  const { data: taskTypes = [] } = useTaskTypesQuery();
+  const addTaskTypeMut = useAddTaskType();
   const [showNewType, setShowNewType] = useState(false);
   const [newTypeLabel, setNewTypeLabel] = useState('');
 
@@ -50,7 +52,11 @@ export function AddTaskDialog({ open, onOpenChange, defaultStatus = 'backlog' }:
 
   const selectedClient = visibleClients.find((c) => c.id === clientId);
 
-  const allTypes = useMemo(() => ({ ...taskTypeConfig, ...customTypes }), [customTypes]);
+  const allTypes = useMemo(() => {
+    const map: Record<string, { label: string; color: string }> = {};
+    for (const t of taskTypes) map[t.key] = { label: t.label, color: t.color };
+    return map;
+  }, [taskTypes]);
 
   const generateTitle = (cId: string, t: TaskType) => {
     const client = visibleClients.find((c) => c.id === cId);
@@ -74,11 +80,17 @@ export function AddTaskDialog({ open, onOpenChange, defaultStatus = 'backlog' }:
     const trimmed = newTypeLabel.trim();
     if (!trimmed) return;
     const key = trimmed.toLowerCase().replace(/\s+/g, '_');
-    setCustomTypes((prev) => ({ ...prev, [key]: { label: trimmed, color: 'bg-gray-100 text-gray-700' } }));
-    setType(key as TaskType);
-    setTitle(generateTitle(clientId, key as TaskType));
-    setNewTypeLabel('');
-    setShowNewType(false);
+    addTaskTypeMut.mutate(
+      { key, label: trimmed, color: 'bg-gray-100 text-gray-700' },
+      {
+        onSuccess: () => {
+          setType(key as TaskType);
+          setTitle(generateTitle(clientId, key as TaskType));
+          setNewTypeLabel('');
+          setShowNewType(false);
+        },
+      }
+    );
   };
 
 

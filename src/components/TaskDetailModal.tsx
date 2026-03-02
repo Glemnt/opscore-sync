@@ -13,7 +13,8 @@ import { useSquads } from '@/contexts/SquadsContext';
 import { useClients } from '@/contexts/ClientsContext';
 import { useAppUsersQuery } from '@/hooks/useAppUsersQuery';
 import { usePlatformsQuery } from '@/hooks/usePlatformsQuery';
-import { priorityConfig, taskTypeConfig, taskStatusConfig } from '@/lib/config';
+import { priorityConfig } from '@/lib/config';
+import { useTaskTypesQuery, useTaskTypesMap } from '@/hooks/useTaskTypesQuery';
 import { cn } from '@/lib/utils';
 import { Send, Clock, User, CalendarDays, Flag, MessageSquare, Trash2, Tag, Briefcase, ShoppingBag, Workflow } from 'lucide-react';
 import { Avatar } from '@/components/ui/shared';
@@ -34,6 +35,8 @@ export function TaskDetailModal({ task, open, onOpenChange }: TaskDetailModalPro
   const { clients } = useClients();
   const { data: appUsers = [] } = useAppUsersQuery();
   const { data: platforms = [] } = usePlatformsQuery();
+  const { data: taskTypes = [] } = useTaskTypesQuery();
+  const taskTypeMap = useTaskTypesMap();
   const queryClient = useQueryClient();
   const [newNote, setNewNote] = useState('');
   const [editingTitle, setEditingTitle] = useState(false);
@@ -68,7 +71,7 @@ export function TaskDetailModal({ task, open, onOpenChange }: TaskDetailModalPro
   const progress = subtasks.length > 0 ? Math.round((doneCount / subtasks.length) * 100) : 0;
   const chatNotes = task.chatNotes ?? [];
   const priorityConf = priorityConfig[task.priority] ?? { label: task.priority, className: '', icon: '●' };
-  const typeConf = taskTypeConfig[task.type] ?? { label: task.type, color: 'bg-gray-100 text-gray-700' };
+  const typeConf = taskTypeMap[task.type] ?? { label: task.type, color: 'bg-gray-100 text-gray-700' };
   const isLate = new Date(task.deadline) < new Date() && task.status !== 'done';
 
   const toggleSubtask = (subtaskId: string) => {
@@ -140,8 +143,8 @@ export function TaskDetailModal({ task, open, onOpenChange }: TaskDetailModalPro
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {Object.entries(taskTypeConfig).map(([key, conf]) => (
-                      <SelectItem key={key} value={key}>{conf.label}</SelectItem>
+                    {taskTypes.map((t) => (
+                      <SelectItem key={t.key} value={t.key}>{t.label}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>

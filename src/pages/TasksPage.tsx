@@ -5,7 +5,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useSquads } from '@/contexts/SquadsContext';
 import { useClients } from '@/contexts/ClientsContext';
 import { PageHeader, StatusBadge, Avatar, ProgressBar } from '@/components/ui/shared';
-import { taskStatusConfig, priorityConfig, taskTypeConfig } from '@/lib/config';
+import { taskStatusConfig, priorityConfig } from '@/lib/config';
+import { useTaskTypesMap } from '@/hooks/useTaskTypesQuery';
 import { usePlatformsQuery } from '@/hooks/usePlatformsQuery';
 import { Task, TaskStatus } from '@/types';
 import { cn } from '@/lib/utils';
@@ -40,6 +41,7 @@ export function TasksPage() {
   const [flowDialogOpen, setFlowDialogOpen] = useState(false);
   const [flowMode, setFlowMode] = useState<FlowDialogMode>('create');
 
+  const taskTypeMap = useTaskTypesMap();
   const responsibles = ['all', ...Array.from(new Set(tasks.map(t => t.responsible)))];
   const allTypes = ['all', ...Array.from(new Set(tasks.map(t => t.type)))];
 
@@ -131,7 +133,7 @@ export function TasksPage() {
         >
           {allTypes.map(t => (
             <option key={t} value={t}>
-              {t === 'all' ? 'Todos os tipos' : (taskTypeConfig[t as keyof typeof taskTypeConfig]?.label ?? t)}
+              {t === 'all' ? 'Todos os tipos' : (taskTypeMap[t]?.label ?? t)}
             </option>
           ))}
         </select>
@@ -239,7 +241,8 @@ export function TasksPage() {
 }
 
 function TaskCard({ task, isLate, onClick, canDelete, onDelete }: { task: Task; isLate: boolean; onClick: () => void; canDelete: boolean; onDelete: () => void }) {
-  const typeConf = taskTypeConfig[task.type] ?? { label: task.type, color: 'bg-gray-100 text-gray-700' };
+  const taskTypeMap = useTaskTypesMap();
+  const typeConf = taskTypeMap[task.type] ?? { label: task.type, color: 'bg-gray-100 text-gray-700' };
   const { data: platforms = [] } = usePlatformsQuery();
   const taskPlatforms = task.platforms ?? [];
   const platformNames = taskPlatforms.map(slug => platforms.find(p => p.slug === slug)?.name ?? slug);
