@@ -1,24 +1,20 @@
 
 
-## Exibir observação no card de demanda da página Squads
+## Adicionar campo de clientes por etapa no Dashboard
 
-### Problema
-O componente `DemandCard` em `ProjectsPage.tsx` (página Squads) não exibe o campo `task.comments` (observação). Na página Demandas (`TasksPage.tsx`), o card já exibe a observação com ícone `MessageSquare` — mas o `DemandCard` da página Squads não tem essa seção.
+### O que será feito
+Adicionar um card no Dashboard que exibe a quantidade de clientes agrupados por status (etapa): Ativo, Onboarding, Pausado e Churned. Será um card visual com barras de progresso e contadores, posicionado logo após o resumo de saúde dos clientes.
 
 ### Alteração
 
-**`src/pages/ProjectsPage.tsx`** — componente `DemandCard` (linha 655, após o bloco de subtarefas)
+**`src/pages/DashboardPage.tsx`**
 
-Adicionar o mesmo bloco de exibição de comentários usado na `TasksPage`:
+1. Criar um `useMemo` que conta os clientes por status (`active`, `onboarding`, `paused`, `churned`) usando os dados já disponíveis no componente.
 
-```tsx
-{task.comments && (
-  <div className="flex items-start gap-1.5 text-xs text-muted-foreground bg-muted/50 rounded-lg p-2 mb-2">
-    <MessageSquare className="w-3 h-3 mt-0.5 shrink-0" />
-    <span className="line-clamp-2">{task.comments}</span>
-  </div>
-)}
-```
+2. Inserir um novo card após o bloco "Saúde dos Clientes Ativos" (linha ~163) com:
+   - Título "Clientes por Etapa"
+   - Uma barra horizontal para cada status mostrando: ícone colorido, label (do `clientStatusConfig`), contagem e barra proporcional
+   - Reutilizar as cores já definidas em `clientStatusConfig` de `src/lib/config.ts`
 
-Também importar `MessageSquare` do lucide-react (já importado parcialmente no arquivo).
+O layout será similar ao card de saúde, mantendo consistência visual com o restante do dashboard.
 
