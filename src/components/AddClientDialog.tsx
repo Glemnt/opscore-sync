@@ -12,7 +12,7 @@ import { useTasks } from '@/contexts/TasksContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { ContractType, Client, Task, TaskType, SubTask, Platform } from '@/types';
 import { usePlatformsQuery } from '@/hooks/usePlatformsQuery';
-import { useTeamMembersQuery } from '@/hooks/useTeamMembersQuery';
+import { useAppUsersQuery } from '@/hooks/useAppUsersQuery';
 import { cn } from '@/lib/utils';
 
 interface AddClientDialogProps {
@@ -47,7 +47,7 @@ export function AddClientDialog({ open, onClose }: AddClientDialogProps) {
   const [platforms, setPlatforms] = useState<Platform[]>([]);
   const [responsible, setResponsible] = useState('');
   const { data: platformOptions = [] } = usePlatformsQuery();
-  const { data: teamMembers = [] } = useTeamMembersQuery();
+  const { data: appUsers = [] } = useAppUsersQuery();
 
   // Selected templates for auto-creation
   const [selectedTemplateIds, setSelectedTemplateIds] = useState<string[]>([]);
@@ -208,7 +208,7 @@ export function AddClientDialog({ open, onClose }: AddClientDialogProps) {
                 <Label className="text-xs">Responsável</Label>
                 <select value={responsible} onChange={e => setResponsible(e.target.value)} className="w-full h-8 px-2 text-sm bg-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring text-foreground">
                   <option value="">Selecione...</option>
-                  {teamMembers.map(m => <option key={m.id} value={m.name}>{m.name}</option>)}
+                  {appUsers.map(u => <option key={u.id} value={u.name}>{u.name}</option>)}
                 </select>
               </div>
             </div>

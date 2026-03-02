@@ -12,7 +12,7 @@ import { useSquads } from '@/contexts/SquadsContext';
 import { useProjectsQuery } from '@/hooks/useProjectsQuery';
 import { useTasks } from '@/contexts/TasksContext';
 import { useClients } from '@/contexts/ClientsContext';
-import { useTeamMembersQuery } from '@/hooks/useTeamMembersQuery';
+import { useAppUsersQuery } from '@/hooks/useAppUsersQuery';
 import { ClientAIAnalysis } from '@/components/ClientAIAnalysis';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -30,7 +30,7 @@ export function ClientDetailModal({ client, open, onClose }: ClientDetailModalPr
   const { squads } = useSquads();
   const { data: projects = [] } = useProjectsQuery();
   const { data: platformOptions = [] } = usePlatformsQuery();
-  const { data: teamMembers = [] } = useTeamMembersQuery();
+  const { data: appUsers = [] } = useAppUsersQuery();
   const { tasks } = useTasks();
   const [editingField, setEditingField] = useState<string | null>(null);
   const [editValue, setEditValue] = useState('');
@@ -116,7 +116,7 @@ export function ClientDetailModal({ client, open, onClose }: ClientDetailModalPr
                 className="flex-1 text-sm bg-background border border-input rounded px-2 py-1 text-foreground"
               >
                 <option value="">Selecione...</option>
-                {teamMembers.map(m => <option key={m.id} value={m.name}>{m.name}</option>)}
+                {appUsers.map(u => <option key={u.id} value={u.name}>{u.name}</option>)}
               </select>
             ) : (
               <Input type={type} value={editValue} onChange={e => setEditValue(e.target.value)} className="h-7 text-sm flex-1" />
@@ -204,7 +204,7 @@ export function ClientDetailModal({ client, open, onClose }: ClientDetailModalPr
                   <Label className="text-xs">Responsável</Label>
                   <select value={editData.responsible ?? ''} onChange={e => setEditData(p => ({ ...p, responsible: e.target.value }))} className="w-full h-8 px-2 text-sm bg-background border border-input rounded-md text-foreground">
                     <option value="">Selecione...</option>
-                    {teamMembers.map(m => <option key={m.id} value={m.name}>{m.name}</option>)}
+                    {appUsers.map(u => <option key={u.id} value={u.name}>{u.name}</option>)}
                   </select>
                 </div>
                 <div>
