@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Plus, Search, Clock, MessageSquare, AlertTriangle, Trash2, Workflow, ChevronDown, ShoppingBag, X } from 'lucide-react';
+import { Plus, Search, Clock, MessageSquare, AlertTriangle, Trash2, Workflow, ChevronDown, ShoppingBag, X, CalendarDays } from 'lucide-react';
 import { useTasks } from '@/contexts/TasksContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSquads } from '@/contexts/SquadsContext';
@@ -29,6 +29,9 @@ export function TasksPage() {
   const [responsible, setResponsible] = useState('all');
   const [selectedType, setSelectedType] = useState('all');
   const [selectedPlatform, setSelectedPlatform] = useState('all');
+  const [selectedStatus, setSelectedStatus] = useState('all');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
   const [editingCol, setEditingCol] = useState<string | null>(null);
   const [dragOverCol, setDragOverCol] = useState<string | null>(null);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
@@ -61,7 +64,10 @@ export function TasksPage() {
     const matchResp = responsible === 'all' || t.responsible === responsible;
     const matchType = selectedType === 'all' || t.type === selectedType;
     const matchPlatform = selectedPlatform === 'all' || (t.platforms ?? []).includes(selectedPlatform);
-    return matchSearch && matchResp && matchType && matchPlatform;
+    const matchStatus = selectedStatus === 'all' || t.status === selectedStatus;
+    const matchDateFrom = !dateFrom || (t.deadline && t.deadline >= dateFrom);
+    const matchDateTo = !dateTo || (t.deadline && t.deadline <= dateTo);
+    return matchSearch && matchResp && matchType && matchPlatform && matchStatus && matchDateFrom && matchDateTo;
   });
 
   const isLate = (task: Task) => new Date(task.deadline) < new Date() && task.status !== 'done';
@@ -218,6 +224,34 @@ export function TasksPage() {
             <option key={p.id} value={p.slug}>{p.name}</option>
           ))}
         </select>
+        <select
+          value={selectedStatus}
+          onChange={e => setSelectedStatus(e.target.value)}
+          className="px-3 py-2 text-sm bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 text-foreground"
+        >
+          <option value="all">Todas etapas</option>
+          {taskStatuses.map(s => (
+            <option key={s.key} value={s.key}>{s.label}</option>
+          ))}
+        </select>
+        <div className="flex items-center gap-1.5">
+          <CalendarDays className="w-4 h-4 text-muted-foreground" />
+          <input
+            type="date"
+            value={dateFrom}
+            onChange={e => setDateFrom(e.target.value)}
+            className="px-2 py-2 text-sm bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 text-foreground"
+            title="Data inicial"
+          />
+          <span className="text-xs text-muted-foreground">até</span>
+          <input
+            type="date"
+            value={dateTo}
+            onChange={e => setDateTo(e.target.value)}
+            className="px-2 py-2 text-sm bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 text-foreground"
+            title="Data final"
+          />
+        </div>
       </div>
 
       {/* Kanban */}
