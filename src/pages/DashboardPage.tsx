@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
+import { usePlatformsQuery } from '@/hooks/usePlatformsQuery';
 
 const weeklyData = [
   { day: 'Seg', concluidas: 8, abertas: 3 },
@@ -34,11 +35,7 @@ const taskTypeData = [
   { name: 'Outros', value: 17, color: '#94a3b8' },
 ];
 
-const PLATFORM_LABELS: Record<string, string> = {
-  mercado_livre: 'Mercado Livre',
-  shopee: 'Shopee',
-  shein: 'Shein',
-};
+// Platform labels now come from the platforms query - see usePlatformsQuery
 const PLATFORM_COLORS: Record<string, string> = {
   mercado_livre: '#ffe600',
   shopee: '#ee4d2d',
@@ -84,6 +81,12 @@ export function DashboardPage() {
   const { getVisibleClients, clients: allClientsList } = useClients();
   const clients = getVisibleClients();
   const { data: allProjects = [] } = useProjectsQuery();
+  const { data: platformsList = [] } = usePlatformsQuery();
+  const platformLabels = useMemo(() => {
+    const map: Record<string, string> = {};
+    platformsList.forEach(p => { map[p.slug] = p.name; });
+    return map;
+  }, [platformsList]);
   const { tasks: allTasks } = useTasks();
   const { data: allTeamMembers = [] } = useTeamMembersQuery();
   const visibleClientIds = new Set(clients.map((c) => c.id));
@@ -153,11 +156,11 @@ export function DashboardPage() {
       });
     });
     return Object.entries(map).map(([key, value]) => ({
-      name: PLATFORM_LABELS[key] || key,
+      name: platformLabels[key] || key,
       value: Math.round(value),
       color: PLATFORM_COLORS[key] || '#94a3b8',
     }));
-  }, [clients]);
+  }, [clients, platformLabels]);
 
   // Client evolution by month (last 6 months) — filtered by visible clients
   const clientEvolutionData = useMemo(() => {

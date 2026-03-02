@@ -11,6 +11,7 @@ import { useClients } from '@/contexts/ClientsContext';
 import { useTasks } from '@/contexts/TasksContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { ContractType, Client, Task, TaskType, SubTask, Platform } from '@/types';
+import { usePlatformsQuery } from '@/hooks/usePlatformsQuery';
 import { cn } from '@/lib/utils';
 
 interface AddClientDialogProps {
@@ -42,7 +43,8 @@ export function AddClientDialog({ open, onClose }: AddClientDialogProps) {
   const { squads } = useSquads();
   const [squadId, setSquadId] = useState(squads[0]?.id ?? '');
   const [monthlyRevenue, setMonthlyRevenue] = useState('');
-  const [platforms, setPlatforms] = useState<Platform[]>(['mercado_livre']);
+  const [platforms, setPlatforms] = useState<Platform[]>([]);
+  const { data: platformOptions = [] } = usePlatformsQuery();
 
   // Selected templates for auto-creation
   const [selectedTemplateIds, setSelectedTemplateIds] = useState<string[]>([]);
@@ -61,7 +63,7 @@ export function AddClientDialog({ open, onClose }: AddClientDialogProps) {
     setName(''); setCompanyName(''); setContractType('mrr');
     setPaymentDay('10'); setContractDuration('3'); setSegment('');
     setSquadId(squads[0]?.id ?? ''); setMonthlyRevenue('');
-    setPlatforms(['mercado_livre']);
+    setPlatforms([]);
     setSelectedTemplateIds([]);
     setTab('dados');
   };
@@ -172,13 +174,13 @@ export function AddClientDialog({ open, onClose }: AddClientDialogProps) {
             <div>
               <Label className="text-xs">Plataformas</Label>
               <div className="flex flex-wrap gap-2 mt-1.5">
-                {([['mercado_livre', 'Mercado Livre'], ['shopee', 'Shopee'], ['shein', 'Shein']] as const).map(([value, label]) => {
-                  const selected = platforms.includes(value);
+                {platformOptions.map((plat) => {
+                  const selected = platforms.includes(plat.slug);
                   return (
                     <button
-                      key={value}
+                      key={plat.id}
                       type="button"
-                      onClick={() => setPlatforms(prev => selected ? prev.filter(p => p !== value) : [...prev, value])}
+                      onClick={() => setPlatforms(prev => selected ? prev.filter(p => p !== plat.slug) : [...prev, plat.slug])}
                       className={cn(
                         'px-3 py-1.5 text-xs rounded-lg border transition-all font-medium',
                         selected
@@ -186,7 +188,7 @@ export function AddClientDialog({ open, onClose }: AddClientDialogProps) {
                           : 'border-border bg-card text-muted-foreground hover:border-primary/40'
                       )}
                     >
-                      {label}
+                      {plat.name}
                     </button>
                   );
                 })}

@@ -3,6 +3,7 @@ import { Plus, Shield, ShieldCheck, ShieldAlert, Pencil, Trash2 } from 'lucide-r
 import { useAuth } from '@/contexts/AuthContext';
 import { useSquads } from '@/contexts/SquadsContext';
 import { useAppUsersQuery, useCreateAppUser, useUpdateAppUser, useDeleteAppUser } from '@/hooks/useAppUsersQuery';
+import { usePlatformsQuery, useAddPlatform, useDeletePlatform } from '@/hooks/usePlatformsQuery';
 import { AccessLevel, TeamRole } from '@/types';
 import type { AppUserProfile } from '@/types/database';
 import { PageHeader } from '@/components/ui/shared';
@@ -15,6 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
+import { toast } from 'sonner';
 
 const roleLabels: Record<TeamRole, string> = {
   cs: 'CS',
@@ -37,6 +39,10 @@ export function SettingsPage() {
   const createUser = useCreateAppUser();
   const updateUser = useUpdateAppUser();
   const deleteUser = useDeleteAppUser();
+  const { data: platforms = [], isLoading: platformsLoading } = usePlatformsQuery();
+  const addPlatform = useAddPlatform();
+  const deletePlatform = useDeletePlatform();
+  const [newPlatformName, setNewPlatformName] = useState('');
 
   // Create dialog
   const [openCreate, setOpenCreate] = useState(false);
@@ -243,6 +249,68 @@ export function SettingsPage() {
             )}
           </TableBody>
         </Table>
+      </div>
+
+      {/* Platforms Section */}
+      <div className="mt-8">
+        <h3 className="text-lg font-semibold text-foreground mb-4">Plataformas</h3>
+        <div className="bg-card rounded-xl border border-border shadow-sm-custom p-5">
+          <div className="flex items-center gap-2 mb-4">
+            <Input
+              value={newPlatformName}
+              onChange={(e) => setNewPlatformName(e.target.value)}
+              placeholder="Nome da nova plataforma"
+              className="max-w-xs"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  const name = newPlatformName.trim();
+                  if (!name) return;
+                  const slug = name.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+                  addPlatform.mutate({ name, slug }, {
+                    onSuccess: () => { setNewPlatformName(''); toast.success('Plataforma adicionada'); },
+                    onError: (err: any) => toast.error(err.message || 'Erro ao adicionar'),
+                  });
+                }
+              }}
+            />
+            <Button
+              onClick={() => {
+                const name = newPlatformName.trim();
+                if (!name) return;
+                const slug = name.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+                addPlatform.mutate({ name, slug }, {
+                  onSuccess: () => { setNewPlatformName(''); toast.success('Plataforma adicionada'); },
+                  onError: (err: any) => toast.error(err.message || 'Erro ao adicionar'),
+                });
+              }}
+              disabled={!newPlatformName.trim() || addPlatform.isPending}
+              className="gradient-primary shadow-primary"
+            >
+              <Plus className="w-4 h-4 mr-1" />
+              Adicionar
+            </Button>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {platformsLoading ? (
+              Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-8 w-28" />)
+            ) : platforms.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Nenhuma plataforma cadastrada</p>
+            ) : (
+              platforms.map((p) => (
+                <div key={p.id} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border bg-muted/50 text-sm font-medium text-foreground">
+                  {p.name}
+                  <button
+                    onClick={() => deletePlatform.mutate(p.id, { onSuccess: () => toast.success('Plataforma removida') })}
+                    className="ml-1 text-muted-foreground hover:text-destructive transition-colors"
+                    title="Remover plataforma"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Create Dialog */}
