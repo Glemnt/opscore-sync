@@ -1,23 +1,51 @@
 
 
-## Corrigir dropdown de responsável -- dados de squad_ids vazios
+## Plataformas dinâmicas: criar, gerenciar e selecionar
 
-### Problema raiz
-O dropdown de responsável já está implementado corretamente no código (filtra por squad), mas **não funciona na prática** porque quase todos os `app_users` têm `squad_ids` vazio (`[]`). Os IDs reais dos squads são `26a8effd-...` (Time Pantera) e `98710a6d-...` (Time Aguia), mas nenhum usuário tem esses IDs no seu array `squad_ids`. Resultado: o dropdown aparece vazio.
+### Problema
+As plataformas (Mercado Livre, Shopee, Shein) estão hardcoded no código. Não é possível adicionar novas plataformas. Os selectors de plataforma em `AddClientDialog` e `ClientDetailModal` usam arrays estáticos.
 
 ### Solução
 
-Duas mudanças:
-
-1. **Melhorar o fallback no filtro** (em `AddTaskDialog.tsx` e `TaskDetailModal.tsx`): quando o filtro por squad retorna zero resultados, mostrar todos os `app_users` como fallback em vez de uma lista vazia. Isso garante que o usuário sempre consiga selecionar alguém, mesmo que os squad_ids ainda não estejam configurados.
-
-2. **Atualizar os `squad_ids` dos usuários no banco**: os colaboradores precisam ter os IDs corretos dos squads associados. Isso pode ser feito pela página de Configurações (edição de usuários), onde o campo de squads já existe. Mas para funcionar imediatamente, vou ajustar o código para que, se o filtro por squad não encontrar ninguém, mostre todos os colaboradores disponíveis.
+Criar uma tabela `platforms` no banco de dados para armazenar plataformas customizáveis, adicionar uma seção de gerenciamento na página de Configurações, e atualizar os seletores de plataforma nos formulários de cliente para ler dessa tabela.
 
 ### Alterações
 
-**`src/components/AddTaskDialog.tsx`** e **`src/components/TaskDetailModal.tsx`**:
-- Alterar o `responsibleOptions` para: filtrar por squad, mas se o resultado for vazio, retornar todos os `appUsers` como fallback
-- Código: `const filtered = appUsers.filter(...); return filtered.length > 0 ? filtered : appUsers;`
+**1. Criar tabela `platforms` no banco** (migration)
+```sql
+CREATE TABLE platforms (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  name text NOT NULL UNIQUE,
+  slug text NOT NULL UNIQUE,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+ALTER TABLE platforms ENABLE ROW LEVEL SECURITY;
+-- RLS: authenticated users can read, insert, update, delete
+-- Seed com as 3 plataformas existentes (mercado_livre, shopee, shein)
+INSERT INTO platforms (name, slug) VALUES 
+  ('Mercado Livre', 'mercado_livre'),
+  ('Shopee', 'shopee'),
+  ('Shein', 'shein');
+```
 
-Isso resolve o problema imediato sem precisar corrigir dados manualmente.
+**2. Criar hook `usePlatformsQuery.ts`**
+- Query para listar todas as plataformas
+- Mutations para adicionar e deletar plataformas
+
+**3. Atualizar `SettingsPage.tsx`**
+- Adicionar uma seção "Plataformas" abaixo da tabela de usuários
+- Lista das plataformas existentes com botão de excluir
+- Input + botão para adicionar nova plataforma
+- Gerar `slug` automaticamente a partir do nome (lowercase, espaços → underscore)
+
+**4. Atualizar `AddClientDialog.tsx`**
+- Substituir o array hardcoded `[['mercado_livre', 'Mercado Livre'], ...]` pela lista dinâmica da query `usePlatformsQuery`
+- Usar `slug` como valor e `name` como label
+
+**5. Atualizar `ClientDetailModal.tsx`**
+- Mesma substituição do array hardcoded pela lista dinâmica
+
+**6. Atualizar tipo `Platform` em `src/types/index.ts`**
+- Mudar de union type literal para `string` (para aceitar plataformas dinâmicas)
+- O campo `platforms` na tabela `clients` já é `text[]`, então aceita qualquer valor
 
