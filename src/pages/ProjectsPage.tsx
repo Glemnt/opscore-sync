@@ -18,7 +18,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAppUsersQuery } from '@/hooks/useAppUsersQuery';
-import { useClientStatusesQuery, useClientStatusesMap, useAddClientStatus, useDeleteClientStatus, useUpdateClientStatus } from '@/hooks/useClientStatusesQuery';
+import { useClientStatusesQuery, useClientStatusesMap, useAddClientStatus, useDeleteClientStatus, useUpdateClientStatus, useReorderClientStatuses } from '@/hooks/useClientStatusesQuery';
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from '@/components/ui/alert-dialog';
 
 type KanbanColumn = { id: string; label: string; status: ClientStatus | string };
@@ -101,6 +101,7 @@ export function ProjectsPage() {
     }
     setSquadDialogOpen(false);
   };
+  const reorderClientMut = useReorderClientStatuses();
   const [clientCols, setClientCols] = useState<KanbanColumn[]>([
     { id: 'onboarding', label: 'Onboarding', status: 'onboarding' },
     { id: 'active', label: 'Ativo', status: 'active' },
@@ -116,6 +117,8 @@ export function ProjectsPage() {
   }, [clientStatuses]);
   const [dragOverClientCol, setDragOverClientCol] = useState<string | null>(null);
   const [editingColId, setEditingColId] = useState<string | null>(null);
+  const [draggingClientColId, setDraggingClientColId] = useState<string | null>(null);
+  const [clientColDropTarget, setClientColDropTarget] = useState<string | null>(null);
 
   const isAdmin = currentUser?.accessLevel === 3;
   const visibleSquads = isAdmin ? squads : squads.filter((s) => currentUser?.squadIds.includes(s.id));
@@ -296,6 +299,45 @@ export function ProjectsPage() {
       setAddColDialogOpen(false);
     };
 
+    const handleClientColDragStart = (e: React.DragEvent, colId: string) => {
+      e.dataTransfer.setData('column-key', colId);
+      e.dataTransfer.effectAllowed = 'move';
+      setDraggingClientColId(colId);
+    };
+
+    const handleClientColDragOver = (e: React.DragEvent, colId: string) => {
+      e.preventDefault();
+      if (draggingClientColId && draggingClientColId !== colId) {
+        setClientColDropTarget(colId);
+      }
+    };
+
+    const handleClientColDrop = (e: React.DragEvent, targetId: string) => {
+      e.preventDefault();
+      const sourceId = e.dataTransfer.getData('column-key');
+      if (!sourceId || sourceId === targetId) {
+        setDraggingClientColId(null);
+        setClientColDropTarget(null);
+        return;
+      }
+      const currentIds = clientCols.map(c => c.id);
+      const sourceIdx = currentIds.indexOf(sourceId);
+      const targetIdx = currentIds.indexOf(targetId);
+      if (sourceIdx === -1 || targetIdx === -1) return;
+      const newIds = [...currentIds];
+      newIds.splice(sourceIdx, 1);
+      newIds.splice(targetIdx, 0, sourceId);
+      const reorderItems = newIds.map((id, i) => ({ key: id, sort_order: i }));
+      reorderClientMut.mutate(reorderItems);
+      setDraggingClientColId(null);
+      setClientColDropTarget(null);
+    };
+
+    const handleClientColDragEnd = () => {
+      setDraggingClientColId(null);
+      setClientColDropTarget(null);
+    };
+
     return (
       <div className="p-6 animate-fade-in h-full flex flex-col">
         <PageHeader
@@ -317,19 +359,42 @@ export function ProjectsPage() {
             return (
               <div
                 key={col.id}
-                className="flex-shrink-0 w-72 group/col"
-                onDragOver={(e) => { e.preventDefault(); setDragOverClientCol(col.id); }}
-                onDragLeave={() => setDragOverClientCol(null)}
-                onDrop={(e) => {
+                className={cn(
+                  'flex-shrink-0 w-72 group/col relative',
+                  draggingClientColId === col.id && 'opacity-50'
+                )}
+                onDragOver={(e) => {
                   e.preventDefault();
-                  setDragOverClientCol(null);
-                  const clientId = e.dataTransfer.getData('text/plain');
-                  if (clientId) {
-                    updateClientField(clientId, 'status', col.status, 'Status');
+                  if (draggingClientColId) {
+                    handleClientColDragOver(e, col.id);
+                  } else {
+                    setDragOverClientCol(col.id);
+                  }
+                }}
+                onDragLeave={() => { setDragOverClientCol(null); setClientColDropTarget(null); }}
+                onDrop={(e) => {
+                  if (draggingClientColId) {
+                    handleClientColDrop(e, col.id);
+                  } else {
+                    e.preventDefault();
+                    setDragOverClientCol(null);
+                    const clientId = e.dataTransfer.getData('text/plain');
+                    if (clientId) {
+                      updateClientField(clientId, 'status', col.status, 'Status');
+                    }
                   }
                 }}
               >
-                <div className="flex items-center gap-2 mb-3">
+                {/* Column drop indicator */}
+                {clientColDropTarget === col.id && draggingClientColId && (
+                  <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary rounded-full z-10" />
+                )}
+                <div
+                  draggable
+                  onDragStart={(e) => handleClientColDragStart(e, col.id)}
+                  onDragEnd={handleClientColDragEnd}
+                  className="flex items-center gap-2 mb-3 cursor-grab active:cursor-grabbing"
+                >
                   {editingColId === col.id ? (
                     <EditableColInput
                       value={col.label}

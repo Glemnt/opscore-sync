@@ -157,6 +157,7 @@ export type Database = {
           id: string
           key: string
           label: string
+          sort_order: number
         }
         Insert: {
           class_name?: string
@@ -164,6 +165,7 @@ export type Database = {
           id?: string
           key: string
           label: string
+          sort_order?: number
         }
         Update: {
           class_name?: string
@@ -171,6 +173,7 @@ export type Database = {
           id?: string
           key?: string
           label?: string
+          sort_order?: number
         }
         Relationships: []
       }
@@ -500,6 +503,7 @@ export type Database = {
           id: string
           key: string
           label: string
+          sort_order: number
         }
         Insert: {
           class_name?: string
@@ -507,6 +511,7 @@ export type Database = {
           id?: string
           key: string
           label: string
+          sort_order?: number
         }
         Update: {
           class_name?: string
@@ -514,6 +519,7 @@ export type Database = {
           id?: string
           key?: string
           label?: string
+          sort_order?: number
         }
         Relationships: []
       }
