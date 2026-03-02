@@ -1,25 +1,20 @@
 
 
-## Correção: Tela branca na página Demandas
+## Aplicar Fluxo a uma Demanda Existente
 
-### Causa
-O erro `Cannot read properties of undefined (reading 'color')` ocorre no componente `TaskCard` na linha:
-```typescript
-const typeConf = taskTypeConfig[task.type];
-```
-Quando uma tarefa tem um `type` que não existe no `taskTypeConfig` (ex: um tipo customizado ou valor inesperado vindo do banco), `typeConf` é `undefined` e ao acessar `typeConf.color` o app quebra.
+### O que será feito
+Adicionar um botão/select no modal de detalhes da demanda (`TaskDetailModal`) que permite ao usuário selecionar um fluxo existente e aplicá-lo como subtarefas da demanda. As etapas do fluxo serão adicionadas como subtarefas (sem substituir as existentes).
 
-### Correção
+### Alterações
 
-**`src/pages/TasksPage.tsx`** - Adicionar fallback no `TaskCard`:
-- Trocar `const typeConf = taskTypeConfig[task.type];` por uma versão com fallback:
-  ```typescript
-  const typeConf = taskTypeConfig[task.type] ?? { label: task.type, color: 'bg-gray-100 text-gray-700' };
-  ```
-- Fazer o mesmo para `priorityConf`:
-  ```typescript
-  const priorityConf = priorityConfig[task.priority] ?? { label: task.priority, className: '', icon: '●' };
-  ```
+**1. `src/components/TaskDetailModal.tsx`**
+- Importar `useFlowsQuery` (ou acessar `flows` via `useTasks`)
+- Adicionar uma seção "Aplicar Fluxo" acima ou ao lado das subtarefas, com um `Select` listando os fluxos disponíveis
+- Ao selecionar um fluxo, gerar novas subtarefas a partir das etapas (`steps`) do fluxo e adicioná-las às subtarefas existentes da demanda via `updateTask`
+- Incluir ícone `Workflow` para identificação visual
 
-Isso garante que tipos desconhecidos não quebrem a página.
+### Comportamento
+- O select mostra todos os fluxos cadastrados
+- Ao selecionar, as etapas do fluxo são **adicionadas** às subtarefas existentes (não substituem)
+- Se a demanda já tiver subtarefas, as novas são concatenadas ao final
 
