@@ -1,35 +1,33 @@
 
 
-## Reordenar colunas do Kanban via drag-and-drop
+## Corrigir métricas do Dashboard para excluir apenas clientes em status "Churn"
 
 ### Problema
-As colunas do Kanban (tanto em Demandas quanto em Projetos) não podem ser reordenadas. A ordem atual depende de `created_at` ou `label`, sem campo de posição.
+As colunas do Kanban de Projetos foram renomeadas pelo usuário (ex: "Churned" virou "Performance"), mas as **keys** permanecem as mesmas (`churned`, `paused`, etc.). O Dashboard usa `status !== 'churned'` hardcoded para calcular MRR e clientes ativos, então clientes na coluna "Performance" (key=`churned`) são excluídos das métricas.
 
-### Alterações
+### Solução
+Em vez de filtrar pelo key hardcoded `'churned'`, o Dashboard deve buscar os status cadastrados e identificar qual(is) têm o **label** contendo "churn" (case-insensitive). Apenas clientes nesses status serão excluídos das métricas.
 
-**1. Migration SQL**
-- Adicionar coluna `sort_order INTEGER NOT NULL DEFAULT 0` nas tabelas `task_statuses` e `client_statuses`
-- Atualizar os registros existentes para ter `sort_order` sequencial baseado na ordem atual (`created_at` para task_statuses, `label` para client_statuses)
+### Alterações em `src/pages/DashboardPage.tsx`
 
-**2. Hooks de reordenação**
-- `useTaskStatusesQuery.ts`: ordenar por `sort_order` em vez de `created_at`; adicionar mutation `useReorderTaskStatuses` que recebe array de `{key, sort_order}` e faz upsert em batch
-- `useClientStatusesQuery.ts`: ordenar por `sort_order` em vez de `label`; adicionar mutation `useReorderClientStatuses`
-- Ao criar nova coluna, definir `sort_order` como `max + 1`
+1. Criar um `Set` de keys cujo label contenha "churn" (case-insensitive):
+   ```ts
+   const churnKeys = useMemo(() => {
+     return new Set(
+       clientStatuses
+         .filter(s => s.label.toLowerCase().includes('churn'))
+         .map(s => s.key)
+     );
+   }, [clientStatuses]);
+   ```
 
-**3. Drag-and-drop nas colunas do Kanban**
-- `TasksPage.tsx`: adicionar `draggable` nos headers das colunas (separado do drag de cards), com `onDragStart`/`onDragOver`/`onDrop` que detectam se o item arrastado é uma coluna (via dataTransfer type diferente, ex: `column-key`) e reordenam localmente + persistem via mutation
-- `ProjectsPage.tsx`: mesma lógica para as colunas de status de clientes
-- Visual: indicador de drop entre colunas (linha vertical colorida) ao arrastar uma coluna
+2. Substituir todas as ocorrências de `c.status !== 'churned'` e `c.status === 'churned'` para usar `churnKeys`:
+   - Linha 107: `activeClients` → `!churnKeys.has(c.status)`
+   - Linha 115: `healthSummary` → `!churnKeys.has(c.status)`
+   - Linha 137: `mrr` → `!churnKeys.has(c.status)`
+   - Linha 152: `churnCount` → `churnKeys.has(c.status)`
+   - Linha 163: `platformData` → `!churnKeys.has(c.status)`
+   - Linha 189: `clientEvolutionData` → `churnKeys.has(c.status)`
 
-**4. Diferenciação drag de coluna vs drag de card**
-- Cards usam `dataTransfer.setData('text/plain', taskId)` (já existente)
-- Colunas usarão `dataTransfer.setData('column-key', statusKey)` para distinguir os dois tipos de drag
-
-| Arquivo | Alteração |
-|---------|-----------|
-| Migration SQL | `ALTER TABLE task_statuses ADD sort_order`; `ALTER TABLE client_statuses ADD sort_order` |
-| `useTaskStatusesQuery.ts` | Order by `sort_order`, add `useReorderTaskStatuses` |
-| `useClientStatusesQuery.ts` | Order by `sort_order`, add `useReorderClientStatuses` |
-| `TasksPage.tsx` | Column drag-and-drop + visual indicator |
-| `ProjectsPage.tsx` | Column drag-and-drop + visual indicator |
+Nenhuma alteração de banco de dados necessária.
 
