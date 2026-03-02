@@ -1,19 +1,30 @@
 
 
-## Correção: Dropdown de Responsável deve usar colaboradores de Configurações
+## Persistir Tipos de Demanda Customizados
 
 ### Problema
-Os dropdowns de "Responsável" nas páginas de clientes (`AddClientDialog` e `ClientDetailModal`) estão puxando dados da tabela `team_members`. O correto é usar a tabela `app_users` — os colaboradores cadastrados na página de Configurações.
+Os tipos de demanda criados pelo usuário ficam apenas em estado local (`useState`) do `AddTaskDialog`, sendo perdidos ao fechar o dialog.
+
+### Solução
+Criar uma tabela `task_types` no banco de dados para persistir os tipos customizados, e um hook `useTaskTypesQuery` para carregar/adicionar tipos.
 
 ### Alterações
 
-**1. `src/components/AddClientDialog.tsx`**
-- Substituir `useTeamMembersQuery` por `useAppUsersQuery`
-- Trocar `teamMembers.map(m => ...)` por `appUsers.map(u => <option key={u.id} value={u.name}>{u.name}</option>)`
+**1. Migração SQL — criar tabela `task_types`**
+- Colunas: `id` (uuid), `key` (text, unique), `label` (text), `color` (text), `created_at`
+- RLS: leitura e escrita para usuários autenticados
+- Seed com os tipos padrão do `taskTypeConfig` para unificar tudo no banco
 
-**2. `src/components/ClientDetailModal.tsx`**
-- Substituir `useTeamMembersQuery` por `useAppUsersQuery` (nos dois locais onde `teamMembers` é usado: no `EditableField` inline e no form de edição completa)
-- Trocar `teamMembers.map(m => ...)` por `appUsers.map(u => <option key={u.id} value={u.name}>{u.name}</option>)`
+**2. Novo hook `src/hooks/useTaskTypesQuery.ts`**
+- `useTaskTypesQuery()` — busca todos os tipos do banco
+- `useAddTaskType()` — insere novo tipo customizado
 
-Ambos os arquivos já importam hooks do mesmo padrão, então a mudança é direta.
+**3. `src/components/AddTaskDialog.tsx`**
+- Remover `customTypes` do estado local
+- Usar `useTaskTypesQuery` para listar todos os tipos no Select
+- `handleAddCustomType` passa a chamar `useAddTaskType` para persistir no banco
+- Tipos ficam disponíveis em todas as sessões futuras
+
+**4. `src/pages/TasksPage.tsx` e `src/components/TaskDetailModal.tsx`**
+- Usar `useTaskTypesQuery` para exibir labels/cores corretas dos tipos customizados (fallback atual com `??` já funciona, mas ficará mais consistente)
 
