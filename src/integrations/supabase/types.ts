@@ -469,6 +469,30 @@ export type Database = {
           },
         ]
       }
+      task_types: {
+        Row: {
+          color: string
+          created_at: string
+          id: string
+          key: string
+          label: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          id?: string
+          key: string
+          label: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          id?: string
+          key?: string
+          label?: string
+        }
+        Relationships: []
+      }
       tasks: {
         Row: {
           client_id: string
