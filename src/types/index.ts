@@ -1,4 +1,4 @@
-export type ClientStatus = 'active' | 'paused' | 'churned' | 'onboarding';
+export type ClientStatus = 'active' | 'paused' | 'churned' | 'onboarding' | (string & {});
 export type ProjectStatus = 'backlog' | 'in_progress' | 'waiting_client' | 'done';
 export type TaskStatus = 'backlog' | 'in_progress' | 'waiting_client' | 'done';
 export type Priority = 'high' | 'medium' | 'low';

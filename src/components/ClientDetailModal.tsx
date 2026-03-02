@@ -4,10 +4,11 @@ import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { StatusBadge } from '@/components/ui/shared';
-import { clientStatusConfig, taskStatusConfig, taskTypeConfig } from '@/lib/config';
+import { taskStatusConfig, taskTypeConfig } from '@/lib/config';
 import { Client, Task, ClientStatus, ContractType, Platform } from '@/types';
 import { usePlatformsQuery } from '@/hooks/usePlatformsQuery';
 import { useTaskTypesMap } from '@/hooks/useTaskTypesQuery';
+import { useClientStatusesQuery, useClientStatusesMap } from '@/hooks/useClientStatusesQuery';
 import { cn } from '@/lib/utils';
 import { useSquads } from '@/contexts/SquadsContext';
 import { useProjectsQuery } from '@/hooks/useProjectsQuery';
@@ -64,7 +65,9 @@ export function ClientDetailModal({ client, open, onClose }: ClientDetailModalPr
 
   if (!client) return null;
 
-  const statusConf = clientStatusConfig[client.status];
+  const statusMap = useClientStatusesMap();
+  const { data: clientStatuses = [] } = useClientStatusesQuery();
+  const statusConf = statusMap[client.status] ?? { label: client.status, className: 'bg-muted text-muted-foreground border-border' };
   const squad = squads.find((s) => s.id === client.squadId);
   const clientProject = projects.find((p) => p.clientId === client.id);
   const clientTasks = tasks.filter((t) => t.clientId === client.id);
@@ -211,10 +214,9 @@ export function ClientDetailModal({ client, open, onClose }: ClientDetailModalPr
                 <div>
                   <Label className="text-xs">Status</Label>
                   <select value={editData.status ?? 'active'} onChange={e => setEditData(p => ({ ...p, status: e.target.value as ClientStatus }))} className="w-full h-8 px-2 text-sm bg-background border border-input rounded-md text-foreground">
-                    <option value="active">Ativo</option>
-                    <option value="onboarding">Onboarding</option>
-                    <option value="paused">Pausado</option>
-                    <option value="churned">Churned</option>
+                    {clientStatuses.map(s => (
+                      <option key={s.key} value={s.key}>{s.label}</option>
+                    ))}
                   </select>
                 </div>
                 <div>

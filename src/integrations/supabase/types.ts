@@ -150,6 +150,30 @@ export type Database = {
           },
         ]
       }
+      client_statuses: {
+        Row: {
+          class_name: string
+          created_at: string
+          id: string
+          key: string
+          label: string
+        }
+        Insert: {
+          class_name?: string
+          created_at?: string
+          id?: string
+          key: string
+          label: string
+        }
+        Update: {
+          class_name?: string
+          created_at?: string
+          id?: string
+          key?: string
+          label?: string
+        }
+        Relationships: []
+      }
       clients: {
         Row: {
           active_projects: number

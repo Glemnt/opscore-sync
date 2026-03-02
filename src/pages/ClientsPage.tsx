@@ -1,24 +1,31 @@
 import { useState } from 'react';
-import { Plus, Search, Building2, Calendar, User, X, Users, Circle, ShoppingBag } from 'lucide-react';
+import { Plus, Search, Building2, Calendar, User, X, Users, Circle, ShoppingBag, Settings2 } from 'lucide-react';
 import { mockAnalysisData } from '@/components/ClientAIAnalysis';
 import { useSquads } from '@/contexts/SquadsContext';
 import { usePlatformsQuery } from '@/hooks/usePlatformsQuery';
 import { useProjectsQuery } from '@/hooks/useProjectsQuery';
 import { useTasks } from '@/contexts/TasksContext';
 import { PageHeader, StatusBadge } from '@/components/ui/shared';
-import { clientStatusConfig } from '@/lib/config';
 import { Client, ClientStatus } from '@/types';
 import { cn } from '@/lib/utils';
 import { useClients } from '@/contexts/ClientsContext';
 import { AddClientDialog } from '@/components/AddClientDialog';
 import { ClientDetailModal } from '@/components/ClientDetailModal';
+import { useClientStatusesQuery, useClientStatusesMap, useAddClientStatus } from '@/hooks/useClientStatusesQuery';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
 
-const statusFilters: { label: string; value: ClientStatus | 'all' }[] = [
-  { label: 'Todos', value: 'all' },
-  { label: 'Ativos', value: 'active' },
-  { label: 'Onboarding', value: 'onboarding' },
-  { label: 'Pausados', value: 'paused' },
-  { label: 'Churned', value: 'churned' },
+const COLOR_OPTIONS = [
+  { label: 'Verde', value: 'bg-success-light text-success border-success/20' },
+  { label: 'Amarelo', value: 'bg-warning-light text-warning border-warning/20' },
+  { label: 'Vermelho', value: 'bg-destructive/10 text-destructive border-destructive/20' },
+  { label: 'Azul', value: 'bg-info-light text-info border-info/20' },
+  { label: 'Cinza', value: 'bg-muted text-muted-foreground border-border' },
+  { label: 'Roxo', value: 'bg-purple-100 text-purple-700 border-purple-200' },
+  { label: 'Rosa', value: 'bg-pink-100 text-pink-700 border-pink-200' },
+  { label: 'Laranja', value: 'bg-orange-100 text-orange-700 border-orange-200' },
 ];
 
 export function ClientsPage() {
@@ -28,13 +35,25 @@ export function ClientsPage() {
   const { tasks } = useTasks();
   const clients = getVisibleClients();
   const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState<ClientStatus | 'all'>('all');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
   const [squadFilter, setSquadFilter] = useState<string>('all');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [healthFilter, setHealthFilter] = useState<'all' | 'green' | 'yellow' | 'red' | 'white'>('all');
+  const [addStatusOpen, setAddStatusOpen] = useState(false);
+  const [newStatusLabel, setNewStatusLabel] = useState('');
+  const [newStatusColor, setNewStatusColor] = useState(COLOR_OPTIONS[0].value);
+
+  const { data: clientStatuses = [] } = useClientStatusesQuery();
+  const statusMap = useClientStatusesMap();
+  const addStatusMutation = useAddClientStatus();
+
+  const statusFilters = [
+    { label: 'Todos', value: 'all' },
+    ...clientStatuses.map(s => ({ label: s.label, value: s.key })),
+  ];
 
   const filtered = clients.filter((c) => {
     const matchSearch = c.name.toLowerCase().includes(search.toLowerCase()) || c.segment.toLowerCase().includes(search.toLowerCase());
@@ -47,9 +66,15 @@ export function ClientsPage() {
   });
 
   const hasDateFilter = dateFrom || dateTo;
-
-  // When selectedClient changes externally (edits), keep it in sync
   const currentClient = selectedClient ? clients.find(c => c.id === selectedClient.id) ?? null : null;
+
+  const handleAddStatus = () => {
+    if (!newStatusLabel.trim()) return;
+    const key = newStatusLabel.trim().toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+    addStatusMutation.mutate({ key, label: newStatusLabel.trim(), class_name: newStatusColor }, {
+      onSuccess: () => { setAddStatusOpen(false); setNewStatusLabel(''); setNewStatusColor(COLOR_OPTIONS[0].value); },
+    });
+  };
 
   return (
     <div className="p-6 animate-fade-in">
@@ -125,13 +150,20 @@ export function ClientsPage() {
               {f.label}
             </button>
           ))}
+          <button
+            onClick={() => setAddStatusOpen(true)}
+            className="px-2 py-1.5 rounded-md text-xs text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all"
+            title="Novo Status"
+          >
+            <Plus className="w-3.5 h-3.5" />
+          </button>
         </div>
       </div>
 
       {/* Grid */}
       <div className="grid grid-cols-3 gap-4">
         {filtered.map((client) => (
-          <ClientCard key={client.id} client={client} onClick={() => setSelectedClient(client)} />
+          <ClientCard key={client.id} client={client} statusMap={statusMap} onClick={() => setSelectedClient(client)} />
         ))}
       </div>
 
@@ -148,12 +180,52 @@ export function ClientsPage() {
         open={!!currentClient}
         onClose={() => setSelectedClient(null)}
       />
+
+      {/* Add Status Dialog */}
+      <Dialog open={addStatusOpen} onOpenChange={setAddStatusOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Novo Status</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Nome do Status</Label>
+              <Input value={newStatusLabel} onChange={(e) => setNewStatusLabel(e.target.value)} placeholder="Ex: Em análise" />
+            </div>
+            <div className="space-y-2">
+              <Label>Cor</Label>
+              <div className="flex flex-wrap gap-2">
+                {COLOR_OPTIONS.map((opt) => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => setNewStatusColor(opt.value)}
+                    className={cn(
+                      'px-3 py-1.5 rounded-lg text-xs font-medium border transition-all',
+                      opt.value,
+                      newStatusColor === opt.value && 'ring-2 ring-primary/40 scale-105'
+                    )}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAddStatusOpen(false)}>Cancelar</Button>
+            <Button onClick={handleAddStatus} disabled={!newStatusLabel.trim() || addStatusMutation.isPending}>
+              Criar Status
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
 
-function ClientCard({ client, onClick }: { client: Client; onClick: () => void }) {
-  const statusConf = clientStatusConfig[client.status];
+function ClientCard({ client, statusMap, onClick }: { client: Client; statusMap: Record<string, { label: string; className: string }>; onClick: () => void }) {
+  const statusConf = statusMap[client.status] ?? { label: client.status, className: 'bg-muted text-muted-foreground border-border' };
   const { squads } = useSquads();
   const { tasks } = useTasks();
   const { data: platforms = [] } = usePlatformsQuery();

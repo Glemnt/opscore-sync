@@ -3,7 +3,7 @@ import { Plus, Search, Calendar, ChevronDown, CheckCircle2, Circle, ArrowLeft, U
 import { TaskDetailModal } from '@/components/TaskDetailModal';
 import { useProjectsQuery } from '@/hooks/useProjectsQuery';
 import { PageHeader, StatusBadge, Avatar, ProgressBar } from '@/components/ui/shared';
-import { projectStatusConfig, priorityConfig, projectTypeConfig, clientStatusConfig } from '@/lib/config';
+import { projectStatusConfig, priorityConfig, projectTypeConfig } from '@/lib/config';
 import { Project, ProjectStatus, Squad, Client, ClientStatus, TaskStatus } from '@/types';
 import { ProjectSummaryPanel } from '@/components/ProjectSummaryPanel';
 import { AddTaskDialog } from '@/components/AddTaskDialog';
@@ -18,6 +18,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAppUsersQuery } from '@/hooks/useAppUsersQuery';
+import { useClientStatusesQuery, useClientStatusesMap } from '@/hooks/useClientStatusesQuery';
 
 type KanbanColumn = { id: string; label: string; status: ClientStatus | string };
 type ProjectKanbanColumn = { id: string; label: string; status: ProjectStatus | string };
@@ -36,6 +37,8 @@ export function ProjectsPage() {
   const { data: projects = [] } = useProjectsQuery();
   const { updateClientField, getVisibleClients } = useClients();
   const { data: appUsers = [] } = useAppUsersQuery();
+  const { data: clientStatuses = [] } = useClientStatusesQuery();
+  const clientStatusMap = useClientStatusesMap();
   const clients = getVisibleClients();
   const [selectedSquad, setSelectedSquad] = useState<Squad | null>(null);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
@@ -97,6 +100,13 @@ export function ProjectsPage() {
     { id: 'paused', label: 'Pausado', status: 'paused' },
     { id: 'churned', label: 'Churned', status: 'churned' },
   ]);
+
+  // Sync kanban columns when dynamic statuses load
+  useEffect(() => {
+    if (clientStatuses.length > 0) {
+      setClientCols(clientStatuses.map(s => ({ id: s.key, label: s.label, status: s.key })));
+    }
+  }, [clientStatuses]);
   const [dragOverClientCol, setDragOverClientCol] = useState<string | null>(null);
   const [editingColId, setEditingColId] = useState<string | null>(null);
 
@@ -276,7 +286,7 @@ export function ProjectsPage() {
         <div className="flex gap-4 flex-1 overflow-x-auto pb-4">
           {clientCols.map((col) => {
             const colClients = squadClients.filter((c) => c.status === col.status);
-            const conf = clientStatusConfig[col.status as ClientStatus];
+            const conf = clientStatusMap[col.status as string];
             return (
               <div
                 key={col.id}
