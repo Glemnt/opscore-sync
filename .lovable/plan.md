@@ -1,28 +1,24 @@
 
 
-## Unificar criação de demandas na página Squads com a página Demandas
+## Correção: Página branca ao abrir cliente "Teste"
 
-### Problema
-A página Squads (ProjectsPage) usa o componente `AddDemandDialog` para criar demandas, que é mais simples e não inclui: tipo de demanda (com persistência no banco), tempo estimado, observações, e auto-geração de título. A página Demandas usa `AddTaskDialog`, que tem todos esses campos. A edição já usa o mesmo `TaskDetailModal` em ambas as páginas.
+### Causa raiz
+O componente `TimelineItem` em `ClientDetailModal.tsx` (linha 451) acessa `taskTypeConfig[task.type]` sem fallback. Quando uma demanda tem um tipo customizado (criado pelo usuário e salvo no banco), ele não existe no `taskTypeConfig` estático, resultando em `undefined`. Na linha 466, `typeConf.color` crasheia a aplicação inteira.
 
-### Alterações
+### Alteração
 
-**`src/pages/ProjectsPage.tsx`**
+**`src/components/ClientDetailModal.tsx`** — componente `TimelineItem` (linha 451)
 
-1. Substituir `AddDemandDialog` por `AddTaskDialog` nos dois locais onde é usado:
-   - No nível do projeto (linha ~416): remover o `AddDemandDialog` e usar `AddTaskDialog` com `defaultStatus="backlog"`
-   - No `KanbanView` (linha ~615): substituir `AddDemandDialog` por `AddTaskDialog` com `defaultStatus` dinâmico baseado na coluna
+Substituir:
+```typescript
+const typeConf = taskTypeConfig[task.type];
+```
 
-2. O `AddTaskDialog` já pré-seleciona o cliente automaticamente pelo dropdown, então o usuário terá a mesma experiência da página Demandas, incluindo:
-   - Seletor de tipo de demanda com opção de criar novos tipos (persistidos no banco)
-   - Campo de tempo estimado
-   - Campo de observações
-   - Seletor de plataformas
-   - Subtarefas
-   - Responsável filtrado por squad do cliente
+Por uso do hook `useTaskTypesMap` (já usado em `TasksPage.tsx`) com fallback seguro:
+```typescript
+const typesMap = useTaskTypesMap();
+const typeConf = taskTypeConfig[task.type] ?? typesMap[task.type] ?? { label: task.type, color: 'bg-muted text-muted-foreground' };
+```
 
-3. Remover imports de `AddDemandDialog` que não serão mais necessários.
-
-### Resultado
-A criação de demandas dentro de Squads → Cliente → Projeto terá exatamente a mesma interface e funcionalidade da página Demandas.
+Isso garante que tipos customizados do banco são resolvidos corretamente, e qualquer tipo desconhecido recebe um fallback visual em vez de crashear.
 
