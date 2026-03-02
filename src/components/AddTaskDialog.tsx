@@ -81,7 +81,8 @@ export function AddTaskDialog({ open, onOpenChange, defaultStatus = 'backlog' }:
 
   const responsibleOptions = useMemo(() => {
     if (!selectedClient?.squadId) return appUsers;
-    return appUsers.filter(u => u.squadIds?.includes(selectedClient.squadId!));
+    const filtered = appUsers.filter(u => u.squadIds?.includes(selectedClient.squadId!));
+    return filtered.length > 0 ? filtered : appUsers;
   }, [selectedClient, appUsers]);
 
   const resetForm = () => {
