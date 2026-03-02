@@ -44,7 +44,7 @@ export function useAddTask() {
         estimated_time: task.estimatedTime,
         real_time: task.realTime ?? null,
         deadline: task.deadline,
-        status: task.status,
+        status: task.status as any,
         priority: task.priority,
         comments: task.comments,
         platform: task.platforms ?? null,
@@ -83,7 +83,7 @@ export function useUpdateTask() {
         const dbKey = keyMap[k] ?? k;
         dbUpdates[dbKey] = v;
       }
-      const { error } = await supabase.from('tasks').update(dbUpdates).eq('id', id);
+      const { error } = await supabase.from('tasks').update(dbUpdates as any).eq('id', id);
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['tasks'] }),

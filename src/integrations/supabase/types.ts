@@ -493,6 +493,30 @@ export type Database = {
           },
         ]
       }
+      task_statuses: {
+        Row: {
+          class_name: string
+          created_at: string
+          id: string
+          key: string
+          label: string
+        }
+        Insert: {
+          class_name?: string
+          created_at?: string
+          id?: string
+          key: string
+          label: string
+        }
+        Update: {
+          class_name?: string
+          created_at?: string
+          id?: string
+          key?: string
+          label?: string
+        }
+        Relationships: []
+      }
       task_types: {
         Row: {
           color: string
@@ -532,7 +556,7 @@ export type Database = {
           project_name: string | null
           real_time: number | null
           responsible: string
-          status: Database["public"]["Enums"]["task_status"]
+          status: string
           title: string
           type: string
           updated_at: string
@@ -551,7 +575,7 @@ export type Database = {
           project_name?: string | null
           real_time?: number | null
           responsible?: string
-          status?: Database["public"]["Enums"]["task_status"]
+          status?: string
           title: string
           type?: string
           updated_at?: string
@@ -570,7 +594,7 @@ export type Database = {
           project_name?: string | null
           real_time?: number | null
           responsible?: string
-          status?: Database["public"]["Enums"]["task_status"]
+          status?: string
           title?: string
           type?: string
           updated_at?: string

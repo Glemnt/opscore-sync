@@ -1,6 +1,6 @@
 export type ClientStatus = 'active' | 'paused' | 'churned' | 'onboarding' | (string & {});
 export type ProjectStatus = 'backlog' | 'in_progress' | 'waiting_client' | 'done';
-export type TaskStatus = 'backlog' | 'in_progress' | 'waiting_client' | 'done';
+export type TaskStatus = 'backlog' | 'in_progress' | 'waiting_client' | 'done' | (string & {});
 export type Priority = 'high' | 'medium' | 'low';
 export type TaskType = 'anuncio' | 'copy' | 'design' | 'otimizacao' | 'analise' | 'setup' | 'reuniao' | 'relatorio' | (string & {});
 export type ProjectType = 'criacao_anuncio' | 'setup_campanha' | 'otimizacao' | 'relatorio' | 'redesign' | 'consultoria';

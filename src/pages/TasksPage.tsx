@@ -1,26 +1,22 @@
 import { useState, useRef, useEffect } from 'react';
-import { Plus, Search, Clock, MessageSquare, AlertTriangle, Trash2, Workflow, ChevronDown, ShoppingBag } from 'lucide-react';
+import { Plus, Search, Clock, MessageSquare, AlertTriangle, Trash2, Workflow, ChevronDown, ShoppingBag, X } from 'lucide-react';
 import { useTasks } from '@/contexts/TasksContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSquads } from '@/contexts/SquadsContext';
 import { useClients } from '@/contexts/ClientsContext';
 import { PageHeader, StatusBadge, Avatar, ProgressBar } from '@/components/ui/shared';
-import { taskStatusConfig, priorityConfig } from '@/lib/config';
+import { priorityConfig } from '@/lib/config';
 import { useTaskTypesMap } from '@/hooks/useTaskTypesQuery';
 import { usePlatformsQuery } from '@/hooks/usePlatformsQuery';
+import { useTaskStatusesQuery, useAddTaskStatus, useDeleteTaskStatus, useUpdateTaskStatus } from '@/hooks/useTaskStatusesQuery';
 import { Task, TaskStatus } from '@/types';
 import { cn } from '@/lib/utils';
 import { TaskDetailModal } from '@/components/TaskDetailModal';
 import { AddTaskDialog } from '@/components/AddTaskDialog';
 import { FlowManagerDialog, FlowDialogMode } from '@/components/FlowManagerDialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-
-const defaultKanbanCols: { status: TaskStatus; label: string }[] = [
-  { status: 'backlog', label: 'Backlog' },
-  { status: 'in_progress', label: 'Em Andamento' },
-  { status: 'waiting_client', label: 'Aguard. Cliente' },
-  { status: 'done', label: 'Concluído' },
-];
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 
 export function TasksPage() {
   const { tasks: allTasks, updateTask, deleteTask } = useTasks();
@@ -33,7 +29,6 @@ export function TasksPage() {
   const [responsible, setResponsible] = useState('all');
   const [selectedType, setSelectedType] = useState('all');
   const [selectedPlatform, setSelectedPlatform] = useState('all');
-  const [cols, setCols] = useState(defaultKanbanCols);
   const [editingCol, setEditingCol] = useState<string | null>(null);
   const [dragOverCol, setDragOverCol] = useState<string | null>(null);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
@@ -41,6 +36,16 @@ export function TasksPage() {
   const [addToStatus, setAddToStatus] = useState<TaskStatus>('backlog');
   const [flowDialogOpen, setFlowDialogOpen] = useState(false);
   const [flowMode, setFlowMode] = useState<FlowDialogMode>('create');
+  const [newColDialogOpen, setNewColDialogOpen] = useState(false);
+  const [newColName, setNewColName] = useState('');
+  const [deleteColKey, setDeleteColKey] = useState<string | null>(null);
+
+  const { data: taskStatuses = [] } = useTaskStatusesQuery();
+  const addStatusMut = useAddTaskStatus();
+  const deleteStatusMut = useDeleteTaskStatus();
+  const updateStatusMut = useUpdateTaskStatus();
+
+  const cols = taskStatuses.map(s => ({ status: s.key as TaskStatus, label: s.label }));
 
   const taskTypeMap = useTaskTypesMap();
   const { data: platforms = [] } = usePlatformsQuery();
@@ -67,7 +72,25 @@ export function TasksPage() {
     }
   };
 
-  // Keep selectedTask in sync with context
+  const handleAddCol = () => {
+    if (!newColName.trim()) return;
+    const key = newColName.trim().toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+    addStatusMut.mutate({ key, label: newColName.trim(), class_name: 'bg-muted text-muted-foreground' });
+    setNewColName('');
+    setNewColDialogOpen(false);
+  };
+
+  const handleDeleteCol = () => {
+    if (!deleteColKey) return;
+    deleteStatusMut.mutate(deleteColKey);
+    setDeleteColKey(null);
+  };
+
+  const handleRenameCol = (statusKey: string, newLabel: string) => {
+    updateStatusMut.mutate({ key: statusKey, label: newLabel });
+    setEditingCol(null);
+  };
+
   const liveSelectedTask = selectedTask ? allTasks.find((t) => t.id === selectedTask.id) ?? null : null;
 
   return (
@@ -167,16 +190,14 @@ export function TasksPage() {
               <div className={cn(
                 'flex items-center justify-between mb-3 pb-3 border-b-2',
                 col.status === 'backlog' ? 'border-b-slate-300' :
-                col.status === 'in_progress' ? 'border-b-info' :
-                col.status === 'waiting_client' ? 'border-b-warning' : 'border-b-success'
+                  col.status === 'in_progress' ? 'border-b-info' :
+                    col.status === 'waiting_client' ? 'border-b-warning' :
+                      col.status === 'done' ? 'border-b-success' : 'border-b-primary/40'
               )}>
                 {editingCol === col.status ? (
                   <EditableColInput
                     value={col.label}
-                    onSave={(v) => {
-                      setCols(c => c.map(x => x.status === col.status ? { ...x, label: v } : x));
-                      setEditingCol(null);
-                    }}
+                    onSave={(v) => handleRenameCol(col.status, v)}
                     onCancel={() => setEditingCol(null)}
                   />
                 ) : (
@@ -187,9 +208,18 @@ export function TasksPage() {
                     {col.label}
                   </h3>
                 )}
-                <span className="text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded-full font-medium">
-                  {colTasks.length}
-                </span>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded-full font-medium">
+                    {colTasks.length}
+                  </span>
+                  <button
+                    onClick={() => setDeleteColKey(col.status)}
+                    className="p-0.5 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+                    title="Excluir coluna"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </div>
               <div className={cn(
                 'space-y-2.5 min-h-[60px] rounded-xl transition-colors p-1',
@@ -228,11 +258,7 @@ export function TasksPage() {
         })}
         <div className="flex-shrink-0 w-72">
           <button
-            onClick={() => {
-              const newId = `custom_${Date.now()}` as TaskStatus;
-              setCols(c => [...c, { status: newId, label: 'Nova Coluna' }]);
-              setEditingCol(newId);
-            }}
+            onClick={() => setNewColDialogOpen(true)}
             className="w-full py-3 border-2 border-dashed border-border rounded-xl text-sm text-muted-foreground hover:border-primary/40 hover:text-primary transition-colors flex items-center justify-center gap-2"
           >
             <Plus className="w-4 h-4" />
@@ -240,6 +266,43 @@ export function TasksPage() {
           </button>
         </div>
       </div>
+
+      {/* New Column Dialog */}
+      <Dialog open={newColDialogOpen} onOpenChange={setNewColDialogOpen}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Nova Coluna</DialogTitle>
+          </DialogHeader>
+          <input
+            autoFocus
+            value={newColName}
+            onChange={(e) => setNewColName(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') handleAddCol(); }}
+            placeholder="Nome da coluna"
+            className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30"
+          />
+          <DialogFooter>
+            <button onClick={() => setNewColDialogOpen(false)} className="px-4 py-2 text-sm border border-border rounded-lg hover:bg-muted transition-colors">Cancelar</button>
+            <button onClick={handleAddCol} disabled={!newColName.trim()} className="px-4 py-2 text-sm gradient-primary text-primary-foreground rounded-lg font-medium disabled:opacity-50">Criar</button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Column Confirmation */}
+      <AlertDialog open={!!deleteColKey} onOpenChange={(open) => { if (!open) setDeleteColKey(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir coluna?</AlertDialogTitle>
+            <AlertDialogDescription>
+              As demandas nesta coluna não serão excluídas, mas ficarão sem status visível até serem movidas.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteCol} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Excluir</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <TaskDetailModal
         task={liveSelectedTask}
