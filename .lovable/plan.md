@@ -1,23 +1,35 @@
 
 
-## Exibir plataformas no card do cliente
+## Adicionar plataforma às demandas
 
-### O que mudar
+### O que precisa ser feito
 
-**`src/pages/ClientsPage.tsx`** -- componente `ClientCard`:
+Adicionar um campo `platform` (texto, opcional) à tabela `tasks` no banco de dados, e expor esse campo nos formulários de criação e edição de demandas.
 
-1. Importar `usePlatformsQuery` do hook existente
-2. Dentro do `ClientCard`, chamar `usePlatformsQuery()` para obter a lista de plataformas com seus nomes
-3. Mapear os slugs armazenados em `client.platforms` para os nomes legíveis usando os dados da query
-4. Renderizar as plataformas como badges/tags compactos logo abaixo do badge do squad (antes das tarefas pendentes)
-   - Cada plataforma aparece como um chip pequeno (estilo similar ao badge do squad)
-   - Se o cliente não tiver plataformas, nada é exibido
+### Alterações
 
-### Resultado visual
+**1. Migration -- adicionar coluna `platform` à tabela `tasks`**
+```sql
+ALTER TABLE tasks ADD COLUMN platform text;
+```
 
-O card passará a mostrar, entre o squad e as tarefas pendentes, uma linha com chips como:
+**2. `src/types/index.ts`** -- adicionar `platform?: string` à interface `Task`
 
-`[Mercado Livre] [Shopee]`
+**3. `src/types/database.ts`** -- no `mapDbTask`, mapear `row.platform` para `task.platform`
 
-Sem alterações no banco de dados -- apenas mudança de apresentação no componente.
+**4. `src/hooks/useTasksQuery.ts`**
+- No `useAddTask`, enviar `platform` ao inserir
+- No `useUpdateTask`, incluir `platform` no mapeamento de campos
+
+**5. `src/components/AddTaskDialog.tsx`**
+- Adicionar estado `platform`
+- Adicionar um `Select` que carrega as plataformas via `usePlatformsQuery`
+- Incluir `platform` no objeto da task ao submeter
+
+**6. `src/components/TaskDetailModal.tsx`**
+- Adicionar um card editável de "Plataforma" na grid de info cards (ao lado de Prioridade/Tempo)
+- Select com as plataformas dinâmicas + opção vazia "Sem plataforma"
+- Alterações salvam via `updateTask`
+
+**7. `src/pages/TasksPage.tsx`** -- no `TaskCard`, exibir badge da plataforma (se presente) similar ao badge de tipo
 
