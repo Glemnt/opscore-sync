@@ -1,25 +1,20 @@
 
 
-## Corrigir erro de build + garantir edição/exclusão de fluxos
+## Adicionar filtro por plataforma na página de Demandas
 
-### 1. Corrigir erro de build em `useClientsQuery.ts`
+### Contexto
+A página de Demandas (`TasksPage.tsx`) já possui filtros por responsável e por tipo. As tarefas já têm o campo `platforms` (array de slugs). O hook `usePlatformsQuery` já existe e retorna as plataformas do banco.
 
-O erro ocorre porque a coluna `clients.status` no banco usa um enum PostgreSQL (`client_status`) com apenas 4 valores fixos, mas agora permitimos status customizados (tipo `string`). Precisamos alterar a coluna de enum para `text`.
+### Alterações
 
-**Migration**: `ALTER TABLE public.clients ALTER COLUMN status TYPE text;`
+**`src/pages/TasksPage.tsx`**
+- Adicionar um novo estado `selectedPlatform` (default `'all'`)
+- Construir a lista de plataformas disponíveis a partir de `usePlatformsQuery`
+- Adicionar um `<select>` ao lado dos filtros existentes com as opções de plataforma
+- Atualizar a lógica de `filtered` para incluir `matchPlatform`: verificar se `task.platforms` contém o slug selecionado (ou passar tudo se `'all'`)
 
-Isso resolve o conflito de tipos entre o `string` do TypeScript e o enum restrito do banco.
-
-### 2. Edição e exclusão de fluxos na página de Demandas
-
-O `FlowManagerDialog` já possui a view `EditFlowView` com funcionalidade de editar e excluir, e o dropdown "Fluxos" na `TasksPage` já tem a opção "Editar Fluxo". Porém, o `EditFlowView` usa `updateFlow` e `deleteFlow` do contexto `TasksContext`, que por sua vez chamam as mutations `useUpdateFlow` e `useDeleteFlow` do hook `useFlowsQuery` — tudo isso já existe e está funcional.
-
-Nenhuma alteração adicional necessária para edição/exclusão de fluxos, pois a funcionalidade já está implementada. Se houver algum bug específico, ele será visível após corrigir o erro de build.
-
-### Resumo das alterações
-
-| Arquivo | Alteração |
-|---------|-----------|
-| Migration SQL | `ALTER TABLE clients ALTER COLUMN status TYPE text` |
-| `useClientsQuery.ts` | Cast `status` as `any` no insert para compatibilidade com tipos gerados |
+### Detalhes técnicos
+- A filtragem usa `task.platforms` (array de slugs) comparado com o slug da plataforma selecionada
+- O select lista `platforms` do hook existente `usePlatformsQuery`
+- Padrão igual aos filtros já existentes de responsável e tipo
 
