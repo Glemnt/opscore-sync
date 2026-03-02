@@ -47,7 +47,7 @@ export function useAddTask() {
         status: task.status,
         priority: task.priority,
         comments: task.comments,
-        platform: task.platform ?? null,
+        platform: task.platforms ?? null,
       });
       if (error) throw error;
       // Insert subtasks if any
@@ -76,7 +76,7 @@ export function useUpdateTask() {
         clientId: 'client_id', clientName: 'client_name',
         projectId: 'project_id', projectName: 'project_name',
         estimatedTime: 'estimated_time', realTime: 'real_time',
-        createdAt: 'created_at',
+        createdAt: 'created_at', platforms: 'platform',
       };
       for (const [k, v] of Object.entries(updates)) {
         if (k === 'subtasks' || k === 'chatNotes') continue;

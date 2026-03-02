@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { format } from 'date-fns';
+import { usePlatformsQuery } from '@/hooks/usePlatformsQuery';
 import { CalendarIcon, Plus, X, Trash2, Save, Pencil } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -9,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
+import { ShoppingBag } from 'lucide-react';
 import { Task, TaskType, TaskStatus, Priority, SubTask } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTasks, CustomTemplate } from '@/contexts/TasksContext';
@@ -66,6 +68,7 @@ export function AddDemandDialog({
   const { currentUser } = useAuth();
   const { customTemplates, addTemplate, updateTemplate, removeTemplate, flows } = useTasks();
   const { squads } = useSquads();
+  const { data: platformOptions = [] } = usePlatformsQuery();
 
   const visibleMembers: string[] = useMemo(() => {
     if (!currentUser) return squadMembers;
@@ -84,6 +87,7 @@ export function AddDemandDialog({
   const [selectedTemplate, setSelectedTemplate] = useState<string>('');
   const [subtasks, setSubtasks] = useState<SubTask[]>([]);
   const [newSubtask, setNewSubtask] = useState('');
+  const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([]);
 
   // Create/edit template state
   const [editingTemplateId, setEditingTemplateId] = useState<string | null>(null);
@@ -128,6 +132,7 @@ export function AddDemandDialog({
     setSubtasks([]);
     setNewSubtask('');
     setMode('new');
+    setSelectedPlatforms([]);
     setTplName('');
     setTplSubtasks([]);
     setTplNewSubtask('');
@@ -151,6 +156,7 @@ export function AddDemandDialog({
       comments: '',
       createdAt: format(new Date(), 'yyyy-MM-dd'),
       subtasks: subtasks.length > 0 ? subtasks : undefined,
+      platforms: selectedPlatforms.length > 0 ? selectedPlatforms : undefined,
       chatNotes: [],
     };
 
@@ -444,6 +450,30 @@ export function AddDemandDialog({
                     ))}
                   </SelectContent>
                 </Select>
+              </div>
+
+              {/* Plataformas */}
+              <div className="space-y-2">
+                <Label className="flex items-center gap-1.5"><ShoppingBag className="w-3.5 h-3.5" /> Plataformas</Label>
+                <div className="flex flex-wrap gap-2">
+                  {platformOptions.map((p) => {
+                    const active = selectedPlatforms.includes(p.slug);
+                    return (
+                      <button
+                        key={p.id}
+                        type="button"
+                        onClick={() => setSelectedPlatforms(prev => active ? prev.filter(s => s !== p.slug) : [...prev, p.slug])}
+                        className={cn(
+                          'px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors',
+                          active ? 'bg-primary text-primary-foreground border-primary' : 'bg-muted text-muted-foreground border-border hover:border-primary/40'
+                        )}
+                      >
+                        {p.name}
+                      </button>
+                    );
+                  })}
+                  {platformOptions.length === 0 && <span className="text-xs text-muted-foreground">Nenhuma plataforma cadastrada</span>}
+                </div>
               </div>
 
               {/* Subtasks section */}

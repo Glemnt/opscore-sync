@@ -94,7 +94,7 @@ export interface Task {
   priority: Priority;
   comments: string;
   createdAt: string;
-  platform?: string;
+  platforms?: string[];
   subtasks?: SubTask[];
   chatNotes?: ChatNote[];
 }

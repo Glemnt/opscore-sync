@@ -116,7 +116,7 @@ export function mapDbTask(
     priority: row.priority,
     comments: row.comments,
     createdAt: row.created_at,
-    platform: (row as any).platform ?? undefined,
+    platforms: (row as any).platform ?? undefined,
     subtasks: subtasks.map(mapDbSubtask),
     chatNotes: chatNotes.map(mapDbChatNote),
   };
