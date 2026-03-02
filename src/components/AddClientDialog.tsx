@@ -12,6 +12,7 @@ import { useTasks } from '@/contexts/TasksContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { ContractType, Client, Task, TaskType, SubTask, Platform } from '@/types';
 import { usePlatformsQuery } from '@/hooks/usePlatformsQuery';
+import { useTeamMembersQuery } from '@/hooks/useTeamMembersQuery';
 import { cn } from '@/lib/utils';
 
 interface AddClientDialogProps {
@@ -44,7 +45,9 @@ export function AddClientDialog({ open, onClose }: AddClientDialogProps) {
   const [squadId, setSquadId] = useState(squads[0]?.id ?? '');
   const [monthlyRevenue, setMonthlyRevenue] = useState('');
   const [platforms, setPlatforms] = useState<Platform[]>([]);
+  const [responsible, setResponsible] = useState('');
   const { data: platformOptions = [] } = usePlatformsQuery();
+  const { data: teamMembers = [] } = useTeamMembersQuery();
 
   // Selected templates for auto-creation
   const [selectedTemplateIds, setSelectedTemplateIds] = useState<string[]>([]);
@@ -63,7 +66,7 @@ export function AddClientDialog({ open, onClose }: AddClientDialogProps) {
     setName(''); setCompanyName(''); setContractType('mrr');
     setPaymentDay('10'); setContractDuration('3'); setSegment('');
     setSquadId(squads[0]?.id ?? ''); setMonthlyRevenue('');
-    setPlatforms([]);
+    setPlatforms([]); setResponsible('');
     setSelectedTemplateIds([]);
     setTab('dados');
   };
@@ -79,7 +82,7 @@ export function AddClientDialog({ open, onClose }: AddClientDialogProps) {
       name: clientName,
       companyName: companyName.trim(),
       segment: segment.trim() || 'Geral',
-      responsible: '',
+      responsible: responsible,
       squadId,
       startDate: new Date().toISOString().split('T')[0],
       status: 'onboarding',
@@ -202,9 +205,16 @@ export function AddClientDialog({ open, onClose }: AddClientDialogProps) {
                 </select>
               </div>
               <div>
-                <Label className="text-xs">Dia de Pagamento</Label>
-                <Input type="number" min={1} max={31} value={paymentDay} onChange={e => setPaymentDay(e.target.value)} className="h-8 text-sm" />
+                <Label className="text-xs">Responsável</Label>
+                <select value={responsible} onChange={e => setResponsible(e.target.value)} className="w-full h-8 px-2 text-sm bg-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring text-foreground">
+                  <option value="">Selecione...</option>
+                  {teamMembers.map(m => <option key={m.id} value={m.name}>{m.name}</option>)}
+                </select>
               </div>
+            </div>
+            <div>
+              <Label className="text-xs">Dia de Pagamento</Label>
+              <Input type="number" min={1} max={31} value={paymentDay} onChange={e => setPaymentDay(e.target.value)} className="h-8 text-sm" />
             </div>
             <div>
               <Label className="text-xs mb-1.5 block">Tipo de Contrato</Label>
