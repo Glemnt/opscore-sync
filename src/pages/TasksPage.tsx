@@ -1,11 +1,12 @@
 import { useState, useRef, useEffect } from 'react';
-import { Plus, Search, Clock, MessageSquare, AlertTriangle, Trash2, Workflow, ChevronDown } from 'lucide-react';
+import { Plus, Search, Clock, MessageSquare, AlertTriangle, Trash2, Workflow, ChevronDown, ShoppingBag } from 'lucide-react';
 import { useTasks } from '@/contexts/TasksContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSquads } from '@/contexts/SquadsContext';
 import { useClients } from '@/contexts/ClientsContext';
 import { PageHeader, StatusBadge, Avatar, ProgressBar } from '@/components/ui/shared';
 import { taskStatusConfig, priorityConfig, taskTypeConfig } from '@/lib/config';
+import { usePlatformsQuery } from '@/hooks/usePlatformsQuery';
 import { Task, TaskStatus } from '@/types';
 import { cn } from '@/lib/utils';
 import { TaskDetailModal } from '@/components/TaskDetailModal';
@@ -239,6 +240,8 @@ export function TasksPage() {
 
 function TaskCard({ task, isLate, onClick, canDelete, onDelete }: { task: Task; isLate: boolean; onClick: () => void; canDelete: boolean; onDelete: () => void }) {
   const typeConf = taskTypeConfig[task.type];
+  const { data: platforms = [] } = usePlatformsQuery();
+  const platformName = task.platform ? (platforms.find(p => p.slug === task.platform)?.name ?? task.platform) : null;
   const priorityConf = priorityConfig[task.priority];
   const subtasks = task.subtasks ?? [];
   const progress = subtasks.length > 0 ? Math.round((subtasks.filter(s => s.done).length / subtasks.length) * 100) : -1;
@@ -269,10 +272,16 @@ function TaskCard({ task, isLate, onClick, canDelete, onDelete }: { task: Task; 
         <span className="text-xs">{priorityConf.icon}</span>
       </div>
 
-      <div className="flex items-center gap-1.5 mb-3">
+      <div className="flex items-center gap-1.5 mb-3 flex-wrap">
         <span className={cn('text-xs px-1.5 py-0.5 rounded-md font-medium', typeConf.color)}>
           {typeConf.label}
         </span>
+        {platformName && (
+          <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground bg-muted/60 rounded-md px-1.5 py-0.5 font-medium">
+            <ShoppingBag className="w-3 h-3" />
+            {platformName}
+          </span>
+        )}
         <span className="text-xs text-muted-foreground truncate">{task.clientName}</span>
       </div>
 

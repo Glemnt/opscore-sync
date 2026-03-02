@@ -478,6 +478,7 @@ export type Database = {
           deadline: string
           estimated_time: number
           id: string
+          platform: string | null
           priority: Database["public"]["Enums"]["priority_level"]
           project_id: string | null
           project_name: string | null
@@ -496,6 +497,7 @@ export type Database = {
           deadline?: string
           estimated_time?: number
           id?: string
+          platform?: string | null
           priority?: Database["public"]["Enums"]["priority_level"]
           project_id?: string | null
           project_name?: string | null
@@ -514,6 +516,7 @@ export type Database = {
           deadline?: string
           estimated_time?: number
           id?: string
+          platform?: string | null
           priority?: Database["public"]["Enums"]["priority_level"]
           project_id?: string | null
           project_name?: string | null

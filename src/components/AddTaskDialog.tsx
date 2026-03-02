@@ -12,6 +12,7 @@ import { Label } from '@/components/ui/label';
 import { useTasks } from '@/contexts/TasksContext';
 import { useClients } from '@/contexts/ClientsContext';
 import { useAppUsersQuery } from '@/hooks/useAppUsersQuery';
+import { usePlatformsQuery } from '@/hooks/usePlatformsQuery';
 
 import { taskTypeConfig, priorityConfig } from '@/lib/config';
 import { Task, TaskType, TaskStatus, Priority } from '@/types';
@@ -28,6 +29,7 @@ export function AddTaskDialog({ open, onOpenChange, defaultStatus = 'backlog' }:
   const { addTask } = useTasks();
   const { getVisibleClients } = useClients();
   const { data: appUsers = [] } = useAppUsersQuery();
+  const { data: platforms = [] } = usePlatformsQuery();
   const visibleClients = getVisibleClients();
   const [customTypes, setCustomTypes] = useState<Record<string, { label: string; color: string }>>({});
   const [showNewType, setShowNewType] = useState(false);
@@ -44,6 +46,7 @@ export function AddTaskDialog({ open, onOpenChange, defaultStatus = 'backlog' }:
   const [comments, setComments] = useState('');
   const [subtaskInput, setSubtaskInput] = useState('');
   const [subtasks, setSubtasks] = useState<string[]>([]);
+  const [platform, setPlatform] = useState('');
 
   const selectedClient = visibleClients.find((c) => c.id === clientId);
 
@@ -96,6 +99,7 @@ export function AddTaskDialog({ open, onOpenChange, defaultStatus = 'backlog' }:
     setComments('');
     setSubtaskInput('');
     setSubtasks([]);
+    setPlatform('');
   };
 
   const handleSubmit = () => {
@@ -119,6 +123,7 @@ export function AddTaskDialog({ open, onOpenChange, defaultStatus = 'backlog' }:
       priority,
       comments,
       createdAt: new Date().toISOString().split('T')[0],
+      platform: platform && platform !== '__none__' ? platform : undefined,
       subtasks: subtasks.map((label, i) => ({
         id: `st_${Date.now()}_${i}`,
         label,
@@ -242,6 +247,20 @@ export function AddTaskDialog({ open, onOpenChange, defaultStatus = 'backlog' }:
               <SelectContent>
                 {responsibleOptions.map((u) => (
                   <SelectItem key={u.id} value={u.name}>{u.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Plataforma */}
+          <div className="space-y-1.5">
+            <Label>Plataforma</Label>
+            <Select value={platform} onValueChange={setPlatform}>
+              <SelectTrigger><SelectValue placeholder="Sem plataforma" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__none__">Sem plataforma</SelectItem>
+                {platforms.map((p) => (
+                  <SelectItem key={p.id} value={p.slug}>{p.name}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
