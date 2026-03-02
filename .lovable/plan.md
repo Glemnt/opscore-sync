@@ -1,20 +1,16 @@
 
 
-## Aplicar Fluxo a uma Demanda Existente
+## Correção: Clientes Ativos e MRR no Dashboard
 
-### O que será feito
-Adicionar um botão/select no modal de detalhes da demanda (`TaskDetailModal`) que permite ao usuário selecionar um fluxo existente e aplicá-lo como subtarefas da demanda. As etapas do fluxo serão adicionadas como subtarefas (sem substituir as existentes).
+### Problema
+Atualmente, o contador de "Clientes Ativos" filtra apenas `status === 'active'`, excluindo clientes com status `paused` ou `onboarding`. O MRR já está correto (exclui apenas `churned`), mas o contador de clientes ativos e o resumo de saúde precisam seguir a mesma lógica: **só excluir clientes com status `churned`**.
 
 ### Alterações
 
-**1. `src/components/TaskDetailModal.tsx`**
-- Importar `useFlowsQuery` (ou acessar `flows` via `useTasks`)
-- Adicionar uma seção "Aplicar Fluxo" acima ou ao lado das subtarefas, com um `Select` listando os fluxos disponíveis
-- Ao selecionar um fluxo, gerar novas subtarefas a partir das etapas (`steps`) do fluxo e adicioná-las às subtarefas existentes da demanda via `updateTask`
-- Incluir ícone `Workflow` para identificação visual
+**`src/pages/DashboardPage.tsx`**
 
-### Comportamento
-- O select mostra todos os fluxos cadastrados
-- Ao selecionar, as etapas do fluxo são **adicionadas** às subtarefas existentes (não substituem)
-- Se a demanda já tiver subtarefas, as novas são concatenadas ao final
+1. **Linha 105** — Contador de clientes ativos: trocar `c.status === 'active'` por `c.status !== 'churned'`
+2. **Linha 113** — Health summary: trocar `c.status === 'active'` por `c.status !== 'churned'` para que clientes `paused` e `onboarding` também apareçam no resumo de saúde
+
+Isso garante que apenas clientes em churn sejam removidos das métricas do dashboard.
 
