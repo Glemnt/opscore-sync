@@ -47,6 +47,7 @@ export function useAddTask() {
         status: task.status,
         priority: task.priority,
         comments: task.comments,
+        platform: task.platform ?? null,
       });
       if (error) throw error;
       // Insert subtasks if any
@@ -79,7 +80,8 @@ export function useUpdateTask() {
       };
       for (const [k, v] of Object.entries(updates)) {
         if (k === 'subtasks' || k === 'chatNotes') continue;
-        dbUpdates[keyMap[k] ?? k] = v;
+        const dbKey = keyMap[k] ?? k;
+        dbUpdates[dbKey] = v;
       }
       const { error } = await supabase.from('tasks').update(dbUpdates).eq('id', id);
       if (error) throw error;

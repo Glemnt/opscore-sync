@@ -12,9 +12,10 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useSquads } from '@/contexts/SquadsContext';
 import { useClients } from '@/contexts/ClientsContext';
 import { useAppUsersQuery } from '@/hooks/useAppUsersQuery';
+import { usePlatformsQuery } from '@/hooks/usePlatformsQuery';
 import { priorityConfig, taskTypeConfig, taskStatusConfig } from '@/lib/config';
 import { cn } from '@/lib/utils';
-import { Send, Clock, User, CalendarDays, Flag, MessageSquare, Trash2, Tag, Briefcase } from 'lucide-react';
+import { Send, Clock, User, CalendarDays, Flag, MessageSquare, Trash2, Tag, Briefcase, ShoppingBag } from 'lucide-react';
 import { Avatar } from '@/components/ui/shared';
 
 interface TaskDetailModalProps {
@@ -29,6 +30,7 @@ export function TaskDetailModal({ task, open, onOpenChange }: TaskDetailModalPro
   const { squads } = useSquads();
   const { clients } = useClients();
   const { data: appUsers = [] } = useAppUsersQuery();
+  const { data: platforms = [] } = usePlatformsQuery();
   const [newNote, setNewNote] = useState('');
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleDraft, setTitleDraft] = useState('');
@@ -210,6 +212,25 @@ export function TaskDetailModal({ task, open, onOpenChange }: TaskDetailModalPro
                     <SelectItem key={key} value={key}>
                       <span className="flex items-center gap-1.5">{conf.icon} {conf.label}</span>
                     </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Plataforma - editable */}
+            <div className="bg-muted/50 rounded-xl p-3 space-y-1.5">
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium uppercase tracking-wide">
+                <ShoppingBag className="w-3.5 h-3.5" />
+                Plataforma
+              </div>
+              <Select value={task.platform || '__none__'} onValueChange={(v) => updateTask(task.id, { platform: v === '__none__' ? '' : v })}>
+                <SelectTrigger className="h-9 bg-background border-border">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">Sem plataforma</SelectItem>
+                  {platforms.map((p) => (
+                    <SelectItem key={p.id} value={p.slug}>{p.name}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
