@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef } from 'react';
-import { Building2, Calendar, Clock, User, CheckCircle2, AlertCircle, ClipboardList, Circle, Send, History, Edit3, Save, X, FileText, Upload, Eye, Trash2, Pencil } from 'lucide-react';
+import { Building2, Calendar, Clock, User, CheckCircle2, AlertCircle, ClipboardList, Circle, Send, History, Edit3, Save, X, FileText, Upload, Eye, Trash2, Pencil, Plus, Workflow } from 'lucide-react';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -16,6 +16,8 @@ import { useTasks } from '@/contexts/TasksContext';
 import { useClients } from '@/contexts/ClientsContext';
 import { useAppUsersQuery } from '@/hooks/useAppUsersQuery';
 import { ClientAIAnalysis } from '@/components/ClientAIAnalysis';
+import { useClientFlowsQuery, useAddClientFlow, useRemoveClientFlow } from '@/hooks/useClientFlowsQuery';
+import { useFlowsQuery } from '@/hooks/useFlowsQuery';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
@@ -34,6 +36,11 @@ export function ClientDetailModal({ client, open, onClose }: ClientDetailModalPr
   const { data: platformOptions = [] } = usePlatformsQuery();
   const { data: appUsers = [] } = useAppUsersQuery();
   const { tasks } = useTasks();
+  const { data: clientFlowsMap = {} } = useClientFlowsQuery();
+  const { data: allFlows = [] } = useFlowsQuery();
+  const addClientFlow = useAddClientFlow();
+  const removeClientFlow = useRemoveClientFlow();
+  const [showFlowSelect, setShowFlowSelect] = useState(false);
   const [editingField, setEditingField] = useState<string | null>(null);
   const [editValue, setEditValue] = useState('');
   const [noteMessage, setNoteMessage] = useState('');
@@ -303,7 +310,60 @@ export function ClientDetailModal({ client, open, onClose }: ClientDetailModalPr
             </>
           )}
 
-          {/* Contract file */}
+          {/* Flows section */}
+          {!editMode && (
+            <div className="mt-3">
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1.5">Fluxos</p>
+              <div className="flex flex-wrap items-center gap-2">
+                {(clientFlowsMap[client.id] ?? []).map((cf) => (
+                  <span key={cf.flowId} className="inline-flex items-center gap-1 text-xs bg-primary/10 text-primary border border-primary/20 rounded-full px-2.5 py-1 font-medium">
+                    <Workflow className="w-3 h-3" />
+                    {cf.flowName}
+                    <button
+                      onClick={() => removeClientFlow.mutate({ clientId: client.id, flowId: cf.flowId })}
+                      className="ml-0.5 p-0.5 rounded-full hover:bg-primary/20 transition-colors"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                ))}
+                {showFlowSelect ? (
+                  <div className="flex items-center gap-1.5">
+                    <select
+                      className="h-7 px-2 text-xs bg-background border border-input rounded-md text-foreground"
+                      defaultValue=""
+                      onChange={(e) => {
+                        if (e.target.value) {
+                          addClientFlow.mutate({ clientId: client.id, flowId: e.target.value });
+                          setShowFlowSelect(false);
+                        }
+                      }}
+                    >
+                      <option value="" disabled>Selecionar fluxo...</option>
+                      {allFlows
+                        .filter(f => !(clientFlowsMap[client.id] ?? []).some(cf => cf.flowId === f.id))
+                        .map(f => (
+                          <option key={f.id} value={f.id}>{f.name}</option>
+                        ))}
+                    </select>
+                    <button onClick={() => setShowFlowSelect(false)} className="p-1 text-muted-foreground hover:text-foreground rounded">
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setShowFlowSelect(true)}
+                    className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-primary border border-dashed border-border hover:border-primary/40 rounded-full px-2.5 py-1 transition-colors"
+                  >
+                    <Plus className="w-3 h-3" />
+                    Adicionar
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+
+
           <ContractSection client={client} updateClientField={updateClientField} />
         </div>
 
