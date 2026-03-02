@@ -6,7 +6,7 @@ import { PageHeader, StatusBadge, Avatar, ProgressBar } from '@/components/ui/sh
 import { projectStatusConfig, priorityConfig, projectTypeConfig, clientStatusConfig } from '@/lib/config';
 import { Project, ProjectStatus, Squad, Client, ClientStatus, TaskStatus } from '@/types';
 import { ProjectSummaryPanel } from '@/components/ProjectSummaryPanel';
-import { AddDemandDialog } from '@/components/AddDemandDialog';
+import { AddTaskDialog } from '@/components/AddTaskDialog';
 import { useTasks } from '@/contexts/TasksContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSquads } from '@/contexts/SquadsContext';
@@ -413,14 +413,10 @@ export function ProjectsPage() {
           </>
         } />
 
-      <AddDemandDialog
+      <AddTaskDialog
         open={addDemandOpen}
         onOpenChange={setAddDemandOpen}
-        onSubmit={(task) => addTask(task)}
-        columnStatus="backlog"
-        clientId={selectedClient.id}
-        clientName={selectedClient.name}
-        squadMembers={selectedSquad?.members ?? []}
+        defaultStatus="backlog"
       />
 
 
@@ -612,14 +608,10 @@ function KanbanView({ filtered, clientId, clientName, squadMembers }: {filtered:
         </div>
       </div>
 
-      <AddDemandDialog
+      <AddTaskDialog
         open={demandDialog.open}
         onOpenChange={(open) => setDemandDialog((prev) => ({ ...prev, open }))}
-        onSubmit={handleAddDemand}
-        columnStatus={demandDialog.status}
-        clientId={clientId}
-        clientName={clientName}
-        squadMembers={squadMembers}
+        defaultStatus={demandDialog.status}
       />
 
       <TaskDetailModal
