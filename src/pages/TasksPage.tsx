@@ -8,7 +8,7 @@ import { PageHeader, StatusBadge, Avatar, ProgressBar } from '@/components/ui/sh
 import { priorityConfig } from '@/lib/config';
 import { useTaskTypesMap } from '@/hooks/useTaskTypesQuery';
 import { usePlatformsQuery } from '@/hooks/usePlatformsQuery';
-import { useTaskStatusesQuery, useAddTaskStatus, useDeleteTaskStatus, useUpdateTaskStatus } from '@/hooks/useTaskStatusesQuery';
+import { useTaskStatusesQuery, useAddTaskStatus, useDeleteTaskStatus, useUpdateTaskStatus, useReorderTaskStatuses } from '@/hooks/useTaskStatusesQuery';
 import { Task, TaskStatus } from '@/types';
 import { cn } from '@/lib/utils';
 import { TaskDetailModal } from '@/components/TaskDetailModal';
@@ -44,6 +44,9 @@ export function TasksPage() {
   const addStatusMut = useAddTaskStatus();
   const deleteStatusMut = useDeleteTaskStatus();
   const updateStatusMut = useUpdateTaskStatus();
+  const reorderMut = useReorderTaskStatuses();
+  const [draggingColKey, setDraggingColKey] = useState<string | null>(null);
+  const [colDropTarget, setColDropTarget] = useState<string | null>(null);
 
   const cols = taskStatuses.map(s => ({ status: s.key as TaskStatus, label: s.label }));
 
@@ -66,10 +69,52 @@ export function TasksPage() {
   const handleDrop = (colStatus: TaskStatus, e: React.DragEvent) => {
     e.preventDefault();
     setDragOverCol(null);
+    // Check if it's a column drag
+    const colKey = e.dataTransfer.getData('column-key');
+    if (colKey) return; // handled by column drop
     const taskId = e.dataTransfer.getData('text/plain');
     if (taskId) {
       updateTask(taskId, { status: colStatus });
     }
+  };
+
+  const handleColDragStart = (e: React.DragEvent, statusKey: string) => {
+    e.dataTransfer.setData('column-key', statusKey);
+    e.dataTransfer.effectAllowed = 'move';
+    setDraggingColKey(statusKey);
+  };
+
+  const handleColDragOver = (e: React.DragEvent, statusKey: string) => {
+    e.preventDefault();
+    if (draggingColKey && draggingColKey !== statusKey) {
+      setColDropTarget(statusKey);
+    }
+  };
+
+  const handleColDrop = (e: React.DragEvent, targetKey: string) => {
+    e.preventDefault();
+    const sourceKey = e.dataTransfer.getData('column-key');
+    if (!sourceKey || sourceKey === targetKey) {
+      setDraggingColKey(null);
+      setColDropTarget(null);
+      return;
+    }
+    const currentKeys = cols.map(c => c.status);
+    const sourceIdx = currentKeys.indexOf(sourceKey as TaskStatus);
+    const targetIdx = currentKeys.indexOf(targetKey as TaskStatus);
+    if (sourceIdx === -1 || targetIdx === -1) return;
+    const newKeys = [...currentKeys];
+    newKeys.splice(sourceIdx, 1);
+    newKeys.splice(targetIdx, 0, sourceKey as TaskStatus);
+    const reorderItems = newKeys.map((key, i) => ({ key, sort_order: i }));
+    reorderMut.mutate(reorderItems);
+    setDraggingColKey(null);
+    setColDropTarget(null);
+  };
+
+  const handleColDragEnd = () => {
+    setDraggingColKey(null);
+    setColDropTarget(null);
   };
 
   const handleAddCol = () => {
@@ -182,13 +227,38 @@ export function TasksPage() {
           return (
             <div
               key={col.status}
-              className="flex-shrink-0 w-72"
-              onDragOver={(e) => { e.preventDefault(); setDragOverCol(col.status); }}
-              onDragLeave={() => setDragOverCol(null)}
-              onDrop={(e) => handleDrop(col.status, e)}
+              className={cn(
+                'flex-shrink-0 w-72 relative',
+                draggingColKey === col.status && 'opacity-50'
+              )}
+              onDragOver={(e) => {
+                e.preventDefault();
+                // Determine if it's a column or card drag
+                if (draggingColKey) {
+                  handleColDragOver(e, col.status);
+                } else {
+                  setDragOverCol(col.status);
+                }
+              }}
+              onDragLeave={() => { setDragOverCol(null); setColDropTarget(null); }}
+              onDrop={(e) => {
+                if (draggingColKey) {
+                  handleColDrop(e, col.status);
+                } else {
+                  handleDrop(col.status, e);
+                }
+              }}
             >
-              <div className={cn(
-                'flex items-center justify-between mb-3 pb-3 border-b-2',
+              {/* Column drop indicator */}
+              {colDropTarget === col.status && draggingColKey && (
+                <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary rounded-full z-10" />
+              )}
+              <div
+                draggable
+                onDragStart={(e) => handleColDragStart(e, col.status)}
+                onDragEnd={handleColDragEnd}
+                className={cn(
+                'flex items-center justify-between mb-3 pb-3 border-b-2 cursor-grab active:cursor-grabbing',
                 col.status === 'backlog' ? 'border-b-slate-300' :
                   col.status === 'in_progress' ? 'border-b-info' :
                     col.status === 'waiting_client' ? 'border-b-warning' :

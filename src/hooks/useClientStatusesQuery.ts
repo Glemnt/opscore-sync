@@ -7,6 +7,7 @@ export interface ClientStatusRow {
   key: string;
   label: string;
   class_name: string;
+  sort_order: number;
 }
 
 export function useClientStatusesQuery() {
@@ -15,8 +16,8 @@ export function useClientStatusesQuery() {
     queryFn: async (): Promise<ClientStatusRow[]> => {
       const { data, error } = await supabase
         .from('client_statuses' as any)
-        .select('id, key, label, class_name')
-        .order('label');
+        .select('id, key, label, class_name, sort_order')
+        .order('sort_order');
       if (error) throw error;
       return (data ?? []) as unknown as ClientStatusRow[];
     },
@@ -25,9 +26,7 @@ export function useClientStatusesQuery() {
 
 export function useClientStatusesMap(): Record<string, { label: string; className: string }> {
   const { data: statuses = [] } = useClientStatusesQuery();
-  // Start with static fallback
   const map: Record<string, { label: string; className: string }> = { ...clientStatusConfig };
-  // Override / add from DB
   for (const s of statuses) {
     map[s.key] = { label: s.label, className: s.class_name };
   }
@@ -38,9 +37,15 @@ export function useAddClientStatus() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (input: { key: string; label: string; class_name: string }) => {
+      const { data: existing } = await supabase
+        .from('client_statuses' as any)
+        .select('sort_order')
+        .order('sort_order', { ascending: false })
+        .limit(1);
+      const maxOrder = (existing as any)?.[0]?.sort_order ?? -1;
       const { error } = await supabase
         .from('client_statuses' as any)
-        .insert({ key: input.key, label: input.label, class_name: input.class_name } as any);
+        .insert({ key: input.key, label: input.label, class_name: input.class_name, sort_order: maxOrder + 1 } as any);
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['client_statuses'] }),
@@ -72,6 +77,22 @@ export function useUpdateClientStatus() {
         .update(updates as any)
         .eq('key', input.key);
       if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['client_statuses'] }),
+  });
+}
+
+export function useReorderClientStatuses() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (items: { key: string; sort_order: number }[]) => {
+      for (const item of items) {
+        const { error } = await supabase
+          .from('client_statuses' as any)
+          .update({ sort_order: item.sort_order } as any)
+          .eq('key', item.key);
+        if (error) throw error;
+      }
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['client_statuses'] }),
   });
