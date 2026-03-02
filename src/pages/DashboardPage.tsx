@@ -119,6 +119,17 @@ export function DashboardPage() {
     return counts;
   }, [clients]);
 
+  // Clients by status
+  const clientsByStatus = useMemo(() => {
+    const counts = { active: 0, onboarding: 0, paused: 0, churned: 0 };
+    clients.forEach(c => {
+      if (counts[c.status as keyof typeof counts] !== undefined) {
+        counts[c.status as keyof typeof counts]++;
+      }
+    });
+    return counts;
+  }, [clients]);
+
   // MRR
   const mrr = useMemo(() => {
     return clients
@@ -236,6 +247,37 @@ export function DashboardPage() {
               <span className="text-xs text-muted-foreground">{item.label}</span>
             </div>
           ))}
+        </div>
+      </div>
+
+      {/* Clients by Stage */}
+      <div className="bg-card rounded-xl border border-border p-4 shadow-sm-custom mb-6">
+        <h3 className="text-xs font-semibold text-muted-foreground mb-3">Clientes por Etapa</h3>
+        <div className="space-y-3">
+          {([
+            { key: 'active', label: 'Ativo', color: 'bg-emerald-500' },
+            { key: 'onboarding', label: 'Onboarding', color: 'bg-blue-500' },
+            { key: 'paused', label: 'Pausado', color: 'bg-amber-400' },
+            { key: 'churned', label: 'Churned', color: 'bg-red-500' },
+          ] as const).map(item => {
+            const count = clientsByStatus[item.key];
+            const total = clients.length || 1;
+            const pct = Math.round((count / total) * 100);
+            return (
+              <div key={item.key}>
+                <div className="flex items-center justify-between mb-1">
+                  <div className="flex items-center gap-2">
+                    <div className={`w-3 h-3 rounded-full ${item.color}`} />
+                    <span className="text-xs text-muted-foreground">{item.label}</span>
+                  </div>
+                  <span className="text-sm font-bold text-foreground">{count}</span>
+                </div>
+                <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                  <div className={`h-full rounded-full ${item.color}`} style={{ width: `${pct}%` }} />
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
 
