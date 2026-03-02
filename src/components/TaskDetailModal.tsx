@@ -15,8 +15,11 @@ import { useAppUsersQuery } from '@/hooks/useAppUsersQuery';
 import { usePlatformsQuery } from '@/hooks/usePlatformsQuery';
 import { priorityConfig, taskTypeConfig, taskStatusConfig } from '@/lib/config';
 import { cn } from '@/lib/utils';
-import { Send, Clock, User, CalendarDays, Flag, MessageSquare, Trash2, Tag, Briefcase, ShoppingBag } from 'lucide-react';
+import { Send, Clock, User, CalendarDays, Flag, MessageSquare, Trash2, Tag, Briefcase, ShoppingBag, Workflow } from 'lucide-react';
 import { Avatar } from '@/components/ui/shared';
+import { supabase } from '@/integrations/supabase/client';
+import { useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 
 interface TaskDetailModalProps {
   task: Task | null;
@@ -25,12 +28,13 @@ interface TaskDetailModalProps {
 }
 
 export function TaskDetailModal({ task, open, onOpenChange }: TaskDetailModalProps) {
-  const { updateTask, deleteTask } = useTasks();
+  const { updateTask, deleteTask, flows } = useTasks();
   const { currentUser } = useAuth();
   const { squads } = useSquads();
   const { clients } = useClients();
   const { data: appUsers = [] } = useAppUsersQuery();
   const { data: platforms = [] } = usePlatformsQuery();
+  const queryClient = useQueryClient();
   const [newNote, setNewNote] = useState('');
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleDraft, setTitleDraft] = useState('');
@@ -288,6 +292,51 @@ export function TaskDetailModal({ task, open, onOpenChange }: TaskDetailModalPro
                 );
               })()}
             </div>
+          </div>
+
+          {/* Aplicar Fluxo */}
+          <div className="space-y-3">
+            <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
+              <Workflow className="w-4 h-4" />
+              Aplicar Fluxo
+            </h4>
+            {flows.length === 0 ? (
+              <p className="text-xs text-muted-foreground italic">Nenhum fluxo cadastrado.</p>
+            ) : (
+              <Select
+                value=""
+                onValueChange={async (flowId) => {
+                  const flow = flows.find(f => f.id === flowId);
+                  if (!flow || !task) return;
+                  const newSubtasks = flow.steps.map((step) => ({
+                    id: crypto.randomUUID(),
+                    task_id: task.id,
+                    label: step,
+                    done: false,
+                    checked_by: null,
+                    checked_at: null,
+                  }));
+                  const { error } = await supabase.from('subtasks').insert(newSubtasks);
+                  if (error) {
+                    toast.error('Erro ao aplicar fluxo');
+                    return;
+                  }
+                  queryClient.invalidateQueries({ queryKey: ['tasks'] });
+                  toast.success(`Fluxo "${flow.name}" aplicado com ${flow.steps.length} etapas`);
+                }}
+              >
+                <SelectTrigger className="h-9 bg-background border-border">
+                  <SelectValue placeholder="Selecione um fluxo para aplicar..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {flows.map((flow) => (
+                    <SelectItem key={flow.id} value={flow.id}>
+                      {flow.name} ({flow.steps.length} etapas)
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
           </div>
 
           {/* Subtasks */}
