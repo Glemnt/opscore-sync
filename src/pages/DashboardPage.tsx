@@ -16,6 +16,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import { usePlatformsQuery } from '@/hooks/usePlatformsQuery';
+import { useClientStatusesQuery } from '@/hooks/useClientStatusesQuery';
 
 const weeklyData = [
   { day: 'Seg', concluidas: 8, abertas: 3 },
@@ -89,6 +90,7 @@ export function DashboardPage() {
   }, [platformsList]);
   const { tasks: allTasks } = useTasks();
   const { data: allTeamMembers = [] } = useTeamMembersQuery();
+  const { data: clientStatuses = [] } = useClientStatusesQuery();
   const visibleClientIds = new Set(clients.map((c) => c.id));
   const projects = allProjects.filter((p) => visibleClientIds.has(p.clientId));
   const tasks = allTasks.filter((t) => visibleClientIds.has(t.clientId));
@@ -119,16 +121,15 @@ export function DashboardPage() {
     return counts;
   }, [clients]);
 
-  // Clients by status
+  // Clients by status (dynamic)
   const clientsByStatus = useMemo(() => {
-    const counts = { active: 0, onboarding: 0, paused: 0, churned: 0 };
+    const counts: Record<string, number> = {};
+    clientStatuses.forEach(s => { counts[s.key] = 0; });
     clients.forEach(c => {
-      if (counts[c.status as keyof typeof counts] !== undefined) {
-        counts[c.status as keyof typeof counts]++;
-      }
+      counts[c.status] = (counts[c.status] || 0) + 1;
     });
     return counts;
-  }, [clients]);
+  }, [clients, clientStatuses]);
 
   // MRR
   const mrr = useMemo(() => {
@@ -254,26 +255,20 @@ export function DashboardPage() {
       <div className="bg-card rounded-xl border border-border p-4 shadow-sm-custom mb-6">
         <h3 className="text-xs font-semibold text-muted-foreground mb-3">Clientes por Etapa</h3>
         <div className="space-y-3">
-          {([
-            { key: 'active', label: 'Ativo', color: 'bg-emerald-500' },
-            { key: 'onboarding', label: 'Onboarding', color: 'bg-blue-500' },
-            { key: 'paused', label: 'Pausado', color: 'bg-amber-400' },
-            { key: 'churned', label: 'Churned', color: 'bg-red-500' },
-          ] as const).map(item => {
-            const count = clientsByStatus[item.key];
+          {clientStatuses.map(status => {
+            const count = clientsByStatus[status.key] || 0;
             const total = clients.length || 1;
             const pct = Math.round((count / total) * 100);
             return (
-              <div key={item.key}>
+              <div key={status.key}>
                 <div className="flex items-center justify-between mb-1">
                   <div className="flex items-center gap-2">
-                    <div className={`w-3 h-3 rounded-full ${item.color}`} />
-                    <span className="text-xs text-muted-foreground">{item.label}</span>
+                    <StatusBadge className={status.class_name}>{status.label}</StatusBadge>
                   </div>
                   <span className="text-sm font-bold text-foreground">{count}</span>
                 </div>
                 <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                  <div className={`h-full rounded-full ${item.color}`} style={{ width: `${pct}%` }} />
+                  <div className="h-full rounded-full bg-primary" style={{ width: `${pct}%` }} />
                 </div>
               </div>
             );
