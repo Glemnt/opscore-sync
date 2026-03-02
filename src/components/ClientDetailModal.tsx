@@ -12,6 +12,7 @@ import { useSquads } from '@/contexts/SquadsContext';
 import { useProjectsQuery } from '@/hooks/useProjectsQuery';
 import { useTasks } from '@/contexts/TasksContext';
 import { useClients } from '@/contexts/ClientsContext';
+import { useTeamMembersQuery } from '@/hooks/useTeamMembersQuery';
 import { ClientAIAnalysis } from '@/components/ClientAIAnalysis';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -29,6 +30,7 @@ export function ClientDetailModal({ client, open, onClose }: ClientDetailModalPr
   const { squads } = useSquads();
   const { data: projects = [] } = useProjectsQuery();
   const { data: platformOptions = [] } = usePlatformsQuery();
+  const { data: teamMembers = [] } = useTeamMembersQuery();
   const { tasks } = useTasks();
   const [editingField, setEditingField] = useState<string | null>(null);
   const [editValue, setEditValue] = useState('');
@@ -106,6 +108,15 @@ export function ClientDetailModal({ client, open, onClose }: ClientDetailModalPr
                 className="flex-1 text-sm bg-background border border-input rounded px-2 py-1 text-foreground"
               >
                 {squads.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+              </select>
+            ) : field === 'responsible' ? (
+              <select
+                value={editValue}
+                onChange={e => setEditValue(e.target.value)}
+                className="flex-1 text-sm bg-background border border-input rounded px-2 py-1 text-foreground"
+              >
+                <option value="">Selecione...</option>
+                {teamMembers.map(m => <option key={m.id} value={m.name}>{m.name}</option>)}
               </select>
             ) : (
               <Input type={type} value={editValue} onChange={e => setEditValue(e.target.value)} className="h-7 text-sm flex-1" />
@@ -191,7 +202,10 @@ export function ClientDetailModal({ client, open, onClose }: ClientDetailModalPr
                 </div>
                 <div>
                   <Label className="text-xs">Responsável</Label>
-                  <Input value={editData.responsible ?? ''} onChange={e => setEditData(p => ({ ...p, responsible: e.target.value }))} className="h-8 text-sm" />
+                  <select value={editData.responsible ?? ''} onChange={e => setEditData(p => ({ ...p, responsible: e.target.value }))} className="w-full h-8 px-2 text-sm bg-background border border-input rounded-md text-foreground">
+                    <option value="">Selecione...</option>
+                    {teamMembers.map(m => <option key={m.id} value={m.name}>{m.name}</option>)}
+                  </select>
                 </div>
                 <div>
                   <Label className="text-xs">Status</Label>
