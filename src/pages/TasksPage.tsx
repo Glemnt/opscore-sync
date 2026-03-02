@@ -239,11 +239,11 @@ export function TasksPage() {
 }
 
 function TaskCard({ task, isLate, onClick, canDelete, onDelete }: { task: Task; isLate: boolean; onClick: () => void; canDelete: boolean; onDelete: () => void }) {
-  const typeConf = taskTypeConfig[task.type];
+  const typeConf = taskTypeConfig[task.type] ?? { label: task.type, color: 'bg-gray-100 text-gray-700' };
   const { data: platforms = [] } = usePlatformsQuery();
   const taskPlatforms = task.platforms ?? [];
   const platformNames = taskPlatforms.map(slug => platforms.find(p => p.slug === slug)?.name ?? slug);
-  const priorityConf = priorityConfig[task.priority];
+  const priorityConf = priorityConfig[task.priority] ?? { label: task.priority, className: '', icon: '●' };
   const subtasks = task.subtasks ?? [];
   const progress = subtasks.length > 0 ? Math.round((subtasks.filter(s => s.done).length / subtasks.length) * 100) : -1;
 
