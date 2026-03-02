@@ -1,20 +1,37 @@
 
 
-## Adicionar filtro por plataforma na página de Demandas
+## Persistir colunas do Kanban de Squads
 
 ### Contexto
-A página de Demandas (`TasksPage.tsx`) já possui filtros por responsável e por tipo. As tarefas já têm o campo `platforms` (array de slugs). O hook `usePlatformsQuery` já existe e retorna as plataformas do banco.
+
+Atualmente, as colunas do Kanban de clientes dentro de um Squad são derivadas da tabela `client_statuses` (via `useEffect` que sincroniza). Porém, as ações de adicionar/remover colunas (`handleAddCol`, `handleRemoveCol`) só alteram o estado local — não persistem no banco.
+
+A infraestrutura já existe: `useAddClientStatus()` e `useDeleteClientStatus()` no hook `useClientStatusesQuery.ts`.
 
 ### Alterações
 
-**`src/pages/TasksPage.tsx`**
-- Adicionar um novo estado `selectedPlatform` (default `'all'`)
-- Construir a lista de plataformas disponíveis a partir de `usePlatformsQuery`
-- Adicionar um `<select>` ao lado dos filtros existentes com as opções de plataforma
-- Atualizar a lógica de `filtered` para incluir `matchPlatform`: verificar se `task.platforms` contém o slug selecionado (ou passar tudo se `'all'`)
+**`src/pages/ProjectsPage.tsx`**
+
+1. Importar `useAddClientStatus` e `useDeleteClientStatus` do hook existente
+2. Modificar `handleAddCol`:
+   - Abrir um mini-dialog pedindo nome da coluna (similar ao que já existe em `ClientsPage` para "Novo Status")
+   - Ao confirmar, chamar `addStatusMut.mutate({ key, label, class_name })` para persistir no banco
+   - A coluna aparecerá automaticamente via `useEffect` que sincroniza `clientStatuses → clientCols`
+3. Modificar `handleRemoveCol`:
+   - Chamar `deleteStatusMut.mutate(col.status)` para remover do banco
+   - A coluna desaparecerá automaticamente via o mesmo `useEffect`
+4. Remover a manipulação direta de `setClientCols` em `handleAddCol`/`handleRemoveCol`, delegando ao fluxo reativo (banco → query invalidation → useEffect sync)
+5. Adicionar um dialog de confirmação antes de excluir uma coluna
 
 ### Detalhes técnicos
-- A filtragem usa `task.platforms` (array de slugs) comparado com o slug da plataforma selecionada
-- O select lista `platforms` do hook existente `usePlatformsQuery`
-- Padrão igual aos filtros já existentes de responsável e tipo
+
+- O `key` da nova coluna será gerado como slug do label (ex: "Em Revisão" → `em_revisao`)
+- O `class_name` usará um valor padrão (`bg-muted text-muted-foreground border-border`) ou o usuário poderá escolher uma cor
+- O rename de colunas (`handleRenameCol`) será persistido usando um novo `useUpdateClientStatus` mutation que faz `update` na tabela `client_statuses`
+- Não é necessária migration — a tabela `client_statuses` já existe com as policies corretas
+
+| Arquivo | Alteração |
+|---------|-----------|
+| `src/hooks/useClientStatusesQuery.ts` | Adicionar `useUpdateClientStatus` mutation |
+| `src/pages/ProjectsPage.tsx` | Conectar add/remove/rename de colunas ao banco via mutations |
 
