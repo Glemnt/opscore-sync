@@ -1,51 +1,23 @@
 
 
-## Plataformas dinâmicas: criar, gerenciar e selecionar
+## Exibir plataformas no card do cliente
 
-### Problema
-As plataformas (Mercado Livre, Shopee, Shein) estão hardcoded no código. Não é possível adicionar novas plataformas. Os selectors de plataforma em `AddClientDialog` e `ClientDetailModal` usam arrays estáticos.
+### O que mudar
 
-### Solução
+**`src/pages/ClientsPage.tsx`** -- componente `ClientCard`:
 
-Criar uma tabela `platforms` no banco de dados para armazenar plataformas customizáveis, adicionar uma seção de gerenciamento na página de Configurações, e atualizar os seletores de plataforma nos formulários de cliente para ler dessa tabela.
+1. Importar `usePlatformsQuery` do hook existente
+2. Dentro do `ClientCard`, chamar `usePlatformsQuery()` para obter a lista de plataformas com seus nomes
+3. Mapear os slugs armazenados em `client.platforms` para os nomes legíveis usando os dados da query
+4. Renderizar as plataformas como badges/tags compactos logo abaixo do badge do squad (antes das tarefas pendentes)
+   - Cada plataforma aparece como um chip pequeno (estilo similar ao badge do squad)
+   - Se o cliente não tiver plataformas, nada é exibido
 
-### Alterações
+### Resultado visual
 
-**1. Criar tabela `platforms` no banco** (migration)
-```sql
-CREATE TABLE platforms (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  name text NOT NULL UNIQUE,
-  slug text NOT NULL UNIQUE,
-  created_at timestamptz NOT NULL DEFAULT now()
-);
-ALTER TABLE platforms ENABLE ROW LEVEL SECURITY;
--- RLS: authenticated users can read, insert, update, delete
--- Seed com as 3 plataformas existentes (mercado_livre, shopee, shein)
-INSERT INTO platforms (name, slug) VALUES 
-  ('Mercado Livre', 'mercado_livre'),
-  ('Shopee', 'shopee'),
-  ('Shein', 'shein');
-```
+O card passará a mostrar, entre o squad e as tarefas pendentes, uma linha com chips como:
 
-**2. Criar hook `usePlatformsQuery.ts`**
-- Query para listar todas as plataformas
-- Mutations para adicionar e deletar plataformas
+`[Mercado Livre] [Shopee]`
 
-**3. Atualizar `SettingsPage.tsx`**
-- Adicionar uma seção "Plataformas" abaixo da tabela de usuários
-- Lista das plataformas existentes com botão de excluir
-- Input + botão para adicionar nova plataforma
-- Gerar `slug` automaticamente a partir do nome (lowercase, espaços → underscore)
-
-**4. Atualizar `AddClientDialog.tsx`**
-- Substituir o array hardcoded `[['mercado_livre', 'Mercado Livre'], ...]` pela lista dinâmica da query `usePlatformsQuery`
-- Usar `slug` como valor e `name` como label
-
-**5. Atualizar `ClientDetailModal.tsx`**
-- Mesma substituição do array hardcoded pela lista dinâmica
-
-**6. Atualizar tipo `Platform` em `src/types/index.ts`**
-- Mudar de union type literal para `string` (para aceitar plataformas dinâmicas)
-- O campo `platforms` na tabela `clients` já é `text[]`, então aceita qualquer valor
+Sem alterações no banco de dados -- apenas mudança de apresentação no componente.
 
