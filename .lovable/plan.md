@@ -1,35 +1,17 @@
 
 
-## Adicionar plataforma às demandas
+## Corrigir contabilização de receita no Dashboard
 
-### O que precisa ser feito
-
-Adicionar um campo `platform` (texto, opcional) à tabela `tasks` no banco de dados, e expor esse campo nos formulários de criação e edição de demandas.
+### Problema
+O Dashboard filtra MRR e receita por plataforma apenas por clientes com status `active`. Quando um cliente muda para `paused` ou `onboarding`, sua receita deixa de ser contabilizada. O correto é excluir a receita **apenas** de clientes com status `churned`.
 
 ### Alterações
 
-**1. Migration -- adicionar coluna `platform` à tabela `tasks`**
-```sql
-ALTER TABLE tasks ADD COLUMN platform text;
-```
+**`src/pages/DashboardPage.tsx`** — 3 pontos de mudança:
 
-**2. `src/types/index.ts`** -- adicionar `platform?: string` à interface `Task`
+1. **MRR (linha 125)**: Trocar `c.status === 'active'` por `c.status !== 'churned'`
+2. **Receita por Plataforma (linha 151)**: Mesmo ajuste — `c.status !== 'churned'`
+3. **Saúde dos Clientes (linha 113)**: Manter filtrando por `active` aqui, pois saúde é apenas para clientes ativos — ou ajustar para incluir todos exceto churned, conforme preferência. Sem alteração proposta neste item.
 
-**3. `src/types/database.ts`** -- no `mapDbTask`, mapear `row.platform` para `task.platform`
-
-**4. `src/hooks/useTasksQuery.ts`**
-- No `useAddTask`, enviar `platform` ao inserir
-- No `useUpdateTask`, incluir `platform` no mapeamento de campos
-
-**5. `src/components/AddTaskDialog.tsx`**
-- Adicionar estado `platform`
-- Adicionar um `Select` que carrega as plataformas via `usePlatformsQuery`
-- Incluir `platform` no objeto da task ao submeter
-
-**6. `src/components/TaskDetailModal.tsx`**
-- Adicionar um card editável de "Plataforma" na grid de info cards (ao lado de Prioridade/Tempo)
-- Select com as plataformas dinâmicas + opção vazia "Sem plataforma"
-- Alterações salvam via `updateTask`
-
-**7. `src/pages/TasksPage.tsx`** -- no `TaskCard`, exibir badge da plataforma (se presente) similar ao badge de tipo
+Nenhuma mudança no banco de dados.
 
