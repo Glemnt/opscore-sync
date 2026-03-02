@@ -1,30 +1,28 @@
 
 
-## Persistir Tipos de Demanda Customizados
+## Unificar criação de demandas na página Squads com a página Demandas
 
 ### Problema
-Os tipos de demanda criados pelo usuário ficam apenas em estado local (`useState`) do `AddTaskDialog`, sendo perdidos ao fechar o dialog.
-
-### Solução
-Criar uma tabela `task_types` no banco de dados para persistir os tipos customizados, e um hook `useTaskTypesQuery` para carregar/adicionar tipos.
+A página Squads (ProjectsPage) usa o componente `AddDemandDialog` para criar demandas, que é mais simples e não inclui: tipo de demanda (com persistência no banco), tempo estimado, observações, e auto-geração de título. A página Demandas usa `AddTaskDialog`, que tem todos esses campos. A edição já usa o mesmo `TaskDetailModal` em ambas as páginas.
 
 ### Alterações
 
-**1. Migração SQL — criar tabela `task_types`**
-- Colunas: `id` (uuid), `key` (text, unique), `label` (text), `color` (text), `created_at`
-- RLS: leitura e escrita para usuários autenticados
-- Seed com os tipos padrão do `taskTypeConfig` para unificar tudo no banco
+**`src/pages/ProjectsPage.tsx`**
 
-**2. Novo hook `src/hooks/useTaskTypesQuery.ts`**
-- `useTaskTypesQuery()` — busca todos os tipos do banco
-- `useAddTaskType()` — insere novo tipo customizado
+1. Substituir `AddDemandDialog` por `AddTaskDialog` nos dois locais onde é usado:
+   - No nível do projeto (linha ~416): remover o `AddDemandDialog` e usar `AddTaskDialog` com `defaultStatus="backlog"`
+   - No `KanbanView` (linha ~615): substituir `AddDemandDialog` por `AddTaskDialog` com `defaultStatus` dinâmico baseado na coluna
 
-**3. `src/components/AddTaskDialog.tsx`**
-- Remover `customTypes` do estado local
-- Usar `useTaskTypesQuery` para listar todos os tipos no Select
-- `handleAddCustomType` passa a chamar `useAddTaskType` para persistir no banco
-- Tipos ficam disponíveis em todas as sessões futuras
+2. O `AddTaskDialog` já pré-seleciona o cliente automaticamente pelo dropdown, então o usuário terá a mesma experiência da página Demandas, incluindo:
+   - Seletor de tipo de demanda com opção de criar novos tipos (persistidos no banco)
+   - Campo de tempo estimado
+   - Campo de observações
+   - Seletor de plataformas
+   - Subtarefas
+   - Responsável filtrado por squad do cliente
 
-**4. `src/pages/TasksPage.tsx` e `src/components/TaskDetailModal.tsx`**
-- Usar `useTaskTypesQuery` para exibir labels/cores corretas dos tipos customizados (fallback atual com `??` já funciona, mas ficará mais consistente)
+3. Remover imports de `AddDemandDialog` que não serão mais necessários.
+
+### Resultado
+A criação de demandas dentro de Squads → Cliente → Projeto terá exatamente a mesma interface e funcionalidade da página Demandas.
 
