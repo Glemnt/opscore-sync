@@ -42,7 +42,8 @@ export function TaskDetailModal({ task, open, onOpenChange }: TaskDetailModalPro
     if (!task) return appUsers;
     const client = clients.find((c) => c.id === task.clientId);
     if (!client?.squadId) return appUsers;
-    return appUsers.filter(u => u.squadIds?.includes(client.squadId!));
+    const filtered = appUsers.filter(u => u.squadIds?.includes(client.squadId!));
+    return filtered.length > 0 ? filtered : appUsers;
   }, [task, clients, appUsers]);
 
   const canDelete = useMemo(() => {
