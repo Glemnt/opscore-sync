@@ -13,6 +13,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { ContractType, Client, Task, TaskType, SubTask, Platform } from '@/types';
 import { usePlatformsQuery } from '@/hooks/usePlatformsQuery';
 import { useAppUsersQuery } from '@/hooks/useAppUsersQuery';
+import { useAddClientFlow } from '@/hooks/useClientFlowsQuery';
 import { cn } from '@/lib/utils';
 
 interface AddClientDialogProps {
@@ -48,6 +49,7 @@ export function AddClientDialog({ open, onClose }: AddClientDialogProps) {
   const [responsible, setResponsible] = useState('');
   const { data: platformOptions = [] } = usePlatformsQuery();
   const { data: appUsers = [] } = useAppUsersQuery();
+  const addClientFlowMutation = useAddClientFlow();
 
   // Selected templates for auto-creation
   const [selectedTemplateIds, setSelectedTemplateIds] = useState<string[]>([]);
@@ -100,6 +102,14 @@ export function AddClientDialog({ open, onClose }: AddClientDialogProps) {
     };
 
     addClient(newClient);
+
+    // Persist flow associations for selected flows (not default/custom templates)
+    const flowIds = flows.map(f => f.id);
+    selectedTemplateIds
+      .filter(id => flowIds.includes(id))
+      .forEach(flowId => {
+        addClientFlowMutation.mutate({ clientId, flowId });
+      });
 
     // Auto-create tasks from selected templates
     const squad = squads.find(s => s.id === squadId);

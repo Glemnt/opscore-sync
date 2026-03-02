@@ -1,10 +1,12 @@
 import { useState } from 'react';
+import { Workflow } from 'lucide-react';
 import { Plus, Search, Building2, Calendar, User, X, Users, Circle, ShoppingBag, Settings2, Trash2 } from 'lucide-react';
 import { mockAnalysisData } from '@/components/ClientAIAnalysis';
 import { useSquads } from '@/contexts/SquadsContext';
 import { usePlatformsQuery } from '@/hooks/usePlatformsQuery';
 import { useProjectsQuery } from '@/hooks/useProjectsQuery';
 import { useTasks } from '@/contexts/TasksContext';
+import { useClientFlowsQuery } from '@/hooks/useClientFlowsQuery';
 import { PageHeader, StatusBadge } from '@/components/ui/shared';
 import { Client, ClientStatus } from '@/types';
 import { cn } from '@/lib/utils';
@@ -34,6 +36,7 @@ export function ClientsPage() {
   const { squads } = useSquads();
   const { data: projects = [] } = useProjectsQuery();
   const { tasks } = useTasks();
+  const { data: clientFlowsMap = {} } = useClientFlowsQuery();
   const clients = getVisibleClients();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -176,7 +179,7 @@ export function ClientsPage() {
       {/* Grid */}
       <div className="grid grid-cols-3 gap-4">
         {filtered.map((client) => (
-          <ClientCard key={client.id} client={client} statusMap={statusMap} onClick={() => setSelectedClient(client)} />
+          <ClientCard key={client.id} client={client} statusMap={statusMap} clientFlows={clientFlowsMap[client.id] ?? []} onClick={() => setSelectedClient(client)} />
         ))}
       </div>
 
@@ -267,7 +270,7 @@ export function ClientsPage() {
   );
 }
 
-function ClientCard({ client, statusMap, onClick }: { client: Client; statusMap: Record<string, { label: string; className: string }>; onClick: () => void }) {
+function ClientCard({ client, statusMap, clientFlows, onClick }: { client: Client; statusMap: Record<string, { label: string; className: string }>; clientFlows: { flowId: string; flowName: string }[]; onClick: () => void }) {
   const statusConf = statusMap[client.status] ?? { label: client.status, className: 'bg-muted text-muted-foreground border-border' };
   const { squads } = useSquads();
   const { tasks } = useTasks();
@@ -324,6 +327,18 @@ function ClientCard({ client, statusMap, onClick }: { client: Client; statusMap:
           })}
         </div>
       )}
+
+      {clientFlows.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 mb-3">
+          {clientFlows.map((cf) => (
+            <span key={cf.flowId} className="inline-flex items-center gap-1 text-[10px] text-primary bg-primary/10 rounded-md px-2 py-1 font-medium">
+              <Workflow className="w-3 h-3 shrink-0" />
+              {cf.flowName}
+            </span>
+          ))}
+        </div>
+      )}
+
 
       {pendingTasks.length > 0 && (
         <div className="space-y-1.5 mb-3">
