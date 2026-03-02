@@ -63,10 +63,11 @@ export function ClientDetailModal({ client, open, onClose }: ClientDetailModalPr
     }
   }, [client?.startDate, client?.contractType, client?.paymentDay, client?.contractDurationMonths]);
 
-  if (!client) return null;
-
   const statusMap = useClientStatusesMap();
   const { data: clientStatuses = [] } = useClientStatusesQuery();
+
+  if (!client) return null;
+
   const statusConf = statusMap[client.status] ?? { label: client.status, className: 'bg-muted text-muted-foreground border-border' };
   const squad = squads.find((s) => s.id === client.squadId);
   const clientProject = projects.find((p) => p.clientId === client.id);
