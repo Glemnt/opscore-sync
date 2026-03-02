@@ -122,7 +122,7 @@ export function DashboardPage() {
   // MRR
   const mrr = useMemo(() => {
     return clients
-      .filter(c => c.status === 'active')
+      .filter(c => c.status !== 'churned')
       .reduce((sum, c) => sum + (c.monthlyRevenue || 0), 0);
   }, [clients]);
 
@@ -148,7 +148,7 @@ export function DashboardPage() {
   // Revenue by platform
   const platformData = useMemo(() => {
     const map: Record<string, number> = {};
-    clients.filter(c => c.status === 'active').forEach(c => {
+    clients.filter(c => c.status !== 'churned').forEach(c => {
       const plats = c.platforms?.length ? c.platforms : (c.platform ? [c.platform] : ['mercado_livre']);
       const rev = (c.monthlyRevenue || 0) / plats.length;
       plats.forEach(p => {
