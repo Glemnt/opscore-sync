@@ -22,7 +22,8 @@ import { useAppUsersQuery } from '@/hooks/useAppUsersQuery';
 import { useClientStatusesQuery, useClientStatusesMap, useAddClientStatus, useDeleteClientStatus, useUpdateClientStatus, useReorderClientStatuses } from '@/hooks/useClientStatusesQuery';
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from '@/components/ui/alert-dialog';
 import { useClientPlatformsQuery } from '@/hooks/useClientPlatformsQuery';
-import { getPlatformAttributeSummary } from '@/components/PlatformAttributesEditor';
+import { getPlatformAttributeSummary, PLATFORM_ATTRIBUTE_DEFINITIONS } from '@/components/PlatformAttributesEditor';
+import { format } from 'date-fns';
 
 type KanbanColumn = { id: string; label: string; status: ClientStatus | string };
 type ProjectKanbanColumn = { id: string; label: string; status: ProjectStatus | string };
@@ -585,49 +586,73 @@ export function ProjectsPage() {
             const cp = clientPlatformsData.find(cp => cp.clientId === selectedClient.id && cp.platformSlug === slug);
             const cpSquad = cp?.squadId ? squads.find(s => s.id === cp.squadId) : null;
             const phaseLabel = cp ? (clientStatuses.find(s => s.key === cp.phase)?.label ?? cp.phase) : null;
-            const isDiffSquad = cp?.squadId && cp.squadId !== selectedClient.squadId;
-            return (
-              <div
-                key={slug}
-                onClick={() => setSelectedPlatform(slug)}
-                className="bg-card rounded-xl border border-border p-5 shadow-sm-custom hover:shadow-md-custom hover:-translate-y-0.5 transition-all cursor-pointer group"
-              >
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="w-10 h-10 rounded-lg bg-accent/60 flex items-center justify-center">
-                    <ShoppingBag className="w-5 h-5 text-accent-foreground" />
-                  </div>
-                  <div>
+            return (() => {
+              const displaySquad = cpSquad ?? (selectedClient.squadId ? squads.find(s => s.id === selectedClient.squadId) : null);
+              const fieldDefs = PLATFORM_ATTRIBUTE_DEFINITIONS[slug] ?? [];
+              const attrs = cp?.platformAttributes ?? {};
+
+              const getAttrDisplay = (field: typeof fieldDefs[number]) => {
+                const val = attrs[field.key];
+                if (field.type === 'toggle') return val ? 'Sim' : 'Não';
+                if (field.type === 'select') {
+                  if (!val) return '—';
+                  const opt = field.options?.find(o => o.value === val);
+                  return opt?.label ?? val;
+                }
+                return val ?? '—';
+              };
+
+              return (
+                <div
+                  key={slug}
+                  onClick={() => setSelectedPlatform(slug)}
+                  className="bg-card rounded-xl border border-border p-5 shadow-sm-custom hover:shadow-md-custom hover:-translate-y-0.5 transition-all cursor-pointer group"
+                >
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-10 h-10 rounded-lg bg-accent/60 flex items-center justify-center">
+                      <ShoppingBag className="w-5 h-5 text-accent-foreground" />
+                    </div>
                     <h3 className="text-sm font-bold text-foreground group-hover:text-primary transition-colors">{plat?.name ?? slug}</h3>
-                    {phaseLabel && (
-                      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary font-medium">{phaseLabel}</span>
-                    )}
                   </div>
-                </div>
-                {cp?.responsible && (
-                  <p className="text-xs text-muted-foreground mb-1">
-                    <span className="font-medium">{cp.responsible}</span>
-                  </p>
-                )}
-                {isDiffSquad && cpSquad && (
-                  <p className="text-[10px] text-primary font-medium mb-1">Squad: {cpSquad.name}</p>
-                )}
-                {(() => {
-                  const attrSummary = cp ? getPlatformAttributeSummary(slug, cp.platformAttributes) : [];
-                  return attrSummary.length > 0 ? (
-                    <div className="flex flex-wrap gap-1 mb-2">
-                      {attrSummary.map((attr, i) => (
-                        <span key={i} className="text-[10px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground font-medium">{attr}</span>
+
+                  <div className="space-y-1.5 mb-3">
+                    <div className="flex items-center text-xs">
+                      <span className="text-muted-foreground w-28 shrink-0">Fase:</span>
+                      <span className="font-medium text-foreground">{phaseLabel ?? '—'}</span>
+                    </div>
+                    <div className="flex items-center text-xs">
+                      <span className="text-muted-foreground w-28 shrink-0">Squad:</span>
+                      <span className="font-medium text-foreground">{displaySquad?.name ?? '—'}</span>
+                    </div>
+                    <div className="flex items-center text-xs">
+                      <span className="text-muted-foreground w-28 shrink-0">Responsável:</span>
+                      <span className="font-medium text-foreground">{cp?.responsible || '—'}</span>
+                    </div>
+                    <div className="flex items-center text-xs">
+                      <span className="text-muted-foreground w-28 shrink-0">Prazo:</span>
+                      <span className="font-medium text-foreground">{cp?.deadline ? format(new Date(cp.deadline + 'T12:00:00'), 'dd/MM/yyyy') : '—'}</span>
+                    </div>
+                  </div>
+
+                  {fieldDefs.length > 0 && (
+                    <div className="space-y-1.5 mb-3 pt-2 border-t border-border/50">
+                      {fieldDefs.map((field) => (
+                        <div key={field.key} className="flex items-center text-xs">
+                          <span className="text-muted-foreground w-28 shrink-0">{field.label}:</span>
+                          <span className="font-medium text-foreground">{getAttrDisplay(field)}</span>
+                        </div>
                       ))}
                     </div>
-                  ) : null;
-                })()}
-                <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                  <span>{platProjects.length} projetos</span>
-                  <span>•</span>
-                  <span>{platTasks.length} demandas</span>
+                  )}
+
+                  <div className="flex items-center gap-3 text-xs text-muted-foreground pt-2 border-t border-border/50">
+                    <span>{platProjects.length} projetos</span>
+                    <span>•</span>
+                    <span>{platTasks.length} demandas</span>
+                  </div>
                 </div>
-              </div>
-            );
+              );
+            })();
           })}
         </div>
       </div>
