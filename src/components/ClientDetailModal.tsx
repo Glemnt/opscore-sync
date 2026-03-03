@@ -1,12 +1,12 @@
-import { useState, useMemo, useRef } from 'react';
-import { Building2, Calendar, Clock, User, CheckCircle2, AlertCircle, ClipboardList, Circle, Send, History, Edit3, Save, X, FileText, Upload, Eye, Trash2, Pencil, Plus, Workflow, ShoppingBag } from 'lucide-react';
+import { useState, useMemo, useRef, useEffect } from 'react';
+import { Building2, Calendar, Clock, User, CheckCircle2, AlertCircle, ClipboardList, Circle, Send, History, Edit3, Save, X, FileText, Upload, Eye, Trash2, Pencil, Plus, Workflow, ShoppingBag, ChevronDown, ChevronUp } from 'lucide-react';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { StatusBadge } from '@/components/ui/shared';
 import { taskStatusConfig, taskTypeConfig } from '@/lib/config';
-import { Client, Task, ClientStatus, ContractType, Platform } from '@/types';
-import { usePlatformsQuery } from '@/hooks/usePlatformsQuery';
+import { Client, Task, ClientStatus, ContractType, Platform, Squad } from '@/types';
+import { usePlatformsQuery, PlatformRow } from '@/hooks/usePlatformsQuery';
 import { useTaskTypesMap } from '@/hooks/useTaskTypesQuery';
 import { useClientStatusesQuery, useClientStatusesMap } from '@/hooks/useClientStatusesQuery';
 import { cn } from '@/lib/utils';
@@ -18,10 +18,145 @@ import { useAppUsersQuery } from '@/hooks/useAppUsersQuery';
 import { ClientAIAnalysis } from '@/components/ClientAIAnalysis';
 import { useClientFlowsQuery, useAddClientFlow, useRemoveClientFlow } from '@/hooks/useClientFlowsQuery';
 import { useFlowsQuery } from '@/hooks/useFlowsQuery';
+import { useClientPlatformsQuery, useAddClientPlatform, useUpdateClientPlatform } from '@/hooks/useClientPlatformsQuery';
+import type { ClientPlatform } from '@/hooks/useClientPlatformsQuery';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+
+// ─── Platform Operational Panel ───
+function PlatformOperationalPanel({ client, platformOptions, squads, appUsers, tasks, clientStatuses }: {
+  client: Client;
+  platformOptions: PlatformRow[];
+  squads: Squad[];
+  appUsers: any[];
+  tasks: Task[];
+  clientStatuses: any[];
+}) {
+  const { data: clientPlatforms = [] } = useClientPlatformsQuery();
+  const addPlatform = useAddClientPlatform();
+  const updatePlatform = useUpdateClientPlatform();
+  const [expandedSlug, setExpandedSlug] = useState<string | null>(null);
+
+  const platforms = client.platforms ?? [];
+  const cpMap = useMemo(() => {
+    const map: Record<string, ClientPlatform> = {};
+    for (const cp of clientPlatforms) {
+      if (cp.clientId === client.id) map[cp.platformSlug] = cp;
+    }
+    return map;
+  }, [clientPlatforms, client.id]);
+
+  // Auto-seed missing platform records
+  useEffect(() => {
+    for (const slug of platforms) {
+      if (!cpMap[slug]) {
+        addPlatform.mutate({ clientId: client.id, platformSlug: slug, squadId: client.squadId || null });
+      }
+    }
+  }, [platforms.join(','), Object.keys(cpMap).join(',')]);
+
+  return (
+    <div className="mt-3">
+      <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1.5">Plataformas (Operacional)</p>
+      <div className="space-y-2">
+        {platforms.map((slug) => {
+          const plat = platformOptions.find(p => p.slug === slug);
+          const cp = cpMap[slug];
+          const platTasks = tasks.filter(t => t.platforms?.includes(slug));
+          const pendingCount = platTasks.filter(t => t.status !== 'done').length;
+          const isExpanded = expandedSlug === slug;
+          const platSquad = cp?.squadId ? squads.find(s => s.id === cp.squadId) : null;
+
+          return (
+            <div key={slug} className="border border-border rounded-lg bg-muted/30 overflow-hidden">
+              <button
+                onClick={() => setExpandedSlug(isExpanded ? null : slug)}
+                className="w-full flex items-center justify-between p-3 hover:bg-muted/50 transition-colors text-left"
+              >
+                <div className="flex items-center gap-2">
+                  <ShoppingBag className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                  <span className="text-sm font-semibold text-foreground">{plat?.name ?? slug}</span>
+                  {cp && (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary font-medium">
+                      {clientStatuses.find(s => s.key === cp.phase)?.label ?? cp.phase}
+                    </span>
+                  )}
+                  {pendingCount > 0 && (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-warning/10 text-warning font-medium">
+                      {pendingCount} pendente{pendingCount > 1 ? 's' : ''}
+                    </span>
+                  )}
+                </div>
+                {isExpanded ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
+              </button>
+
+              {isExpanded && cp && (
+                <div className="px-3 pb-3 space-y-2 border-t border-border pt-2">
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-[10px] text-muted-foreground uppercase">Fase</label>
+                      <select
+                        value={cp.phase}
+                        onChange={e => updatePlatform.mutate({ id: cp.id, updates: { phase: e.target.value } })}
+                        className="w-full h-8 px-2 text-xs bg-background border border-input rounded-md text-foreground"
+                      >
+                        {clientStatuses.map(s => <option key={s.key} value={s.key}>{s.label}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-muted-foreground uppercase">Squad Operacional</label>
+                      <select
+                        value={cp.squadId ?? ''}
+                        onChange={e => updatePlatform.mutate({ id: cp.id, updates: { squad_id: e.target.value || null } })}
+                        className="w-full h-8 px-2 text-xs bg-background border border-input rounded-md text-foreground"
+                      >
+                        <option value="">—</option>
+                        {squads.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-muted-foreground uppercase">Responsável</label>
+                      <select
+                        value={cp.responsible}
+                        onChange={e => updatePlatform.mutate({ id: cp.id, updates: { responsible: e.target.value } })}
+                        className="w-full h-8 px-2 text-xs bg-background border border-input rounded-md text-foreground"
+                      >
+                        <option value="">—</option>
+                        {appUsers.map(u => <option key={u.id} value={u.name}>{u.name}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-muted-foreground uppercase">Prazo</label>
+                      <input
+                        type="date"
+                        value={cp.deadline ?? ''}
+                        onChange={e => updatePlatform.mutate({ id: cp.id, updates: { deadline: e.target.value || null } })}
+                        className="w-full h-8 px-2 text-xs bg-background border border-input rounded-md text-foreground"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 text-xs text-muted-foreground pt-1">
+                    <span>{platTasks.length} demandas</span>
+                    <span>•</span>
+                    <span>{pendingCount} pendentes</span>
+                    {platSquad && platSquad.id !== client.squadId && (
+                      <>
+                        <span>•</span>
+                        <span className="text-primary font-medium">Squad: {platSquad.name}</span>
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 interface ClientDetailModalProps {
   client: Client | null;
@@ -284,22 +419,16 @@ export function ClientDetailModal({ client, open, onClose }: ClientDetailModalPr
                 <EditableField field="responsible" label="Responsável" value={client.responsible || '—'} />
               </div>
 
-              {/* Plataformas */}
+              {/* Plataformas Operacionais */}
               {client.platforms && client.platforms.length > 0 && (
-                <div className="mt-3">
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1.5">Plataformas</p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {client.platforms.map((slug) => {
-                      const plat = platformOptions.find(p => p.slug === slug);
-                      return (
-                        <span key={slug} className="inline-flex items-center gap-1 text-xs text-muted-foreground bg-muted/60 rounded-md px-2.5 py-1 font-medium">
-                          <ShoppingBag className="w-3 h-3 shrink-0" />
-                          {plat?.name ?? slug}
-                        </span>
-                      );
-                    })}
-                  </div>
-                </div>
+                <PlatformOperationalPanel
+                  client={client}
+                  platformOptions={platformOptions}
+                  squads={squads}
+                  appUsers={appUsers}
+                  tasks={clientTasks}
+                  clientStatuses={clientStatuses}
+                />
               )}
 
               {/* Health color selector */}
