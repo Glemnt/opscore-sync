@@ -613,6 +613,7 @@ export function ProjectsPage() {
     const clientProjects = projects.filter(p => p.clientId === selectedClient.id);
 
     return (
+    <>
       <div className="p-6 animate-fade-in">
         <PageHeader
           title={selectedClient.name}
@@ -805,6 +806,28 @@ export function ProjectsPage() {
           );
         })()}
       </div>
+
+      {generateTarget && (
+        <GenerateDemandsDialog
+          open={!!generateTarget}
+          onOpenChange={(v) => { if (!v) setGenerateTarget(null); }}
+          phase={generateTarget.phase}
+          clientId={generateTarget.clientId}
+          clientName={generateTarget.clientName}
+          platformSlug={generateTarget.platformSlug}
+          squadId={generateTarget.squadId}
+        />
+      )}
+      {transferTarget && (
+        <TransferPlatformDialog
+          open={!!transferTarget}
+          onOpenChange={(v) => { if (!v) setTransferTarget(null); }}
+          platformId={transferTarget.platformId}
+          currentSquadId={transferTarget.squadId}
+          currentResponsible={transferTarget.responsible}
+        />
+      )}
+    </>
     );
   }
 
