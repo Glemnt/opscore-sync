@@ -44,6 +44,7 @@ export interface Client {
   platform?: Platform;
   platforms?: Platform[];
   healthColor?: 'green' | 'yellow' | 'red' | 'white';
+  setupFee?: number;
   contractFile?: { name: string; url: string; uploadedAt: string };
   changeLogs: ChangeLogEntry[];
   chatNotes: ChatNote[];

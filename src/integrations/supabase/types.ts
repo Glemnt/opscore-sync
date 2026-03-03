@@ -255,6 +255,7 @@ export type Database = {
           platforms: string[] | null
           responsible: string
           segment: string
+          setup_fee: number | null
           squad_id: string | null
           start_date: string
           status: string
@@ -277,6 +278,7 @@ export type Database = {
           platforms?: string[] | null
           responsible?: string
           segment?: string
+          setup_fee?: number | null
           squad_id?: string | null
           start_date?: string
           status?: string
@@ -299,6 +301,7 @@ export type Database = {
           platforms?: string[] | null
           responsible?: string
           segment?: string
+          setup_fee?: number | null
           squad_id?: string | null
           start_date?: string
           status?: string

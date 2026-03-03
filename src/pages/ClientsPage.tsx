@@ -363,8 +363,22 @@ function ClientCard({ client, statusMap, clientFlows, onClick }: { client: Clien
         </div>
       )}
 
-      <div className="pt-3 border-t border-border space-y-2">
-        <div className="grid grid-cols-2 gap-2">
+      {/* Responsible & Entry Date badges */}
+      <div className="flex flex-wrap items-center gap-1.5 mb-2">
+        {client.responsible && (
+          <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground bg-muted/60 rounded-md px-2 py-1 font-medium">
+            <User className="w-3 h-3 shrink-0" />
+            {client.responsible}
+          </span>
+        )}
+        <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground bg-muted/60 rounded-md px-2 py-1 font-medium">
+          <Calendar className="w-3 h-3 shrink-0" />
+          {new Date(client.startDate + 'T00:00:00').toLocaleDateString('pt-BR')}
+        </span>
+      </div>
+
+      <div className="pt-3 border-t border-border">
+        <div className="grid grid-cols-3 gap-2">
           <div className="text-center">
             <p className="text-base font-bold text-foreground">{pendingTasks.length}</p>
             <p className="text-[10px] text-muted-foreground">Pendentes</p>
@@ -375,8 +389,18 @@ function ClientCard({ client, statusMap, clientFlows, onClick }: { client: Clien
             </p>
             <p className="text-[10px] text-muted-foreground">Mensalidade</p>
           </div>
-        </div>
-        <div className="grid grid-cols-2 gap-2">
+          <div className="text-center">
+            <p className="text-base font-bold text-foreground">
+              {client.setupFee ? `R$${(client.setupFee / 1000).toFixed(1)}k` : '—'}
+            </p>
+            <p className="text-[10px] text-muted-foreground">Setup</p>
+          </div>
+          <div className="text-center">
+            <p className="text-base font-bold text-foreground">
+              {client.contractDurationMonths ? `${client.contractDurationMonths}m` : '—'}
+            </p>
+            <p className="text-[10px] text-muted-foreground">Contrato</p>
+          </div>
           <div className="text-center">
             <p className="text-base font-bold text-foreground">{nps !== undefined ? nps.toFixed(1) : '—'}</p>
             <p className="text-[10px] text-muted-foreground">NPS</p>

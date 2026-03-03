@@ -51,6 +51,7 @@ export function useAddClient() {
         contract_duration_months: client.contractDurationMonths ?? null,
         platforms: (client.platforms as any) ?? null,
         health_color: client.healthColor ?? null,
+        setup_fee: client.setupFee ?? null,
       } as any);
       if (error) throw error;
     },
@@ -70,6 +71,7 @@ export function useUpdateClient() {
         pendingTasks: 'pending_tasks', contractType: 'contract_type',
         paymentDay: 'payment_day', contractDurationMonths: 'contract_duration_months',
         healthColor: 'health_color',
+        setupFee: 'setup_fee',
       };
       for (const [k, v] of Object.entries(updates)) {
         if (k === 'changeLogs' || k === 'chatNotes') continue;
