@@ -1,34 +1,35 @@
 
 
-## Plano: Área de drop ocupa toda a altura restante da tela
+## Plano: Mostrar contagem de clientes ativos baseada no status do Kanban
 
-### Diagnóstico
-
-O `main` no Layout tem `overflow-y-auto`, o que quebra a cadeia de `flex-1` / `h-full` — o conteúdo pode crescer além do viewport sem que o flex constrainja a altura. Por isso, `flex-1` na div interna dos cards não estica até o fundo da tela.
-
-O `min-h-[calc(100vh-280px)]` é estático e não se adapta ao conteúdo real acima do Kanban.
+### Problema
+No card do squad, a linha 192 mostra `activeProjects` (projetos com status `in_progress`), mas o usuário quer ver o número de **clientes** cujo status corresponde à coluna "ativo" do Kanban.
 
 ### Solução
-
-Usar uma abordagem que **force as colunas a ocuparem toda a altura restante da viewport**, independente do `overflow-y-auto` do `main`:
-
-1. **Container do Kanban**: trocar `flex-1` por altura explícita calculada com CSS (`h-[calc(100vh-<offset>)]`), garantindo que o container sempre ocupe do ponto atual até o fundo da tela
-2. **Cada coluna**: adicionar `h-full` para herdar a altura do container
-3. **Div interna dos cards**: usar `flex-1 overflow-y-auto` (scroll interno quando há muitos cards) e remover o `min-h-[calc(100vh-280px)]` fixo
-
-Isso torna a zona de drop um retângulo que vai até o final da tela, e quando há muitos cards, a coluna faz scroll interno em vez de crescer.
+Substituir a contagem de `activeProjects` por uma contagem de clientes cujo `status` contém "active" (ou o equivalente dinâmico). Como os statuses são dinâmicos e vêm do banco (`client_statuses`), precisamos identificar quais statuses representam "ativo". A abordagem mais robusta é usar o label — qualquer status cujo label contenha "ativo" (case-insensitive) — similar ao padrão já usado para "churn" no dashboard.
 
 ### Alterações
 
-**`src/pages/ProjectsPage.tsx`**
-- Linha 362: Container do Kanban — trocar `flex-1` por `h-[calc(100vh-140px)]` (offset para header + padding da página)
-- Linha 367-370: Coluna — adicionar `h-full`
-- Linha 432-433: Div interna dos cards — trocar `min-h-[calc(100vh-280px)]` por `min-h-0 overflow-y-auto`
+**`src/pages/ProjectsPage.tsx`** (~linhas 151-192):
+- Adicionar uma contagem de clientes ativos: filtrar `squadClients` cujo `status` corresponde a um `clientStatus` com label contendo "ativo" (case-insensitive)
+- Substituir `activeProjects` por `activeClients` na exibição do card
+- Alterar o texto de "X ativos" para "X clientes ativos"
 
-**`src/pages/TasksPage.tsx`**
-- Linha 258: Container do Kanban — trocar `flex-1` por `h-[calc(100vh-200px)]` (offset maior por causa dos filtros acima)
-- Linha 264-265: Coluna — adicionar `h-full`
-- Linha 328-329: Div interna dos cards — trocar `min-h-[calc(100vh-280px)]` por `min-h-0 overflow-y-auto`
+Trecho resultante:
+```typescript
+const squadClients = clients.filter((c) => c.squadId === squad.id);
+const activeStatusKeys = clientStatuses
+  .filter(s => s.label.toLowerCase().includes('ativo') || s.key === 'active')
+  .map(s => s.key);
+const activeClients = squadClients.filter(c => activeStatusKeys.includes(c.status)).length;
+```
+
+E na renderização:
+```tsx
+<span className="font-medium">{squadClients.length} clientes</span>
+<span>•</span>
+<span className="text-primary font-semibold">{activeClients} ativos</span>
+```
 
 Nenhuma mudança de banco de dados.
 
