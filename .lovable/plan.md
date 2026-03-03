@@ -1,22 +1,32 @@
 
 
-## Plano: Expandir zona de drop do Kanban para toda a altura da coluna
+## Plano: Corrigir zona de drop do Kanban para toda a altura da coluna
 
-### Problema
-As colunas do Kanban têm `min-h-[60px]` na área de cards, mas não se estendem até o final da tela. Quando o usuário arrasta um card para uma posição abaixo dos cards existentes (numa área vazia), o drop não é registrado porque a div interna com os cards não cobre toda a altura.
+### Diagnóstico
 
-### Solução
-Fazer a div interna de cards (`space-y-3 min-h-[60px]`) ocupar toda a altura disponível da coluna com `flex-1`, e garantir que a coluna pai use `flex flex-col` com altura total.
+O problema persiste porque `flex-1` no container de cards só funciona se a cadeia de alturas estiver completa. Embora o layout tenha `h-screen` → `flex-1` (main) → `h-full flex flex-col` (page) → `flex-1` (kanban container), o `overflow-x-auto` no container do Kanban pode impedir que as colunas herdem a altura corretamente em todos os navegadores.
+
+Além disso, os handlers `onDragOver`/`onDrop` estão apenas na div externa da coluna. A div interna dos cards (que tem `flex-1`) não captura eventos de drag, então se o browser não considerar a div interna como "alvo" quando está vazia, o drop pode falhar.
+
+### Solução (duas camadas de correção)
+
+**1. Garantir altura mínima visível no container de cards**
+
+Substituir `min-h-[60px]` por `min-h-[calc(100vh-280px)]` (ou valor similar) para que a área de drop tenha altura visual garantida, independente de CSS flex.
+
+**2. Duplicar handlers de drag na div interna dos cards**
+
+Adicionar `onDragOver` e `onDrop` também na div interna que contém os cards, para que mesmo sem bubbling correto, o drop funcione.
 
 ### Alterações
 
-**Arquivo: `src/pages/ProjectsPage.tsx`**
-- Linha 367-371: Adicionar `flex flex-col` à div da coluna do Kanban de clientes
-- Linha 432-434: Adicionar `flex-1` à div interna que contém os cards de clientes
+**`src/pages/ProjectsPage.tsx`** (Kanban de clientes, ~linhas 432-435):
+- Trocar `min-h-[60px]` por `min-h-[calc(100vh-280px)]`
+- Adicionar `onDragOver` e `onDrop` idênticos aos da coluna pai
 
-**Arquivo: `src/pages/TasksPage.tsx`**
-- Linha 262-266: Adicionar `flex flex-col` à div da coluna do Kanban de demandas
-- Linha 328-330: Adicionar `flex-1` à div interna que contém os cards de demandas
+**`src/pages/TasksPage.tsx`** (Kanban de demandas, ~linhas 328-331):
+- Trocar `min-h-[60px]` por `min-h-[calc(100vh-280px)]`
+- Adicionar `onDragOver` e `onDrop` idênticos aos da coluna pai
 
-Ambas as mudanças garantem que a zona de drop se estenda por toda a altura visível da coluna, permitindo soltar o card em qualquer posição vertical.
+Nenhuma mudança de banco de dados.
 
