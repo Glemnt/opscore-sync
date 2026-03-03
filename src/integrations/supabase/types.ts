@@ -155,11 +155,13 @@ export type Database = {
           client_id: string
           created_at: string
           deadline: string | null
+          health_color: string | null
           id: string
           notes: string
           phase: string
           platform_attributes: Json
           platform_slug: string
+          quality_level: string | null
           responsible: string
           squad_id: string | null
           start_date: string | null
@@ -169,11 +171,13 @@ export type Database = {
           client_id: string
           created_at?: string
           deadline?: string | null
+          health_color?: string | null
           id?: string
           notes?: string
           phase?: string
           platform_attributes?: Json
           platform_slug: string
+          quality_level?: string | null
           responsible?: string
           squad_id?: string | null
           start_date?: string | null
@@ -183,11 +187,13 @@ export type Database = {
           client_id?: string
           created_at?: string
           deadline?: string | null
+          health_color?: string | null
           id?: string
           notes?: string
           phase?: string
           platform_attributes?: Json
           platform_slug?: string
+          quality_level?: string | null
           responsible?: string
           squad_id?: string | null
           start_date?: string | null

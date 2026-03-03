@@ -145,6 +145,34 @@ function PlatformOperationalPanel({ client, platformOptions, squads, appUsers, t
                         <option value="12">12 meses</option>
                       </select>
                     </div>
+                    <div>
+                      <label className="text-[10px] text-muted-foreground uppercase">Nível de Qualidade</label>
+                      <select
+                        value={cp.qualityLevel ?? ''}
+                        onChange={e => updatePlatform.mutate({ id: cp.id, updates: { qualityLevel: e.target.value || null } })}
+                        className="w-full h-8 px-2 text-xs bg-background border border-input rounded-md text-foreground"
+                      >
+                        <option value="">—</option>
+                        <option value="iniciante">🥉 Iniciante</option>
+                        <option value="estruturado">🥈 Estruturado</option>
+                        <option value="competitivo">🥇 Competitivo</option>
+                        <option value="escalando">🚀 Escalando</option>
+                        <option value="dominante">👑 Dominante</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-muted-foreground uppercase">Saúde da Plataforma</label>
+                      <select
+                        value={cp.healthColor ?? ''}
+                        onChange={e => updatePlatform.mutate({ id: cp.id, updates: { healthColor: e.target.value || null } })}
+                        className="w-full h-8 px-2 text-xs bg-background border border-input rounded-md text-foreground"
+                      >
+                        <option value="">—</option>
+                        <option value="green">🟢 Excelente</option>
+                        <option value="orange">🟠 Mediano</option>
+                        <option value="red">🔴 Ruim</option>
+                      </select>
+                    </div>
                   </div>
                   <div className="flex items-center gap-3 text-xs text-muted-foreground pt-1">
                     <span>{platTasks.length} demandas</span>

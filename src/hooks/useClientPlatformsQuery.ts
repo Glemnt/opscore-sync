@@ -12,6 +12,8 @@ export interface ClientPlatform {
   deadline: string | null;
   notes: string;
   platformAttributes: Record<string, any>;
+  qualityLevel: string | null;
+  healthColor: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -28,6 +30,8 @@ function mapRow(row: any): ClientPlatform {
     deadline: row.deadline,
     notes: row.notes,
     platformAttributes: row.platform_attributes ?? {},
+    qualityLevel: row.quality_level ?? null,
+    healthColor: row.health_color ?? null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -73,6 +77,8 @@ export function useUpdateClientPlatform() {
         squadId: 'squad_id',
         startDate: 'start_date',
         platformAttributes: 'platform_attributes',
+        qualityLevel: 'quality_level',
+        healthColor: 'health_color',
       };
       for (const [k, v] of Object.entries(updates)) {
         dbUpdates[keyMap[k] ?? k] = v;

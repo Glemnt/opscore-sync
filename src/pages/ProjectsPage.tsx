@@ -694,12 +694,32 @@ export function ProjectsPage() {
                             onClick={() => setSelectedPlatform(slug)}
                             className={`bg-card rounded-xl border border-border p-4 shadow-sm-custom hover:shadow-md-custom hover:-translate-y-0.5 transition-all cursor-pointer group ${getReputationBorder()}`}
                           >
-                            <div className="flex items-center gap-2.5 mb-2.5">
+                            <div className="flex items-center gap-2.5 mb-2">
                               <div className="w-8 h-8 rounded-lg bg-accent/60 flex items-center justify-center">
                                 <ShoppingBag className="w-4 h-4 text-accent-foreground" />
                               </div>
                               <h3 className="text-sm font-bold text-foreground group-hover:text-primary transition-colors">{plat?.name ?? slug}</h3>
                             </div>
+
+                            {/* Quality Level & Health */}
+                            {(cp?.qualityLevel || cp?.healthColor) && (
+                              <div className="flex items-center justify-between mb-2.5 px-1">
+                                {cp?.qualityLevel && (() => {
+                                  const qMap: Record<string, string> = { iniciante: '🥉 Iniciante', estruturado: '🥈 Estruturado', competitivo: '🥇 Competitivo', escalando: '🚀 Escalando', dominante: '👑 Dominante' };
+                                  return <span className="text-[11px] font-semibold text-foreground">{qMap[cp.qualityLevel] ?? cp.qualityLevel}</span>;
+                                })()}
+                                {cp?.healthColor && (() => {
+                                  const hMap: Record<string, { color: string; label: string }> = { green: { color: 'bg-green-500', label: 'Excelente' }, orange: { color: 'bg-orange-500', label: 'Mediano' }, red: { color: 'bg-red-500', label: 'Ruim' } };
+                                  const h = hMap[cp.healthColor];
+                                  return h ? (
+                                    <span className="inline-flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                                      <span className={`w-2.5 h-2.5 rounded-full ${h.color}`} />
+                                      {h.label}
+                                    </span>
+                                  ) : null;
+                                })()}
+                              </div>
+                            )}
 
                             <div className="space-y-1 mb-2.5">
                               <div className="flex items-center text-xs">
