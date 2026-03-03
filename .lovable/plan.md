@@ -1,45 +1,22 @@
 
 
-## Plano: Kanban de Fases das Plataformas na Página Squads
+## Plano: Expandir zona de drop do Kanban para toda a altura da coluna
 
-### Objetivo
-Reorganizar a visualização das plataformas de um cliente (step 2.5 do `ProjectsPage.tsx`) de um grid de cards para um **Kanban horizontal**, onde as colunas representam as fases (onboarding, implementacao, escala, performance, etc.) e os cards são as plataformas do cliente posicionadas na coluna correspondente à sua fase atual.
+### Problema
+As colunas do Kanban têm `min-h-[60px]` na área de cards, mas não se estendem até o final da tela. Quando o usuário arrasta um card para uma posição abaixo dos cards existentes (numa área vazia), o drop não é registrado porque a div interna com os cards não cobre toda a altura.
 
-### Lógica
-- As colunas do Kanban serão derivadas da tabela `client_statuses` (já carregada via `useClientStatusesQuery`)
-- Cada plataforma do cliente (`client_platforms`) tem um campo `phase` que determina em qual coluna ela aparece
-- O card de cada plataforma mantém as informações atuais (squad, responsável, contrato, atributos operacionais, indicador de reputação)
-- O card "Ver Todos" permanece acima do Kanban como botão de ação
+### Solução
+Fazer a div interna de cards (`space-y-3 min-h-[60px]`) ocupar toda a altura disponível da coluna com `flex-1`, e garantir que a coluna pai use `flex flex-col` com altura total.
 
 ### Alterações
 
-**Arquivo: `src/pages/ProjectsPage.tsx` (linhas 541-673)**
+**Arquivo: `src/pages/ProjectsPage.tsx`**
+- Linha 367-371: Adicionar `flex flex-col` à div da coluna do Kanban de clientes
+- Linha 432-434: Adicionar `flex-1` à div interna que contém os cards de clientes
 
-Substituir o layout `grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4` por um layout Kanban horizontal:
+**Arquivo: `src/pages/TasksPage.tsx`**
+- Linha 262-266: Adicionar `flex flex-col` à div da coluna do Kanban de demandas
+- Linha 328-330: Adicionar `flex-1` à div interna que contém os cards de demandas
 
-1. Agrupar as plataformas do cliente por `cp.phase`
-2. Renderizar colunas horizontais (uma por fase existente) com header mostrando o nome da fase e contagem
-3. Dentro de cada coluna, renderizar os cards de plataforma (mantendo o conteudo atual: nome, squad, responsavel, contrato, atributos, borda de reputacao)
-4. Manter o card "Ver Todos" como botao no topo, fora do Kanban
-5. Layout com `flex gap-4 overflow-x-auto` para scroll horizontal quando necessario
-
-```text
-┌──────────────────────────────────────────────────────────────────┐
-│ [← Voltar]   Cliente X   "Selecione uma plataforma"            │
-│                                                                  │
-│ [Ver Todos - X projetos, Y demandas]                            │
-│                                                                  │
-│ ┌─Onboarding──┐ ┌─Implementação─┐ ┌─Escala────────┐ ┌─Perf──┐ │
-│ │ Shopee      │ │ ML            │ │               │ │ Shein │ │
-│ │ Squad A     │ │ Squad B       │ │               │ │ ...   │ │
-│ │ Resp: João  │ │ Resp: Maria   │ │               │ │       │ │
-│ └─────────────┘ └───────────────┘ └───────────────┘ └───────┘ │
-└──────────────────────────────────────────────────────────────────┘
-```
-
-### Detalhes Tecnicos
-- Reutiliza `clientStatuses` (ja carregado) para definir colunas e labels
-- Fases sem plataformas associadas aparecem como colunas vazias (para dar visibilidade do pipeline)
-- Clicar no card continua navegando para `setSelectedPlatform(slug)`
-- Nenhuma mudanca de banco de dados
+Ambas as mudanças garantem que a zona de drop se estenda por toda a altura visível da coluna, permitindo soltar o card em qualquer posição vertical.
 
