@@ -1,48 +1,48 @@
 
 
-## Plano: Nível de Qualidade e Saúde da Plataforma nos Cards
+## Plano: Melhorar visual dos cards de clientes na aba Squads
 
 ### Problema
-Os cards de plataforma na aba de Squads (Step 2.5) não mostram o nível de qualidade do cliente naquela plataforma nem um indicador de saúde.
+Os cards de clientes no Kanban da aba Squads mostram as plataformas como badges inline com texto corrido que fica confuso e difícil de ler -- fase, atributos e nome se misturam em uma linha só.
 
 ### Solução
 
-**1. Banco de dados — Adicionar campos ao `client_platforms`**
+**Arquivo: `src/pages/ProjectsPage.tsx` (linhas ~478-523)**
 
-Migração SQL:
-```sql
-ALTER TABLE client_platforms ADD COLUMN quality_level text DEFAULT NULL;
-ALTER TABLE client_platforms ADD COLUMN health_color text DEFAULT NULL;
+Redesenhar o card do cliente para um layout mais organizado e legível:
+
+**Layout proposto do card:**
+
+```text
+┌──────────────────────────────┐
+│  Nome do Cliente             │
+│  Segmento                    │
+│                              │
+│  ┌─ Mercado Livre ─────────┐ │
+│  │ 📦 Implementação        │ │
+│  │ 🥇 Competitivo  🟢     │ │
+│  │ Ouro · Flex             │ │
+│  └─────────────────────────┘ │
+│  ┌─ Shopee ────────────────┐ │
+│  │ 📦 Performance          │ │
+│  │ 🥈 Estruturado  🟠     │ │
+│  │ Indicado · Express      │ │
+│  └─────────────────────────┘ │
+│                              │
+│  0 projetos  •  0 ativos     │
+└──────────────────────────────┘
 ```
 
-Valores possíveis:
-- `quality_level`: `iniciante`, `estruturado`, `competitivo`, `escalando`, `dominante`
-- `health_color`: `green`, `orange`, `red`
+**Mudanças concretas:**
 
-**2. Hook `useClientPlatformsQuery.ts`**
-- Adicionar `qualityLevel` e `healthColor` à interface `ClientPlatform`
-- Mapear `quality_level` → `qualityLevel` e `health_color` → `healthColor` no `mapRow`
-- Incluir no key map do update mutation
+1. Substituir os badges inline (`flex-wrap gap-1`) por cards individuais por plataforma usando `div` com `space-y-1.5`
+2. Cada plataforma vira um mini-card com:
+   - **Header**: ícone + nome da plataforma + bolinha de saúde (health_color) alinhada à direita
+   - **Linha 1**: Badge da fase (Onboarding, Implementação, etc.) com cor de destaque
+   - **Linha 2**: Nível de qualidade com emoji (se definido)
+   - **Linha 3**: Atributos específicos (Ouro, Flex, etc.) em texto muted menor
+3. Cada mini-card terá fundo `bg-muted/40`, `rounded-lg`, `p-2`, borda sutil
+4. Manter o footer com "X projetos • Y ativos"
 
-**3. Card da plataforma em `src/pages/ProjectsPage.tsx` (linhas ~691-735)**
-
-Adicionar ao card, entre o header e os dados de Squad/Responsável:
-
-- **Nível de Qualidade** — badge com emoji:
-  - 🥉 Iniciante, 🥈 Estruturado, 🥇 Competitivo, 🚀 Escalando, 👑 Dominante
-
-- **Saúde da Plataforma** — indicador colorido (bolinha):
-  - 🟢 Excelente, 🟠 Mediano, 🔴 Ruim
-
-Layout: uma linha com o badge de qualidade à esquerda e o indicador de saúde à direita, logo abaixo do nome da plataforma.
-
-**4. Kanban columns (linhas ~634-636)**
-
-Garantir que as colunas do Kanban de fases incluam sempre: Onboarding, Implementação, Performance, Escala (já existem como fallback, mas vou manter consistente).
-
-**5. Edição dos campos**
-
-Adicionar controles de edição (select para quality_level e health_color) no modal/painel onde as plataformas do cliente são editadas — provavelmente no `ClientDetailModal.tsx`, na seção de plataformas operacionais.
-
-Nenhuma mudança estrutural grande — apenas 2 colunas novas e renderização nos cards existentes.
+Nenhuma mudança de banco de dados. Apenas reorganização visual do JSX existente.
 
