@@ -1,48 +1,34 @@
 
 
-## Visão por Plataforma dentro do Squad → Cliente
+## Adicionar badges de plataformas nos cards dos clientes no kanban do Squad
 
-### Problema
-Quando um cliente tem múltiplas plataformas (Mercado Livre, Shopee, Shein), cada uma avança em ritmos diferentes. Hoje, ao clicar num cliente dentro do Squad, vão direto para os projetos sem distinção de plataforma, impossibilitando gerenciar e transferir o trabalho por plataforma.
+### Alteração em `src/pages/ProjectsPage.tsx`
 
-### Solução
-Adicionar um nível intermediário entre a seleção do cliente e a visualização de projetos. Ao clicar num cliente dentro do Squad, o usuário verá:
+No card do cliente no kanban (linhas ~444-454), após o segmento e antes dos contadores de projetos, inserir badges das plataformas associadas ao cliente.
 
-1. **Painel de plataformas do cliente** — cards para cada plataforma associada ao cliente, mostrando quantos projetos/demandas existem para aquela plataforma
-2. **Opção "Ver Todos"** — para continuar vendo todos os projetos sem filtro (comportamento atual)
-3. **Ao selecionar uma plataforma** — filtra projetos e demandas apenas daquela plataforma
+**Código a inserir** (após linha 448, `<p>...segment...</p>`):
 
-```text
-Squads → Squad X → Clientes (kanban) → Cliente Y
-                                          ├── [Todas] → projetos sem filtro
-                                          ├── [Mercado Livre] → projetos filtrados
-                                          ├── [Shopee] → projetos filtrados
-                                          └── [Shein] → projetos filtrados
+```tsx
+{client.platforms && client.platforms.length > 0 && (
+  <div className="flex flex-wrap gap-1 mb-2">
+    {client.platforms.map((slug) => {
+      const plat = platformOptions.find(p => p.slug === slug);
+      return (
+        <span key={slug} className="inline-flex items-center gap-1 text-[10px] text-muted-foreground bg-muted/60 rounded px-1.5 py-0.5 font-medium">
+          <ShoppingBag className="w-2.5 h-2.5 shrink-0" />
+          {plat?.name ?? slug}
+        </span>
+      );
+    })}
+  </div>
+)}
 ```
 
-### Alterações em `src/pages/ProjectsPage.tsx`
-
-**1. Novo estado**
-- `selectedPlatform: string | null` — `null` = mostrar painel de plataformas, `'all'` = todos, ou o slug da plataforma selecionada
-
-**2. Novo nível intermediário (Step 2.5)**
-Após selecionar o cliente (`selectedClient` definido) e antes de mostrar projetos, se `selectedPlatform === null`:
-- Exibir header com nome do cliente e botão "Voltar"
-- Grid de cards: um card por plataforma do cliente (usando `client.platforms` + dados de `usePlatformsQuery`)
-- Cada card mostra: ícone, nome da plataforma, contagem de projetos/demandas daquela plataforma
-- Card "Ver Todos" para acessar a visão completa sem filtro
-- Badge com plataformas no card do cliente no kanban para visibilidade rápida
-
-**3. Filtro de projetos por plataforma (Step 3 existente)**
-Quando `selectedPlatform` for definido (não null), a variável `filtered` passa a incluir filtro pela plataforma selecionada no campo `platform` dos tasks/projects. Como a tabela `projects` não tem campo `platform`, o filtro será aplicado nas **demandas** (tasks) que têm `platform[]`. Os projetos serão mostrados se possuírem pelo menos uma demanda com aquela plataforma.
-
-**4. Botão "Voltar" ajustado**
-- Se `selectedPlatform !== null`: voltar limpa `selectedPlatform` (volta ao painel de plataformas)
-- Se `selectedPlatform === null`: voltar limpa `selectedClient`
-
-### Arquivos alterados
+- `ShoppingBag` e `platformOptions` já estão importados/disponíveis no componente
+- Badges compactos (text `10px`) para não sobrecarregar o card
+- Mesmo padrão visual usado no modal de detalhes do cliente
 
 | Arquivo | Alteração |
 |---------|-----------|
-| `src/pages/ProjectsPage.tsx` | Novo estado `selectedPlatform`, novo painel intermediário de plataformas, filtro de projetos por plataforma, ajuste na navegação de volta |
+| `src/pages/ProjectsPage.tsx` | Inserir badges de plataformas no card do cliente no kanban (~linha 448) |
 
