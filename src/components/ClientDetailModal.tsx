@@ -20,6 +20,7 @@ import { useClientFlowsQuery, useAddClientFlow, useRemoveClientFlow } from '@/ho
 import { useFlowsQuery } from '@/hooks/useFlowsQuery';
 import { useClientPlatformsQuery, useAddClientPlatform, useUpdateClientPlatform } from '@/hooks/useClientPlatformsQuery';
 import type { ClientPlatform } from '@/hooks/useClientPlatformsQuery';
+import { PlatformAttributesEditor } from '@/components/PlatformAttributesEditor';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
@@ -148,6 +149,14 @@ function PlatformOperationalPanel({ client, platformOptions, squads, appUsers, t
                       </>
                     )}
                   </div>
+                  <PlatformAttributesEditor
+                    platformSlug={slug}
+                    attributes={cp.platformAttributes ?? {}}
+                    onChange={(key, value) => {
+                      const newAttrs = { ...cp.platformAttributes, [key]: value };
+                      updatePlatform.mutate({ id: cp.id, updates: { platformAttributes: newAttrs } });
+                    }}
+                  />
                 </div>
               )}
             </div>

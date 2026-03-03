@@ -11,6 +11,7 @@ export interface ClientPlatform {
   startDate: string | null;
   deadline: string | null;
   notes: string;
+  platformAttributes: Record<string, any>;
   createdAt: string;
   updatedAt: string;
 }
@@ -26,6 +27,7 @@ function mapRow(row: any): ClientPlatform {
     startDate: row.start_date,
     deadline: row.deadline,
     notes: row.notes,
+    platformAttributes: row.platform_attributes ?? {},
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -70,6 +72,7 @@ export function useUpdateClientPlatform() {
         platformSlug: 'platform_slug',
         squadId: 'squad_id',
         startDate: 'start_date',
+        platformAttributes: 'platform_attributes',
       };
       for (const [k, v] of Object.entries(updates)) {
         dbUpdates[keyMap[k] ?? k] = v;

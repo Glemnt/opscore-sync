@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { Workflow } from 'lucide-react';
+import { useClientPlatformsQuery } from '@/hooks/useClientPlatformsQuery';
 import { Plus, Search, Building2, Calendar, User, X, Users, Circle, ShoppingBag, Settings2, Trash2 } from 'lucide-react';
 import { mockAnalysisData } from '@/components/ClientAIAnalysis';
+import { getPlatformAttributeSummary } from '@/components/PlatformAttributesEditor';
 import { useSquads } from '@/contexts/SquadsContext';
 import { usePlatformsQuery } from '@/hooks/usePlatformsQuery';
 import { useProjectsQuery } from '@/hooks/useProjectsQuery';
@@ -275,10 +277,12 @@ function ClientCard({ client, statusMap, clientFlows, onClick }: { client: Clien
   const { squads } = useSquads();
   const { tasks } = useTasks();
   const { data: platforms = [] } = usePlatformsQuery();
+  const { data: allClientPlatforms = [] } = useClientPlatformsQuery();
   const squad = squads.find((s) => s.id === client.squadId);
   const pendingTasks = tasks.filter((t) => t.clientId === client.id && t.status !== 'done');
   const analysis = mockAnalysisData[client.id];
   const nps = analysis?.satisfactionScore;
+  const clientCPs = allClientPlatforms.filter(cp => cp.clientId === client.id);
 
   const healthColorMap: Record<string, string> = {
     green: 'bg-success',
@@ -318,10 +322,15 @@ function ClientCard({ client, statusMap, clientFlows, onClick }: { client: Clien
         <div className="flex flex-wrap gap-1.5 mb-3">
           {client.platforms.map((slug) => {
             const plat = platforms.find((p) => p.slug === slug);
+            const cp = clientCPs.find(c => c.platformSlug === slug);
+            const attrSummary = cp ? getPlatformAttributeSummary(slug, cp.platformAttributes) : [];
             return (
               <span key={slug} className="inline-flex items-center gap-1 text-[10px] text-muted-foreground bg-muted/60 rounded-md px-2 py-1 font-medium">
                 <ShoppingBag className="w-3 h-3 shrink-0" />
                 {plat?.name ?? slug}
+                {attrSummary.length > 0 && (
+                  <span className="text-foreground/70 ml-0.5">· {attrSummary.join(' · ')}</span>
+                )}
               </span>
             );
           })}
