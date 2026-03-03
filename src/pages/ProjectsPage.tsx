@@ -149,8 +149,10 @@ export function ProjectsPage() {
         <div className="grid grid-cols-3 gap-4">
           {visibleSquads.map((squad) => {
             const squadClients = clients.filter((c) => c.squadId === squad.id);
-            const squadProjects = projects.filter((p) => squadClients.some((c) => c.id === p.clientId));
-            const activeProjects = squadProjects.filter((p) => p.status === 'in_progress').length;
+            const activeStatusKeys = clientStatuses
+              .filter(s => s.label.toLowerCase().includes('ativo') || s.key === 'active')
+              .map(s => s.key);
+            const activeClients = squadClients.filter(c => activeStatusKeys.includes(c.status)).length;
             return (
               <div
                 key={squad.id}
@@ -189,7 +191,7 @@ export function ProjectsPage() {
                   <div className="flex items-center gap-4 text-xs text-muted-foreground">
                     <span className="font-medium">{squadClients.length} clientes</span>
                     <span>•</span>
-                    <span className="text-primary font-semibold">{activeProjects} ativos</span>
+                    <span className="text-primary font-semibold">{activeClients} ativos</span>
                   </div>
                   <div className="mt-3 flex flex-wrap gap-1">
                     {squad.members.map((m) =>
