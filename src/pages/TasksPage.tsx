@@ -262,7 +262,7 @@ export function TasksPage() {
             <div
               key={col.status}
               className={cn(
-                'flex-shrink-0 w-72 relative',
+                'flex-shrink-0 w-72 relative flex flex-col',
                 draggingColKey === col.status && 'opacity-50'
               )}
               onDragOver={(e) => {
@@ -326,7 +326,7 @@ export function TasksPage() {
                 </div>
               </div>
               <div className={cn(
-                'space-y-2.5 min-h-[60px] rounded-xl transition-colors p-1',
+                'space-y-2.5 min-h-[60px] rounded-xl transition-colors p-1 flex-1',
                 dragOverCol === col.status && 'bg-primary/5 ring-2 ring-primary/20'
               )}>
                 {colTasks.map(task => {
