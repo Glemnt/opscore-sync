@@ -558,117 +558,145 @@ export function ProjectsPage() {
             </button>
           }
         />
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mt-2">
-          {/* "Ver Todos" card */}
-          <div
-            onClick={() => setSelectedPlatform('all')}
-            className="bg-card rounded-xl border border-border p-5 shadow-sm-custom hover:shadow-md-custom hover:-translate-y-0.5 transition-all cursor-pointer group"
-          >
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                <LayoutGrid className="w-5 h-5 text-primary" />
-              </div>
-              <h3 className="text-sm font-bold text-foreground group-hover:text-primary transition-colors">Todas</h3>
-            </div>
+        {/* Ver Todos button */}
+        <div
+          onClick={() => setSelectedPlatform('all')}
+          className="bg-card rounded-xl border border-border p-5 shadow-sm-custom hover:shadow-md-custom hover:-translate-y-0.5 transition-all cursor-pointer group inline-flex items-center gap-3 mt-2 mb-4"
+        >
+          <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+            <LayoutGrid className="w-5 h-5 text-primary" />
+          </div>
+          <div>
+            <h3 className="text-sm font-bold text-foreground group-hover:text-primary transition-colors">Todas</h3>
             <div className="flex items-center gap-3 text-xs text-muted-foreground">
               <span>{clientProjects.length} projetos</span>
               <span>•</span>
               <span>{clientTasks.length} demandas</span>
             </div>
           </div>
-
-          {/* One card per platform */}
-          {selectedClient.platforms.map((slug) => {
-            const plat = platformOptions.find(p => p.slug === slug);
-            const platTasks = clientTasks.filter(t => t.platforms?.includes(slug));
-            const platProjectIds = new Set(platTasks.map(t => t.projectId).filter(Boolean));
-            const platProjects = clientProjects.filter(p => platProjectIds.has(p.id));
-            const cp = clientPlatformsData.find(cp => cp.clientId === selectedClient.id && cp.platformSlug === slug);
-            const cpSquad = cp?.squadId ? squads.find(s => s.id === cp.squadId) : null;
-            const phaseLabel = cp ? (clientStatuses.find(s => s.key === cp.phase)?.label ?? cp.phase) : null;
-            return (() => {
-              const displaySquad = cpSquad ?? (selectedClient.squadId ? squads.find(s => s.id === selectedClient.squadId) : null);
-              const fieldDefs = PLATFORM_ATTRIBUTE_DEFINITIONS[slug] ?? [];
-              const attrs = cp?.platformAttributes ?? {};
-
-              const getAttrDisplay = (field: typeof fieldDefs[number]) => {
-                const val = attrs[field.key];
-                if (field.type === 'toggle') return val ? 'Sim' : 'Não';
-                if (field.type === 'select') {
-                  if (!val) return '—';
-                  const opt = field.options?.find(o => o.value === val);
-                  return opt?.label ?? val;
-                }
-                return val ?? '—';
-              };
-
-              const getReputationBorder = () => {
-                const rep = attrs.reputacao;
-                if (!rep) return '';
-                if (slug === 'mercado_livre') {
-                  const map: Record<string, string> = { verde: 'border-l-green-500', amarelo: 'border-l-yellow-500', laranja: 'border-l-orange-500', vermelho: 'border-l-red-500' };
-                  return map[rep] ? `border-l-4 ${map[rep]}` : '';
-                }
-                if (slug === 'shein') {
-                  const map: Record<string, string> = { L5: 'border-l-green-500', L4: 'border-l-green-500', L3: 'border-l-yellow-500', L2: 'border-l-orange-500', L1: 'border-l-red-500' };
-                  return map[rep] ? `border-l-4 ${map[rep]}` : '';
-                }
-                return '';
-              };
-
-              return (
-                <div
-                  key={slug}
-                  onClick={() => setSelectedPlatform(slug)}
-                  className={`bg-card rounded-xl border border-border p-5 shadow-sm-custom hover:shadow-md-custom hover:-translate-y-0.5 transition-all cursor-pointer group ${getReputationBorder()}`}
-                >
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="w-10 h-10 rounded-lg bg-accent/60 flex items-center justify-center">
-                      <ShoppingBag className="w-5 h-5 text-accent-foreground" />
-                    </div>
-                    <h3 className="text-sm font-bold text-foreground group-hover:text-primary transition-colors">{plat?.name ?? slug}</h3>
-                  </div>
-
-                  <div className="space-y-1.5 mb-3">
-                    <div className="flex items-center text-xs">
-                      <span className="text-muted-foreground w-28 shrink-0">Fase:</span>
-                      <span className="font-medium text-foreground">{phaseLabel ?? '—'}</span>
-                    </div>
-                    <div className="flex items-center text-xs">
-                      <span className="text-muted-foreground w-28 shrink-0">Squad:</span>
-                      <span className="font-medium text-foreground">{displaySquad?.name ?? '—'}</span>
-                    </div>
-                    <div className="flex items-center text-xs">
-                      <span className="text-muted-foreground w-28 shrink-0">Responsável:</span>
-                      <span className="font-medium text-foreground">{cp?.responsible || '—'}</span>
-                    </div>
-                    <div className="flex items-center text-xs">
-                      <span className="text-muted-foreground w-28 shrink-0">Contrato:</span>
-                      <span className="font-medium text-foreground">{cp?.platformAttributes?.tempo_contrato ? `${cp.platformAttributes.tempo_contrato} meses` : '—'}</span>
-                    </div>
-                  </div>
-
-                  {fieldDefs.length > 0 && (
-                    <div className="space-y-1.5 mb-3 pt-2 border-t border-border/50">
-                      {fieldDefs.map((field) => (
-                        <div key={field.key} className="flex items-center text-xs">
-                          <span className="text-muted-foreground w-28 shrink-0">{field.label}:</span>
-                          <span className="font-medium text-foreground">{getAttrDisplay(field)}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  <div className="flex items-center gap-3 text-xs text-muted-foreground pt-2 border-t border-border/50">
-                    <span>{platProjects.length} projetos</span>
-                    <span>•</span>
-                    <span>{platTasks.length} demandas</span>
-                  </div>
-                </div>
-              );
-            })();
-          })}
         </div>
+
+        {/* Kanban by phase */}
+        {(() => {
+          const platformsByPhase: Record<string, string[]> = {};
+          for (const slug of selectedClient.platforms!) {
+            const cp = clientPlatformsData.find(c => c.clientId === selectedClient.id && c.platformSlug === slug);
+            const phase = cp?.phase ?? 'onboarding';
+            if (!platformsByPhase[phase]) platformsByPhase[phase] = [];
+            platformsByPhase[phase].push(slug);
+          }
+
+          const columns = clientStatuses.length > 0
+            ? clientStatuses
+            : [{ key: 'onboarding', label: 'Onboarding' }, { key: 'implementacao', label: 'Implementação' }, { key: 'escala', label: 'Escala' }, { key: 'performance', label: 'Performance' }];
+
+          return (
+            <div className="flex gap-4 overflow-x-auto pb-4">
+              {columns.map((col) => {
+                const colKey = 'key' in col ? col.key : col.key;
+                const colLabel = col.label;
+                const slugsInCol = platformsByPhase[colKey] ?? [];
+
+                return (
+                  <div key={colKey} className="min-w-[240px] w-[260px] shrink-0">
+                    <div className="flex items-center justify-between mb-3 px-1">
+                      <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{colLabel}</h4>
+                      <span className="text-xs text-muted-foreground bg-muted rounded-full px-2 py-0.5">{slugsInCol.length}</span>
+                    </div>
+                    <div className="space-y-3 min-h-[80px] bg-muted/30 rounded-lg p-2">
+                      {slugsInCol.length === 0 && (
+                        <p className="text-xs text-muted-foreground text-center py-6 italic">Nenhuma plataforma</p>
+                      )}
+                      {slugsInCol.map((slug) => {
+                        const plat = platformOptions.find(p => p.slug === slug);
+                        const platTasks = clientTasks.filter(t => t.platforms?.includes(slug));
+                        const platProjectIds = new Set(platTasks.map(t => t.projectId).filter(Boolean));
+                        const platProjects = clientProjects.filter(p => platProjectIds.has(p.id));
+                        const cp = clientPlatformsData.find(c => c.clientId === selectedClient.id && c.platformSlug === slug);
+                        const cpSquad = cp?.squadId ? squads.find(s => s.id === cp.squadId) : null;
+                        const displaySquad = cpSquad ?? (selectedClient.squadId ? squads.find(s => s.id === selectedClient.squadId) : null);
+                        const fieldDefs = PLATFORM_ATTRIBUTE_DEFINITIONS[slug] ?? [];
+                        const attrs = cp?.platformAttributes ?? {};
+
+                        const getAttrDisplay = (field: typeof fieldDefs[number]) => {
+                          const val = attrs[field.key];
+                          if (field.type === 'toggle') return val ? 'Sim' : 'Não';
+                          if (field.type === 'select') {
+                            if (!val) return '—';
+                            const opt = field.options?.find(o => o.value === val);
+                            return opt?.label ?? val;
+                          }
+                          return val ?? '—';
+                        };
+
+                        const getReputationBorder = () => {
+                          const rep = attrs.reputacao;
+                          if (!rep) return '';
+                          if (slug === 'mercado_livre') {
+                            const map: Record<string, string> = { verde: 'border-l-green-500', amarelo: 'border-l-yellow-500', laranja: 'border-l-orange-500', vermelho: 'border-l-red-500' };
+                            return map[rep] ? `border-l-4 ${map[rep]}` : '';
+                          }
+                          if (slug === 'shein') {
+                            const map: Record<string, string> = { L5: 'border-l-green-500', L4: 'border-l-green-500', L3: 'border-l-yellow-500', L2: 'border-l-orange-500', L1: 'border-l-red-500' };
+                            return map[rep] ? `border-l-4 ${map[rep]}` : '';
+                          }
+                          return '';
+                        };
+
+                        return (
+                          <div
+                            key={slug}
+                            onClick={() => setSelectedPlatform(slug)}
+                            className={`bg-card rounded-xl border border-border p-4 shadow-sm-custom hover:shadow-md-custom hover:-translate-y-0.5 transition-all cursor-pointer group ${getReputationBorder()}`}
+                          >
+                            <div className="flex items-center gap-2.5 mb-2.5">
+                              <div className="w-8 h-8 rounded-lg bg-accent/60 flex items-center justify-center">
+                                <ShoppingBag className="w-4 h-4 text-accent-foreground" />
+                              </div>
+                              <h3 className="text-sm font-bold text-foreground group-hover:text-primary transition-colors">{plat?.name ?? slug}</h3>
+                            </div>
+
+                            <div className="space-y-1 mb-2.5">
+                              <div className="flex items-center text-xs">
+                                <span className="text-muted-foreground w-24 shrink-0">Squad:</span>
+                                <span className="font-medium text-foreground">{displaySquad?.name ?? '—'}</span>
+                              </div>
+                              <div className="flex items-center text-xs">
+                                <span className="text-muted-foreground w-24 shrink-0">Responsável:</span>
+                                <span className="font-medium text-foreground">{cp?.responsible || '—'}</span>
+                              </div>
+                              <div className="flex items-center text-xs">
+                                <span className="text-muted-foreground w-24 shrink-0">Contrato:</span>
+                                <span className="font-medium text-foreground">{cp?.platformAttributes?.tempo_contrato ? `${cp.platformAttributes.tempo_contrato} meses` : '—'}</span>
+                              </div>
+                            </div>
+
+                            {fieldDefs.length > 0 && (
+                              <div className="space-y-1 mb-2.5 pt-2 border-t border-border/50">
+                                {fieldDefs.map((field) => (
+                                  <div key={field.key} className="flex items-center text-xs">
+                                    <span className="text-muted-foreground w-24 shrink-0">{field.label}:</span>
+                                    <span className="font-medium text-foreground">{getAttrDisplay(field)}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+
+                            <div className="flex items-center gap-3 text-xs text-muted-foreground pt-2 border-t border-border/50">
+                              <span>{platProjects.length} proj</span>
+                              <span>•</span>
+                              <span>{platTasks.length} dem</span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })()}
       </div>
     );
   }
