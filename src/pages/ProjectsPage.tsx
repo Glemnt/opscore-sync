@@ -22,6 +22,7 @@ import { useAppUsersQuery } from '@/hooks/useAppUsersQuery';
 import { useClientStatusesQuery, useClientStatusesMap, useAddClientStatus, useDeleteClientStatus, useUpdateClientStatus, useReorderClientStatuses } from '@/hooks/useClientStatusesQuery';
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from '@/components/ui/alert-dialog';
 import { useClientPlatformsQuery } from '@/hooks/useClientPlatformsQuery';
+import { getPlatformAttributeSummary } from '@/components/PlatformAttributesEditor';
 
 type KanbanColumn = { id: string; label: string; status: ClientStatus | string };
 type ProjectKanbanColumn = { id: string; label: string; status: ProjectStatus | string };
@@ -452,10 +453,15 @@ export function ProjectsPage() {
                           <div className="flex flex-wrap gap-1 mb-2">
                             {client.platforms.map((slug) => {
                               const plat = platformOptions.find(p => p.slug === slug);
+                              const cp = clientPlatformsData.find(cp => cp.clientId === client.id && cp.platformSlug === slug);
+                              const attrSummary = cp ? getPlatformAttributeSummary(slug, cp.platformAttributes) : [];
                               return (
                                 <span key={slug} className="inline-flex items-center gap-1 text-[10px] text-muted-foreground bg-muted/60 rounded px-1.5 py-0.5 font-medium">
                                   <ShoppingBag className="w-2.5 h-2.5 shrink-0" />
                                   {plat?.name ?? slug}
+                                  {attrSummary.length > 0 && (
+                                    <span className="text-foreground/70">· {attrSummary.join(' · ')}</span>
+                                  )}
                                 </span>
                               );
                             })}
@@ -605,6 +611,16 @@ export function ProjectsPage() {
                 {isDiffSquad && cpSquad && (
                   <p className="text-[10px] text-primary font-medium mb-1">Squad: {cpSquad.name}</p>
                 )}
+                {(() => {
+                  const attrSummary = cp ? getPlatformAttributeSummary(slug, cp.platformAttributes) : [];
+                  return attrSummary.length > 0 ? (
+                    <div className="flex flex-wrap gap-1 mb-2">
+                      {attrSummary.map((attr, i) => (
+                        <span key={i} className="text-[10px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground font-medium">{attr}</span>
+                      ))}
+                    </div>
+                  ) : null;
+                })()}
                 <div className="flex items-center gap-3 text-xs text-muted-foreground">
                   <span>{platProjects.length} projetos</span>
                   <span>•</span>
