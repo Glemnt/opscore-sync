@@ -1,22 +1,37 @@
 
 
-## Adicionar filtros de Data e Etapa na página de Demandas
+## Exibir Plataformas no modal de detalhes do Cliente
 
-### Alterações em `src/pages/TasksPage.tsx`
+### Problema
+Ao abrir o modal de detalhes de um cliente, as plataformas associadas não aparecem nas informações visíveis (modo visualização). Elas só são mostradas no formulário de edição.
 
-**1. Novos estados de filtro**
-- `selectedStatus`: string (`'all'` ou a key do status) para filtrar por etapa/coluna
-- `dateFrom` e `dateTo`: strings opcionais para filtro por intervalo de data (deadline)
+### Solução
+Adicionar uma seção "Plataformas" logo abaixo do grid de informações editáveis (após o grid de Entrada/Mensalidade/Squad/Responsável), exibindo as plataformas como badges — similar ao que já é feito no card do cliente na listagem.
 
-**2. UI dos filtros** (ao lado dos filtros existentes de tipo e plataforma)
-- **Filtro por Etapa**: `<select>` com opção "Todas etapas" + lista dinâmica vinda de `taskStatuses`
-- **Filtro por Data**: dois inputs `type="date"` (De / Até) para filtrar pelo campo `deadline` das tarefas
+### Alteração em `src/components/ClientDetailModal.tsx`
 
-**3. Lógica de filtragem** (adicionar ao bloco `filtered`)
-- `matchStatus`: `selectedStatus === 'all' || t.status === selectedStatus`
-- `matchDate`: se `dateFrom` definido, `t.deadline >= dateFrom`; se `dateTo` definido, `t.deadline <= dateTo`
+Após o grid editável (linha ~285), antes da seção "Saúde do Cliente" (linha ~288), inserir:
 
-| Arquivo | Alteração |
-|---------|-----------|
-| `src/pages/TasksPage.tsx` | Adicionar estados, selects e lógica de filtro por etapa e data |
+```tsx
+{/* Plataformas */}
+{client.platforms && client.platforms.length > 0 && (
+  <div className="mt-3">
+    <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1.5">Plataformas</p>
+    <div className="flex flex-wrap gap-1.5">
+      {client.platforms.map((slug) => {
+        const plat = platformOptions.find(p => p.slug === slug);
+        return (
+          <span key={slug} className="inline-flex items-center gap-1 text-xs text-muted-foreground bg-muted/60 rounded-md px-2.5 py-1 font-medium">
+            <ShoppingBag className="w-3 h-3 shrink-0" />
+            {plat?.name ?? slug}
+          </span>
+        );
+      })}
+    </div>
+  </div>
+)}
+```
+
+- Usar o ícone `ShoppingBag` (já importado na página de clientes, precisa importar no modal)
+- Reutilizar `platformOptions` que já é carregado no modal via `usePlatformsQuery`
 
