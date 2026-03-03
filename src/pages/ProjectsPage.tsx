@@ -643,8 +643,8 @@ export function ProjectsPage() {
                       <span className="font-medium text-foreground">{cp?.responsible || '—'}</span>
                     </div>
                     <div className="flex items-center text-xs">
-                      <span className="text-muted-foreground w-28 shrink-0">Prazo:</span>
-                      <span className="font-medium text-foreground">{cp?.deadline ? format(new Date(cp.deadline + 'T12:00:00'), 'dd/MM/yyyy') : '—'}</span>
+                      <span className="text-muted-foreground w-28 shrink-0">Contrato:</span>
+                      <span className="font-medium text-foreground">{cp?.platformAttributes?.tempo_contrato ? `${cp.platformAttributes.tempo_contrato} meses` : '—'}</span>
                     </div>
                   </div>
 
