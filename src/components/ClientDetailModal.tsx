@@ -351,7 +351,7 @@ export function ClientDetailModal({ client, open, onClose }: ClientDetailModalPr
                 {client.contractType === 'mrr' ? 'MRR' : `TCV ${client.contractDurationMonths}m`}
               </span>
               <button
-                onClick={() => { setEditMode(true); setEditData({ name: client.name, companyName: client.companyName, segment: client.segment, status: client.status, platforms: client.platforms ?? (client.platform ? [client.platform] : []), contractType: client.contractType, paymentDay: client.paymentDay, contractDurationMonths: client.contractDurationMonths, notes: client.notes, monthlyRevenue: client.monthlyRevenue, responsible: client.responsible }); }}
+                onClick={() => { setEditMode(true); setEditData({ name: client.name, companyName: client.companyName, segment: client.segment, status: client.status, platforms: client.platforms ?? (client.platform ? [client.platform] : []), contractType: client.contractType, paymentDay: client.paymentDay, contractDurationMonths: client.contractDurationMonths, notes: client.notes, monthlyRevenue: client.monthlyRevenue, responsible: client.responsible, setupFee: client.setupFee }); }}
                 className="p-1.5 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
                 title="Editar cliente"
               >
@@ -412,6 +412,10 @@ export function ClientDetailModal({ client, open, onClose }: ClientDetailModalPr
                 <div>
                   <Label className="text-xs">Mensalidade (R$)</Label>
                   <Input type="number" value={editData.monthlyRevenue ?? ''} onChange={e => setEditData(p => ({ ...p, monthlyRevenue: Number(e.target.value) }))} className="h-8 text-sm" />
+                </div>
+                <div>
+                  <Label className="text-xs">Setup Pago (R$)</Label>
+                  <Input type="number" value={editData.setupFee ?? ''} onChange={e => setEditData(p => ({ ...p, setupFee: Number(e.target.value) }))} className="h-8 text-sm" />
                 </div>
                 <div>
                   <Label className="text-xs">Tipo de Contrato</Label>

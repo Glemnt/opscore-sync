@@ -1,0 +1,1 @@
+ALTER TABLE public.clients ADD COLUMN setup_fee numeric DEFAULT NULL;

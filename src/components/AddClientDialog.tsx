@@ -45,6 +45,7 @@ export function AddClientDialog({ open, onClose }: AddClientDialogProps) {
   const { squads } = useSquads();
   const [squadId, setSquadId] = useState(squads[0]?.id ?? '');
   const [monthlyRevenue, setMonthlyRevenue] = useState('');
+  const [setupFee, setSetupFee] = useState('');
   const [platforms, setPlatforms] = useState<Platform[]>([]);
   const [responsible, setResponsible] = useState('');
   const { data: platformOptions = [] } = usePlatformsQuery();
@@ -67,7 +68,7 @@ export function AddClientDialog({ open, onClose }: AddClientDialogProps) {
   const resetForm = () => {
     setName(''); setCompanyName(''); setContractType('mrr');
     setPaymentDay('10'); setContractDuration('3'); setSegment('');
-    setSquadId(squads[0]?.id ?? ''); setMonthlyRevenue('');
+    setSquadId(squads[0]?.id ?? ''); setMonthlyRevenue(''); setSetupFee('');
     setPlatforms([]); setResponsible('');
     setSelectedTemplateIds([]);
     setTab('dados');
@@ -90,6 +91,7 @@ export function AddClientDialog({ open, onClose }: AddClientDialogProps) {
       status: 'onboarding',
       notes: '',
       monthlyRevenue: monthlyRevenue ? Number(monthlyRevenue) : undefined,
+      setupFee: setupFee ? Number(setupFee) : undefined,
       activeProjects: 0,
       pendingTasks: selectedTemplateIds.length,
       contractType,
@@ -182,6 +184,12 @@ export function AddClientDialog({ open, onClose }: AddClientDialogProps) {
               <div>
                 <Label className="text-xs">Mensalidade (R$)</Label>
                 <Input type="number" value={monthlyRevenue} onChange={e => setMonthlyRevenue(e.target.value)} placeholder="3500" className="h-8 text-sm" />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs">Setup Pago (R$)</Label>
+                <Input type="number" value={setupFee} onChange={e => setSetupFee(e.target.value)} placeholder="1500" className="h-8 text-sm" />
               </div>
             </div>
             <div>

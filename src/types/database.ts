@@ -47,6 +47,7 @@ export function mapDbClient(
     contractDurationMonths: row.contract_duration_months ?? undefined,
     platforms: (row.platforms as any) ?? undefined,
     healthColor: row.health_color ?? undefined,
+    setupFee: (row as any).setup_fee ?? undefined,
     changeLogs: changeLogs.map(mapDbChangeLog),
     chatNotes: chatNotes.map(mapDbChatNote),
   };
