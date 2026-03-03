@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef } from 'react';
-import { Building2, Calendar, Clock, User, CheckCircle2, AlertCircle, ClipboardList, Circle, Send, History, Edit3, Save, X, FileText, Upload, Eye, Trash2, Pencil, Plus, Workflow } from 'lucide-react';
+import { Building2, Calendar, Clock, User, CheckCircle2, AlertCircle, ClipboardList, Circle, Send, History, Edit3, Save, X, FileText, Upload, Eye, Trash2, Pencil, Plus, Workflow, ShoppingBag } from 'lucide-react';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -283,6 +283,24 @@ export function ClientDetailModal({ client, open, onClose }: ClientDetailModalPr
                 <EditableField field="squadId" label="Squad" value={squad?.name ?? '—'} />
                 <EditableField field="responsible" label="Responsável" value={client.responsible || '—'} />
               </div>
+
+              {/* Plataformas */}
+              {client.platforms && client.platforms.length > 0 && (
+                <div className="mt-3">
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1.5">Plataformas</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {client.platforms.map((slug) => {
+                      const plat = platformOptions.find(p => p.slug === slug);
+                      return (
+                        <span key={slug} className="inline-flex items-center gap-1 text-xs text-muted-foreground bg-muted/60 rounded-md px-2.5 py-1 font-medium">
+                          <ShoppingBag className="w-3 h-3 shrink-0" />
+                          {plat?.name ?? slug}
+                        </span>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
 
               {/* Health color selector */}
               <div className="mt-3">
