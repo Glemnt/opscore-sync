@@ -326,9 +326,20 @@ export function TasksPage() {
                 </div>
               </div>
               <div className={cn(
-                'space-y-2.5 min-h-[60px] rounded-xl transition-colors p-1 flex-1',
+                'space-y-2.5 min-h-[calc(100vh-280px)] rounded-xl transition-colors p-1 flex-1',
                 dragOverCol === col.status && 'bg-primary/5 ring-2 ring-primary/20'
-              )}>
+              )}
+              onDragOver={(e) => {
+                e.preventDefault();
+                if (!draggingColKey) {
+                  setDragOverCol(col.status);
+                }
+              }}
+              onDrop={(e) => {
+                if (!draggingColKey) {
+                  handleDrop(col.status, e);
+                }
+              }}>
                 {colTasks.map(task => {
                   const canDel = (() => {
                     if (!currentUser) return false;
