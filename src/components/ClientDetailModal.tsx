@@ -1,7 +1,12 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
-import { Building2, Calendar, Clock, User, CheckCircle2, AlertCircle, ClipboardList, Circle, Send, History, Edit3, Save, X, FileText, Upload, Eye, Trash2, Pencil, Plus, Workflow, ShoppingBag, ChevronDown, ChevronUp } from 'lucide-react';
+import { Building2, Calendar as CalendarIcon, Clock, User, CheckCircle2, AlertCircle, ClipboardList, Circle, Send, History, Edit3, Save, X, FileText, Upload, Eye, Trash2, Pencil, Plus, Workflow, ShoppingBag, ChevronDown, ChevronUp } from 'lucide-react';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Button } from '@/components/ui/button';
+import { format, parseISO } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 import { Label } from '@/components/ui/label';
 import { StatusBadge } from '@/components/ui/shared';
 import { taskStatusConfig, taskTypeConfig } from '@/lib/config';
@@ -260,7 +265,33 @@ export function ClientDetailModal({ client, open, onClose }: ClientDetailModalPr
         <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">{label}</p>
         {isEditing ? (
           <div className="flex items-center gap-1.5">
-            {field === 'squadId' ? (
+            {field === 'startDate' ? (
+              <Popover open={true} onOpenChange={(open) => { if (!open) cancelEdit(); }}>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className="flex-1 h-7 text-sm justify-start font-normal">
+                    <CalendarIcon className="mr-2 h-3.5 w-3.5" />
+                    {editValue ? format(parseISO(editValue), "dd 'de' MMM yyyy", { locale: ptBR }) : 'Selecione...'}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0 z-[9999]" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={editValue ? parseISO(editValue) : undefined}
+                    onSelect={(date) => {
+                      if (date) {
+                        const formatted = format(date, 'yyyy-MM-dd');
+                        setEditValue(formatted);
+                        updateClientField(client.id, 'startDate', formatted, label);
+                        setEditingField(null);
+                      }
+                    }}
+                    initialFocus
+                    locale={ptBR}
+                    className="p-3 pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
+            ) : field === 'squadId' ? (
               <select
                 value={editValue}
                 onChange={e => setEditValue(e.target.value)}
@@ -280,8 +311,12 @@ export function ClientDetailModal({ client, open, onClose }: ClientDetailModalPr
             ) : (
               <Input type={type} value={editValue} onChange={e => setEditValue(e.target.value)} className="h-7 text-sm flex-1" />
             )}
-            <button onClick={() => saveEdit(field, label)} className="p-1 text-success hover:bg-success/10 rounded"><Save className="w-3.5 h-3.5" /></button>
-            <button onClick={cancelEdit} className="p-1 text-destructive hover:bg-destructive/10 rounded"><X className="w-3.5 h-3.5" /></button>
+            {field !== 'startDate' && (
+              <>
+                <button onClick={() => saveEdit(field, label)} className="p-1 text-success hover:bg-success/10 rounded"><Save className="w-3.5 h-3.5" /></button>
+                <button onClick={cancelEdit} className="p-1 text-destructive hover:bg-destructive/10 rounded"><X className="w-3.5 h-3.5" /></button>
+              </>
+            )}
           </div>
         ) : (
           <div className="flex items-center justify-between group/edit">
