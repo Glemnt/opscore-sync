@@ -493,22 +493,40 @@ export function ProjectsPage() {
                         </h3>
                         <p className="text-xs text-muted-foreground mb-2">{client.segment}</p>
                         {client.platforms && client.platforms.length > 0 && (
-                          <div className="flex flex-wrap gap-1 mb-2">
+                          <div className="space-y-1.5 mb-2">
                             {client.platforms.map((slug) => {
                               const plat = platformOptions.find(p => p.slug === slug);
                               const cp = clientPlatformsData.find(cp => cp.clientId === client.id && cp.platformSlug === slug);
                               const attrSummary = cp ? getPlatformAttributeSummary(slug, cp.platformAttributes) : [];
+                              const qMap: Record<string, string> = { iniciante: '🥉 Iniciante', estruturado: '🥈 Estruturado', competitivo: '🥇 Competitivo', escalando: '🚀 Escalando', dominante: '👑 Dominante' };
+                              const hMap: Record<string, { color: string; label: string }> = { green: { color: 'bg-green-500', label: 'Excelente' }, orange: { color: 'bg-orange-500', label: 'Mediano' }, red: { color: 'bg-red-500', label: 'Ruim' } };
+                              const health = cp?.healthColor ? hMap[cp.healthColor] : null;
                               return (
-                                <span key={slug} className="inline-flex items-center gap-1 text-[10px] text-muted-foreground bg-muted/60 rounded px-1.5 py-0.5 font-medium">
-                                  <ShoppingBag className="w-2.5 h-2.5 shrink-0" />
-                                  {plat?.name ?? slug}
+                                <div key={slug} className="bg-muted/40 rounded-lg p-2 border border-border/50">
+                                  <div className="flex items-center justify-between mb-1">
+                                    <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-foreground">
+                                      <ShoppingBag className="w-3 h-3 shrink-0 text-primary" />
+                                      {plat?.name ?? slug}
+                                    </span>
+                                    {health && (
+                                      <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground">
+                                        <span className={`w-2 h-2 rounded-full ${health.color}`} />
+                                        {health.label}
+                                      </span>
+                                    )}
+                                  </div>
                                   {cp?.phase && (
-                                    <span className="text-primary font-semibold">· {phaseLabels[cp.phase] ?? cp.phase}</span>
+                                    <span className="inline-flex items-center text-[10px] font-medium text-primary bg-primary/10 rounded px-1.5 py-0.5 mb-1">
+                                      {phaseLabels[cp.phase] ?? cp.phase}
+                                    </span>
+                                  )}
+                                  {cp?.qualityLevel && (
+                                    <p className="text-[10px] font-medium text-foreground/80 mt-0.5">{qMap[cp.qualityLevel] ?? cp.qualityLevel}</p>
                                   )}
                                   {attrSummary.length > 0 && (
-                                    <span className="text-foreground/70">· {attrSummary.join(' · ')}</span>
+                                    <p className="text-[10px] text-muted-foreground mt-0.5">{attrSummary.join(' · ')}</p>
                                   )}
-                                </span>
+                                </div>
                               );
                             })}
                           </div>
