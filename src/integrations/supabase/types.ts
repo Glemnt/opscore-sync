@@ -150,6 +150,63 @@ export type Database = {
           },
         ]
       }
+      client_platforms: {
+        Row: {
+          client_id: string
+          created_at: string
+          deadline: string | null
+          id: string
+          notes: string
+          phase: string
+          platform_slug: string
+          responsible: string
+          squad_id: string | null
+          start_date: string | null
+          updated_at: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          deadline?: string | null
+          id?: string
+          notes?: string
+          phase?: string
+          platform_slug: string
+          responsible?: string
+          squad_id?: string | null
+          start_date?: string | null
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          deadline?: string | null
+          id?: string
+          notes?: string
+          phase?: string
+          platform_slug?: string
+          responsible?: string
+          squad_id?: string | null
+          start_date?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_platforms_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_platforms_squad_id_fkey"
+            columns: ["squad_id"]
+            isOneToOne: false
+            referencedRelation: "squads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_statuses: {
         Row: {
           class_name: string

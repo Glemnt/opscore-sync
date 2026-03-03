@@ -21,6 +21,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useAppUsersQuery } from '@/hooks/useAppUsersQuery';
 import { useClientStatusesQuery, useClientStatusesMap, useAddClientStatus, useDeleteClientStatus, useUpdateClientStatus, useReorderClientStatuses } from '@/hooks/useClientStatusesQuery';
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from '@/components/ui/alert-dialog';
+import { useClientPlatformsQuery } from '@/hooks/useClientPlatformsQuery';
 
 type KanbanColumn = { id: string; label: string; status: ClientStatus | string };
 type ProjectKanbanColumn = { id: string; label: string; status: ProjectStatus | string };
@@ -46,6 +47,7 @@ export function ProjectsPage() {
   const updateStatusMut = useUpdateClientStatus();
   const clients = getVisibleClients();
   const { data: platformOptions = [] } = usePlatformsQuery();
+  const { data: clientPlatformsData = [] } = useClientPlatformsQuery();
   const [selectedSquad, setSelectedSquad] = useState<Squad | null>(null);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [selectedPlatform, setSelectedPlatform] = useState<string | null>(null);
@@ -574,18 +576,35 @@ export function ProjectsPage() {
             const platTasks = clientTasks.filter(t => t.platforms?.includes(slug));
             const platProjectIds = new Set(platTasks.map(t => t.projectId).filter(Boolean));
             const platProjects = clientProjects.filter(p => platProjectIds.has(p.id));
+            const cp = clientPlatformsData.find(cp => cp.clientId === selectedClient.id && cp.platformSlug === slug);
+            const cpSquad = cp?.squadId ? squads.find(s => s.id === cp.squadId) : null;
+            const phaseLabel = cp ? (clientStatuses.find(s => s.key === cp.phase)?.label ?? cp.phase) : null;
+            const isDiffSquad = cp?.squadId && cp.squadId !== selectedClient.squadId;
             return (
               <div
                 key={slug}
                 onClick={() => setSelectedPlatform(slug)}
                 className="bg-card rounded-xl border border-border p-5 shadow-sm-custom hover:shadow-md-custom hover:-translate-y-0.5 transition-all cursor-pointer group"
               >
-                <div className="flex items-center gap-3 mb-3">
+                <div className="flex items-center gap-3 mb-2">
                   <div className="w-10 h-10 rounded-lg bg-accent/60 flex items-center justify-center">
                     <ShoppingBag className="w-5 h-5 text-accent-foreground" />
                   </div>
-                  <h3 className="text-sm font-bold text-foreground group-hover:text-primary transition-colors">{plat?.name ?? slug}</h3>
+                  <div>
+                    <h3 className="text-sm font-bold text-foreground group-hover:text-primary transition-colors">{plat?.name ?? slug}</h3>
+                    {phaseLabel && (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary font-medium">{phaseLabel}</span>
+                    )}
+                  </div>
                 </div>
+                {cp?.responsible && (
+                  <p className="text-xs text-muted-foreground mb-1">
+                    <span className="font-medium">{cp.responsible}</span>
+                  </p>
+                )}
+                {isDiffSquad && cpSquad && (
+                  <p className="text-[10px] text-primary font-medium mb-1">Squad: {cpSquad.name}</p>
+                )}
                 <div className="flex items-center gap-3 text-xs text-muted-foreground">
                   <span>{platProjects.length} projetos</span>
                   <span>•</span>
