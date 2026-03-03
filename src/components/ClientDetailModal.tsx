@@ -129,13 +129,16 @@ function PlatformOperationalPanel({ client, platformOptions, squads, appUsers, t
                       </select>
                     </div>
                     <div>
-                      <label className="text-[10px] text-muted-foreground uppercase">Prazo</label>
-                      <input
-                        type="date"
-                        value={cp.deadline ?? ''}
-                        onChange={e => updatePlatform.mutate({ id: cp.id, updates: { deadline: e.target.value || null } })}
+                      <label className="text-[10px] text-muted-foreground uppercase">Tempo de Contrato</label>
+                      <select
+                        value={cp.platformAttributes?.tempo_contrato ?? ''}
+                        onChange={e => updatePlatform.mutate({ id: cp.id, updates: { platformAttributes: { ...cp.platformAttributes, tempo_contrato: e.target.value || '' } } })}
                         className="w-full h-8 px-2 text-xs bg-background border border-input rounded-md text-foreground"
-                      />
+                      >
+                        <option value="">—</option>
+                        <option value="6">6 meses</option>
+                        <option value="12">12 meses</option>
+                      </select>
                     </div>
                   </div>
                   <div className="flex items-center gap-3 text-xs text-muted-foreground pt-1">
