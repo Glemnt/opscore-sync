@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Plus, Search, Calendar, ChevronDown, CheckCircle2, Circle, ArrowLeft, Users2, X, Pencil, Trash2, MessageSquare, ShoppingBag, LayoutGrid } from 'lucide-react';
+import { Plus, Search, Calendar, ChevronDown, CheckCircle2, Circle, ArrowLeft, Users2, X, Pencil, Trash2, MessageSquare, ShoppingBag, LayoutGrid, Zap, ArrowRightLeft } from 'lucide-react';
 import { usePlatformsQuery } from '@/hooks/usePlatformsQuery';
 import { TaskDetailModal } from '@/components/TaskDetailModal';
 import { useProjectsQuery } from '@/hooks/useProjectsQuery';
@@ -24,6 +24,8 @@ import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, A
 import { useClientPlatformsQuery } from '@/hooks/useClientPlatformsQuery';
 import { getPlatformAttributeSummary, PLATFORM_ATTRIBUTE_DEFINITIONS } from '@/components/PlatformAttributesEditor';
 import { format } from 'date-fns';
+import { GenerateDemandsDialog } from '@/components/GenerateDemandsDialog';
+import { TransferPlatformDialog } from '@/components/TransferPlatformDialog';
 
 type KanbanColumn = { id: string; label: string; status: ClientStatus | string };
 type ProjectKanbanColumn = { id: string; label: string; status: ProjectStatus | string };
@@ -59,6 +61,10 @@ export function ProjectsPage() {
   const [addColDialogOpen, setAddColDialogOpen] = useState(false);
   const [newColLabel, setNewColLabel] = useState('');
   const [deleteColConfirm, setDeleteColConfirm] = useState<{ id: string; label: string; status: string } | null>(null);
+
+  // Generate demands & transfer platform state
+  const [generateTarget, setGenerateTarget] = useState<{ phase: string; clientId: string; clientName: string; platformSlug: string; squadId: string | null } | null>(null);
+  const [transferTarget, setTransferTarget] = useState<{ platformId: string; squadId: string | null; responsible: string } | null>(null);
 
   // Squad management state
   const [squadDialogOpen, setSquadDialogOpen] = useState(false);
@@ -765,10 +771,28 @@ export function ProjectsPage() {
                               </div>
                             )}
 
-                            <div className="flex items-center gap-3 text-xs text-muted-foreground pt-2 border-t border-border/50">
-                              <span>{platProjects.length} proj</span>
-                              <span>•</span>
-                              <span>{platTasks.length} dem</span>
+                            <div className="flex items-center justify-between text-xs text-muted-foreground pt-2 border-t border-border/50">
+                              <span>{platProjects.length} proj • {platTasks.length} dem</span>
+                              <div className="flex items-center gap-1">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-6 w-6"
+                                  title="Transferir Plataforma"
+                                  onClick={(e) => { e.stopPropagation(); setTransferTarget({ platformId: cp?.id ?? '', squadId: cp?.squadId ?? null, responsible: cp?.responsible ?? '' }); }}
+                                >
+                                  <ArrowRightLeft className="w-3.5 h-3.5" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-6 w-6 text-primary"
+                                  title="Gerar Demandas"
+                                  onClick={(e) => { e.stopPropagation(); setGenerateTarget({ phase: cp?.phase ?? 'onboarding', clientId: selectedClient.id, clientName: selectedClient.name, platformSlug: slug, squadId: cp?.squadId ?? null }); }}
+                                >
+                                  <Zap className="w-3.5 h-3.5" />
+                                </Button>
+                              </div>
                             </div>
                           </div>
                         );
@@ -874,6 +898,28 @@ export function ProjectsPage() {
 
         <ProjectSummaryPanel projects={filtered} />
       </div>
+
+      {generateTarget && (
+        <GenerateDemandsDialog
+          open={!!generateTarget}
+          onOpenChange={(v) => !v && setGenerateTarget(null)}
+          phase={generateTarget.phase}
+          clientId={generateTarget.clientId}
+          clientName={generateTarget.clientName}
+          platformSlug={generateTarget.platformSlug}
+          squadId={generateTarget.squadId}
+        />
+      )}
+
+      {transferTarget && (
+        <TransferPlatformDialog
+          open={!!transferTarget}
+          onOpenChange={(v) => !v && setTransferTarget(null)}
+          platformId={transferTarget.platformId}
+          currentSquadId={transferTarget.squadId}
+          currentResponsible={transferTarget.responsible}
+        />
+      )}
     </div>);
 
 }

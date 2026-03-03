@@ -365,6 +365,33 @@ export type Database = {
         }
         Relationships: []
       }
+      phase_demand_templates: {
+        Row: {
+          created_at: string
+          demand_owner: string
+          id: string
+          phase: string
+          sort_order: number
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          demand_owner?: string
+          id?: string
+          phase: string
+          sort_order?: number
+          title: string
+        }
+        Update: {
+          created_at?: string
+          demand_owner?: string
+          id?: string
+          phase?: string
+          sort_order?: number
+          title?: string
+        }
+        Relationships: []
+      }
       platforms: {
         Row: {
           created_at: string
