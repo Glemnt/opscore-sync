@@ -1,35 +1,42 @@
 
 
-## Plano: Mostrar contagem de clientes ativos baseada no status do Kanban
+## Plano: Adicionar informações visuais ao card do cliente
 
-### Problema
-No card do squad, a linha 192 mostra `activeProjects` (projetos com status `in_progress`), mas o usuário quer ver o número de **clientes** cujo status corresponde à coluna "ativo" do Kanban.
+### Dados já disponíveis no modelo `Client`
+- `contractDurationMonths` → Prazo de contrato (6 ou 12 meses)
+- `responsible` → Responsável pelo cliente
+- `startDate` → Data de entrada do cliente
 
-### Solução
-Substituir a contagem de `activeProjects` por uma contagem de clientes cujo `status` contém "active" (ou o equivalente dinâmico). Como os statuses são dinâmicos e vêm do banco (`client_statuses`), precisamos identificar quais statuses representam "ativo". A abordagem mais robusta é usar o label — qualquer status cujo label contenha "ativo" (case-insensitive) — similar ao padrão já usado para "churn" no dashboard.
+### Dado novo necessário
+- **Setup Pago** (`setupFee`) → Não existe no banco nem no tipo. Precisa ser adicionado.
 
 ### Alterações
 
-**`src/pages/ProjectsPage.tsx`** (~linhas 151-192):
-- Adicionar uma contagem de clientes ativos: filtrar `squadClients` cujo `status` corresponde a um `clientStatus` com label contendo "ativo" (case-insensitive)
-- Substituir `activeProjects` por `activeClients` na exibição do card
-- Alterar o texto de "X ativos" para "X clientes ativos"
+**1. Banco de dados — Adicionar coluna `setup_fee`**
+- Migração: `ALTER TABLE clients ADD COLUMN setup_fee numeric DEFAULT NULL;`
 
-Trecho resultante:
-```typescript
-const squadClients = clients.filter((c) => c.squadId === squad.id);
-const activeStatusKeys = clientStatuses
-  .filter(s => s.label.toLowerCase().includes('ativo') || s.key === 'active')
-  .map(s => s.key);
-const activeClients = squadClients.filter(c => activeStatusKeys.includes(c.status)).length;
-```
+**2. Tipo `Client` em `src/types/index.ts`**
+- Adicionar `setupFee?: number;`
 
-E na renderização:
-```tsx
-<span className="font-medium">{squadClients.length} clientes</span>
-<span>•</span>
-<span className="text-primary font-semibold">{activeClients} ativos</span>
-```
+**3. Mapeamento DB → Client em `src/types/database.ts`**
+- Mapear `setup_fee` → `setupFee`
 
-Nenhuma mudança de banco de dados.
+**4. Hook `useClientsQuery.ts`**
+- Incluir `setup_fee` / `setupFee` no insert e no update key map
+
+**5. Card do cliente em `src/pages/ClientsPage.tsx`**
+
+Reorganizar a seção de métricas no rodapé do card para incluir as novas informações. O grid passará de 2x2 para mostrar:
+
+- **Responsável** — badge com ícone `User` e nome do responsável (acima da seção de métricas)
+- **Data de Entrada** — formato `dd/mm/aaaa` com ícone `Calendar`
+- **Prazo de Contrato** — exibir "6 meses" ou "12 meses" (ou "—" se não definido)
+- **Mensalidade** — já existente
+- **Setup Pago** — valor do setup no mesmo formato da mensalidade (`R$X.Xk` ou `—`)
+- Manter: Pendentes, NPS, Saúde
+
+Layout do rodapé: grid 3 colunas com as 6 métricas (Pendentes, Mensalidade, Setup, Contrato, NPS, Saúde). Responsável e Data de Entrada ficam como badges inline acima do rodapé.
+
+**6. Modal `AddClientDialog` e `ClientDetailModal`**
+- Adicionar campo de input para Setup Pago (mesmo padrão do campo Mensalidade)
 
