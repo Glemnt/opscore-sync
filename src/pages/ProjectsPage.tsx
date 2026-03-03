@@ -602,11 +602,25 @@ export function ProjectsPage() {
                 return val ?? '—';
               };
 
+              const getReputationBorder = () => {
+                const rep = attrs.reputacao;
+                if (!rep) return '';
+                if (slug === 'mercado_livre') {
+                  const map: Record<string, string> = { verde: 'border-l-green-500', amarelo: 'border-l-yellow-500', laranja: 'border-l-orange-500', vermelho: 'border-l-red-500' };
+                  return map[rep] ? `border-l-4 ${map[rep]}` : '';
+                }
+                if (slug === 'shein') {
+                  const map: Record<string, string> = { L5: 'border-l-green-500', L4: 'border-l-green-500', L3: 'border-l-yellow-500', L2: 'border-l-orange-500', L1: 'border-l-red-500' };
+                  return map[rep] ? `border-l-4 ${map[rep]}` : '';
+                }
+                return '';
+              };
+
               return (
                 <div
                   key={slug}
                   onClick={() => setSelectedPlatform(slug)}
-                  className="bg-card rounded-xl border border-border p-5 shadow-sm-custom hover:shadow-md-custom hover:-translate-y-0.5 transition-all cursor-pointer group"
+                  className={`bg-card rounded-xl border border-border p-5 shadow-sm-custom hover:shadow-md-custom hover:-translate-y-0.5 transition-all cursor-pointer group ${getReputationBorder()}`}
                 >
                   <div className="flex items-center gap-3 mb-3">
                     <div className="w-10 h-10 rounded-lg bg-accent/60 flex items-center justify-center">
