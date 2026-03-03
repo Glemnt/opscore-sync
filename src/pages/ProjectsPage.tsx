@@ -445,7 +445,20 @@ export function ProjectsPage() {
                         <h3 className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors mb-1">
                           {client.name}
                         </h3>
-                        <p className="text-xs text-muted-foreground mb-3">{client.segment}</p>
+                        <p className="text-xs text-muted-foreground mb-2">{client.segment}</p>
+                        {client.platforms && client.platforms.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mb-2">
+                            {client.platforms.map((slug) => {
+                              const plat = platformOptions.find(p => p.slug === slug);
+                              return (
+                                <span key={slug} className="inline-flex items-center gap-1 text-[10px] text-muted-foreground bg-muted/60 rounded px-1.5 py-0.5 font-medium">
+                                  <ShoppingBag className="w-2.5 h-2.5 shrink-0" />
+                                  {plat?.name ?? slug}
+                                </span>
+                              );
+                            })}
+                          </div>
+                        )}
                         <div className="flex items-center gap-3 text-xs text-muted-foreground">
                           <span>{clientProjects.length} projetos</span>
                           <span>•</span>
