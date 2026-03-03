@@ -359,7 +359,7 @@ export function ProjectsPage() {
             </button>
           } />
 
-        <div className="flex gap-4 flex-1 overflow-x-auto pb-4">
+        <div className="flex gap-4 h-[calc(100vh-140px)] overflow-x-auto pb-4">
           {clientCols.map((col) => {
             const colClients = squadClients.filter((c) => c.status === col.status);
             const conf = clientStatusMap[col.status as string];
@@ -367,7 +367,7 @@ export function ProjectsPage() {
               <div
                 key={col.id}
                 className={cn(
-                  'flex-shrink-0 w-72 group/col relative flex flex-col',
+                  'flex-shrink-0 w-72 group/col relative flex flex-col h-full',
                   draggingClientColId === col.id && 'opacity-50'
                 )}
                 onDragOver={(e) => {
@@ -430,7 +430,7 @@ export function ProjectsPage() {
                   </button>
                 </div>
                 <div className={cn(
-                  'space-y-3 min-h-[calc(100vh-280px)] rounded-xl transition-colors p-1 flex-1',
+                  'space-y-3 min-h-0 rounded-xl transition-colors p-1 flex-1 overflow-y-auto',
                   dragOverClientCol === col.id && 'bg-primary/5 ring-2 ring-primary/20'
                 )}
                 onDragOver={(e) => {

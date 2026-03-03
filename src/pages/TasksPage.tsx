@@ -255,14 +255,14 @@ export function TasksPage() {
       </div>
 
       {/* Kanban */}
-      <div className="flex gap-4 flex-1 overflow-x-auto pb-4">
+      <div className="flex gap-4 h-[calc(100vh-200px)] overflow-x-auto pb-4">
         {cols.map(col => {
           const colTasks = filtered.filter(t => t.status === col.status);
           return (
             <div
               key={col.status}
               className={cn(
-                'flex-shrink-0 w-72 relative flex flex-col',
+                'flex-shrink-0 w-72 relative flex flex-col h-full',
                 draggingColKey === col.status && 'opacity-50'
               )}
               onDragOver={(e) => {
@@ -326,7 +326,7 @@ export function TasksPage() {
                 </div>
               </div>
               <div className={cn(
-                'space-y-2.5 min-h-[calc(100vh-280px)] rounded-xl transition-colors p-1 flex-1',
+                'space-y-2.5 min-h-0 rounded-xl transition-colors p-1 flex-1 overflow-y-auto',
                 dragOverCol === col.status && 'bg-primary/5 ring-2 ring-primary/20'
               )}
               onDragOver={(e) => {
