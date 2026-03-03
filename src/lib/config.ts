@@ -2,9 +2,11 @@ import { ClientStatus, Priority, ProjectStatus, TaskStatus, TaskType, ProjectTyp
 
 export const clientStatusConfig: Record<ClientStatus, { label: string; className: string }> = {
   active: { label: 'Ativo', className: 'bg-success-light text-success border-success/20' },
-  paused: { label: 'Pausado', className: 'bg-warning-light text-warning border-warning/20' },
-  churned: { label: 'Churned', className: 'bg-destructive/10 text-destructive border-destructive/20' },
   onboarding: { label: 'Onboarding', className: 'bg-info-light text-info border-info/20' },
+  implementacao: { label: 'Implementacao', className: 'bg-warning-light text-warning border-warning/20' },
+  escala: { label: 'Escala', className: 'bg-purple-100 text-purple-700 border-purple-200' },
+  performance: { label: 'Performance', className: 'bg-cyan-100 text-cyan-700 border-cyan-200' },
+  inativo: { label: 'Inativo', className: 'bg-destructive/10 text-destructive border-destructive/20' },
 };
 
 export const projectStatusConfig: Record<ProjectStatus, { label: string; className: string; dot: string }> = {
