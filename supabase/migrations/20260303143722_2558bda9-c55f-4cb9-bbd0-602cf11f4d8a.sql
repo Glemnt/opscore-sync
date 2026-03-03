@@ -1,0 +1,1 @@
+ALTER TABLE public.client_platforms ADD COLUMN platform_attributes jsonb NOT NULL DEFAULT '{}'::jsonb;

@@ -158,6 +158,7 @@ export type Database = {
           id: string
           notes: string
           phase: string
+          platform_attributes: Json
           platform_slug: string
           responsible: string
           squad_id: string | null
@@ -171,6 +172,7 @@ export type Database = {
           id?: string
           notes?: string
           phase?: string
+          platform_attributes?: Json
           platform_slug: string
           responsible?: string
           squad_id?: string | null
@@ -184,6 +186,7 @@ export type Database = {
           id?: string
           notes?: string
           phase?: string
+          platform_attributes?: Json
           platform_slug?: string
           responsible?: string
           squad_id?: string | null
