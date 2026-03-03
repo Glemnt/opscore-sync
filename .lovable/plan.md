@@ -1,32 +1,34 @@
 
 
-## Plano: Corrigir zona de drop do Kanban para toda a altura da coluna
+## Plano: Área de drop ocupa toda a altura restante da tela
 
 ### Diagnóstico
 
-O problema persiste porque `flex-1` no container de cards só funciona se a cadeia de alturas estiver completa. Embora o layout tenha `h-screen` → `flex-1` (main) → `h-full flex flex-col` (page) → `flex-1` (kanban container), o `overflow-x-auto` no container do Kanban pode impedir que as colunas herdem a altura corretamente em todos os navegadores.
+O `main` no Layout tem `overflow-y-auto`, o que quebra a cadeia de `flex-1` / `h-full` — o conteúdo pode crescer além do viewport sem que o flex constrainja a altura. Por isso, `flex-1` na div interna dos cards não estica até o fundo da tela.
 
-Além disso, os handlers `onDragOver`/`onDrop` estão apenas na div externa da coluna. A div interna dos cards (que tem `flex-1`) não captura eventos de drag, então se o browser não considerar a div interna como "alvo" quando está vazia, o drop pode falhar.
+O `min-h-[calc(100vh-280px)]` é estático e não se adapta ao conteúdo real acima do Kanban.
 
-### Solução (duas camadas de correção)
+### Solução
 
-**1. Garantir altura mínima visível no container de cards**
+Usar uma abordagem que **force as colunas a ocuparem toda a altura restante da viewport**, independente do `overflow-y-auto` do `main`:
 
-Substituir `min-h-[60px]` por `min-h-[calc(100vh-280px)]` (ou valor similar) para que a área de drop tenha altura visual garantida, independente de CSS flex.
+1. **Container do Kanban**: trocar `flex-1` por altura explícita calculada com CSS (`h-[calc(100vh-<offset>)]`), garantindo que o container sempre ocupe do ponto atual até o fundo da tela
+2. **Cada coluna**: adicionar `h-full` para herdar a altura do container
+3. **Div interna dos cards**: usar `flex-1 overflow-y-auto` (scroll interno quando há muitos cards) e remover o `min-h-[calc(100vh-280px)]` fixo
 
-**2. Duplicar handlers de drag na div interna dos cards**
-
-Adicionar `onDragOver` e `onDrop` também na div interna que contém os cards, para que mesmo sem bubbling correto, o drop funcione.
+Isso torna a zona de drop um retângulo que vai até o final da tela, e quando há muitos cards, a coluna faz scroll interno em vez de crescer.
 
 ### Alterações
 
-**`src/pages/ProjectsPage.tsx`** (Kanban de clientes, ~linhas 432-435):
-- Trocar `min-h-[60px]` por `min-h-[calc(100vh-280px)]`
-- Adicionar `onDragOver` e `onDrop` idênticos aos da coluna pai
+**`src/pages/ProjectsPage.tsx`**
+- Linha 362: Container do Kanban — trocar `flex-1` por `h-[calc(100vh-140px)]` (offset para header + padding da página)
+- Linha 367-370: Coluna — adicionar `h-full`
+- Linha 432-433: Div interna dos cards — trocar `min-h-[calc(100vh-280px)]` por `min-h-0 overflow-y-auto`
 
-**`src/pages/TasksPage.tsx`** (Kanban de demandas, ~linhas 328-331):
-- Trocar `min-h-[60px]` por `min-h-[calc(100vh-280px)]`
-- Adicionar `onDragOver` e `onDrop` idênticos aos da coluna pai
+**`src/pages/TasksPage.tsx`**
+- Linha 258: Container do Kanban — trocar `flex-1` por `h-[calc(100vh-200px)]` (offset maior por causa dos filtros acima)
+- Linha 264-265: Coluna — adicionar `h-full`
+- Linha 328-329: Div interna dos cards — trocar `min-h-[calc(100vh-280px)]` por `min-h-0 overflow-y-auto`
 
 Nenhuma mudança de banco de dados.
 
