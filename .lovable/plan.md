@@ -1,45 +1,50 @@
 
 
-## Fix: Corrigir mapeamento de keys no `client_statuses`
+## Plano: Atributos Operacionais Específicos por Plataforma
 
-### Problema encontrado
-
-A funcionalidade de alterar fase por plataforma **funciona corretamente** -- alterar a fase da Shopee não afetou Mercado Livre nem Shein. Porém, os dados no `client_statuses` têm keys que não correspondem aos labels:
-
-```text
-key: "churned"    → label: "Onboarding"     (deveria ser key: "onboarding")
-key: "onboarding" → label: "Implementacao"   (deveria ser key: "implementacao")
-key: "paused"     → label: "Escala"           (deveria ser key: "escala")
-key: "active"     → label: "Ativo"            (ok)
-key: "performance"→ label: "Performance"      (ok)
-key: "inativo"    → label: "Inativo"          (ok)
-```
-
-Quando o sistema faz auto-seed com `phase: 'onboarding'`, o badge exibe "Implementacao" (porque esse é o label de key "onboarding"). Quando o usuario seleciona "Onboarding" no dropdown, salva key "churned".
+### Problema
+Cada plataforma (Mercado Livre, Shopee, Shein) possui atributos operacionais únicos que precisam ser gerenciados por cliente. Atualmente, a tabela `client_platforms` só armazena dados genéricos (fase, responsável, squad).
 
 ### Solução
 
-Corrigir os keys no `client_statuses` e atualizar todos os registros dependentes (`clients.status` e `client_platforms.phase`) que usam os keys antigos.
+Usar uma coluna JSONB `platform_attributes` na tabela `client_platforms` para armazenar os atributos específicos de cada plataforma. Isso evita criar tabelas separadas para cada marketplace e permite adicionar novos atributos futuramente sem migrações.
 
-**Operações de dados (INSERT tool):**
+### Estrutura dos atributos por plataforma
 
-1. Atualizar `client_statuses`:
-   - `churned` → renomear key para `onboarding`, label "Onboarding"
-   - `onboarding` → renomear key para `implementacao`, label "Implementacao"  
-   - `paused` → renomear key para `escala`, label "Escala"
+```text
+mercado_livre:
+  reputacao: "verde" | "vermelho" | "laranja" | "amarelo"
+  medalha: "sem_medalha" | "lider" | "gold" | "platinum" | "loja_oficial"
+  envios: "full" | "flex" | "turbo"
 
-2. Atualizar `clients.status` onde usa keys antigos
-3. Atualizar `client_platforms.phase` onde usa keys antigos
+shopee:
+  vendedor_indicado: true | false
+  shopee_express: true | false
+  shopee_entrega_direta: true | false
+  full_shopee: true | false
 
-Alternativamente, se os keys foram intencionalmente reutilizados e há lógica no sistema dependendo deles (ex: `active`, `churned`, `paused` são usados em código), a solução é ajustar o default do auto-seed para usar o key correto que mapeia para "Onboarding" (que é `churned`).
+shein:
+  reputacao: "L1" | "L2" | "L3" | "L4" | "L5"
+```
 
-### Abordagem recomendada
+### Tarefas de Implementação
 
-Verificar se existe código que depende dos keys literais (`churned`, `paused`, etc.) no `src/lib/config.ts` e no restante do codebase. Se os keys são puramente dinâmicos, renomear. Se há dependência hardcoded, ajustar o default do auto-seed.
+1. **Migração de banco**: Adicionar coluna `platform_attributes jsonb DEFAULT '{}'` à tabela `client_platforms`
 
-| Ação | Detalhe |
-|------|---------|
-| Verificar `src/lib/config.ts` | Checar dependências hardcoded de keys |
-| Corrigir dados ou defaults | Alinhar keys com labels ou ajustar auto-seed default |
-| Atualizar `client_platforms` existentes | Migrar phases com keys antigos |
+2. **Atualizar hook `useClientPlatformsQuery`**: Incluir `platformAttributes` no mapeamento da interface `ClientPlatform` e no `keyMap` do update
+
+3. **Criar componente `PlatformAttributesEditor`**: Renderiza os campos específicos de cada plataforma baseado no slug:
+   - `mercado_livre`: 3 selects (Reputação com cores, Medalha, Envios)
+   - `shopee`: 4 switches/checkboxes (Vendedor Indicado, Shopee Express, Entrega Direta, Full Shopee)
+   - `shein`: 1 select (Reputação L1-L5)
+
+4. **Integrar no `PlatformOperationalPanel`** (ClientDetailModal): Renderizar o `PlatformAttributesEditor` dentro de cada plataforma expandida, abaixo dos campos existentes (fase, squad, responsável, prazo)
+
+5. **Exibir resumo no `ClientCard`** (ClientsPage): Mostrar badges compactos com os atributos principais (ex: 🟢 Gold · Full para Mercado Livre)
+
+### Detalhes Técnicos
+
+- A definição de quais atributos cada plataforma possui ficará em um mapa constante no código (`PLATFORM_ATTRIBUTE_DEFINITIONS`), facilitando adicionar novas plataformas ou atributos sem mudar o banco
+- O componente de edição será dinâmico, renderizando selects ou switches conforme o tipo de cada atributo
+- A coluna JSONB permite queries futuras (ex: filtrar clientes com reputação vermelha no ML)
 
