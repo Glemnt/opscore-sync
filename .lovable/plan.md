@@ -1,27 +1,53 @@
 
 
-## Plano: Exibir Atributos Operacionais nos Cards de Plataforma (Squads)
+## Plano: Exibir Todos os Campos Operacionais nos Cards de Plataforma (Squads)
 
-### Contexto
+### Problema Atual
 
-Os atributos operacionais (Reputação, Medalha, Envios no ML; Vendedor Indicado, Express, etc. na Shopee; Reputação L1-L5 na Shein) já são salvos no `platform_attributes` JSONB e exibidos na página de Clientes. Porém, na página de Squads eles não aparecem em dois lugares:
+Os cards de plataforma na página de Squads (Step 2.5) já possuem lógica para mostrar Fase, Responsável, Squad e atributos operacionais, mas:
 
-1. **Card do cliente no Kanban** (Step 2) — mostra badges de plataforma sem atributos
-2. **Card da plataforma na seleção** (Step 2.5) — mostra fase, responsável e squad, mas não os atributos operacionais
+1. **Fase** — aparece como badge pequeno ao lado do nome, pouco visível
+2. **Squad Operacional** — só aparece quando é diferente do squad do cliente
+3. **Responsável** — aparece apenas quando preenchido, sem label
+4. **Prazo** — não é exibido
+5. **Atributos operacionais** — aparecem como badges genéricos, sem labels explícitos
+
+O usuário quer que todos os campos apareçam sempre, de forma clara e estruturada, com labels visíveis.
 
 ### Alterações
 
-**Arquivo: `src/pages/ProjectsPage.tsx`**
+**Arquivo: `src/pages/ProjectsPage.tsx` (linhas 589-629)**
 
-1. **Importar** `getPlatformAttributeSummary` de `PlatformAttributesEditor`
+Reestruturar o card de plataforma para mostrar uma lista organizada de informações:
 
-2. **Card do cliente no Kanban (linhas ~452-461)**: Adicionar resumo de atributos ao lado do nome da plataforma, usando `getPlatformAttributeSummary` com dados de `clientPlatformsData` — idêntico ao que já é feito no `ClientCard` da página de Clientes
+```text
+┌─────────────────────────────────┐
+│ 🛒 Mercado Livre                │
+│                                 │
+│ Fase: Onboarding               │
+│ Squad: Time Pantera             │
+│ Responsável: Felipe Alves       │
+│ Prazo: 15/04/2026               │
+│                                 │
+│ 🟢  Gold  Full                  │
+│                                 │
+│ 0 projetos • 0 demandas        │
+└─────────────────────────────────┘
+```
 
-3. **Card da plataforma na seleção (linhas ~583-614)**: Adicionar uma seção de badges compactos abaixo do responsável/squad, mostrando os atributos configurados (ex: "🟢 Gold · Full" para ML, "Indicado · Express" para Shopee, "L3" para Shein)
+Campos específicos por plataforma (usando `PLATFORM_ATTRIBUTE_DEFINITIONS`):
+- **Mercado Livre**: Reputação, Medalha, Envios
+- **Shopee**: Vendedor Indicado, Shopee Express, Shopee Entrega Direta, Full Shopee
+- **Shein**: Reputação
 
-### Detalhes
+Cada atributo será renderizado com seu label explícito (ex: "Reputação: 🟢 Verde") em vez de apenas o badge.
 
-- Reutilizar a função `getPlatformAttributeSummary` já existente, sem duplicar lógica
-- Os badges terão o mesmo estilo compacto usado na `ClientsPage` (`text-[10px]` com fundo `muted`)
-- Nenhuma mudança de banco de dados necessária — os dados já existem na coluna `platform_attributes`
+### Detalhes Técnicos
+
+- Importar `PLATFORM_ATTRIBUTE_DEFINITIONS` do `PlatformAttributesEditor` para renderizar os atributos com labels
+- Mostrar **Squad sempre** (não apenas quando diferente do squad do cliente) — pegar do `cp.squadId` ou fallback para o squad do cliente
+- Mostrar **Prazo** usando `cp.deadline` com formatação `dd/MM/yyyy`
+- Mostrar **Fase** como linha separada com label, não como badge inline no título
+- Para atributos não preenchidos, mostrar "—" como valor padrão
+- Manter a seção de projetos/demandas no rodapé do card
 
