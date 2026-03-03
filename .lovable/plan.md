@@ -1,50 +1,27 @@
 
 
-## Plano: Atributos Operacionais Específicos por Plataforma
+## Plano: Exibir Atributos Operacionais nos Cards de Plataforma (Squads)
 
-### Problema
-Cada plataforma (Mercado Livre, Shopee, Shein) possui atributos operacionais únicos que precisam ser gerenciados por cliente. Atualmente, a tabela `client_platforms` só armazena dados genéricos (fase, responsável, squad).
+### Contexto
 
-### Solução
+Os atributos operacionais (Reputação, Medalha, Envios no ML; Vendedor Indicado, Express, etc. na Shopee; Reputação L1-L5 na Shein) já são salvos no `platform_attributes` JSONB e exibidos na página de Clientes. Porém, na página de Squads eles não aparecem em dois lugares:
 
-Usar uma coluna JSONB `platform_attributes` na tabela `client_platforms` para armazenar os atributos específicos de cada plataforma. Isso evita criar tabelas separadas para cada marketplace e permite adicionar novos atributos futuramente sem migrações.
+1. **Card do cliente no Kanban** (Step 2) — mostra badges de plataforma sem atributos
+2. **Card da plataforma na seleção** (Step 2.5) — mostra fase, responsável e squad, mas não os atributos operacionais
 
-### Estrutura dos atributos por plataforma
+### Alterações
 
-```text
-mercado_livre:
-  reputacao: "verde" | "vermelho" | "laranja" | "amarelo"
-  medalha: "sem_medalha" | "lider" | "gold" | "platinum" | "loja_oficial"
-  envios: "full" | "flex" | "turbo"
+**Arquivo: `src/pages/ProjectsPage.tsx`**
 
-shopee:
-  vendedor_indicado: true | false
-  shopee_express: true | false
-  shopee_entrega_direta: true | false
-  full_shopee: true | false
+1. **Importar** `getPlatformAttributeSummary` de `PlatformAttributesEditor`
 
-shein:
-  reputacao: "L1" | "L2" | "L3" | "L4" | "L5"
-```
+2. **Card do cliente no Kanban (linhas ~452-461)**: Adicionar resumo de atributos ao lado do nome da plataforma, usando `getPlatformAttributeSummary` com dados de `clientPlatformsData` — idêntico ao que já é feito no `ClientCard` da página de Clientes
 
-### Tarefas de Implementação
+3. **Card da plataforma na seleção (linhas ~583-614)**: Adicionar uma seção de badges compactos abaixo do responsável/squad, mostrando os atributos configurados (ex: "🟢 Gold · Full" para ML, "Indicado · Express" para Shopee, "L3" para Shein)
 
-1. **Migração de banco**: Adicionar coluna `platform_attributes jsonb DEFAULT '{}'` à tabela `client_platforms`
+### Detalhes
 
-2. **Atualizar hook `useClientPlatformsQuery`**: Incluir `platformAttributes` no mapeamento da interface `ClientPlatform` e no `keyMap` do update
-
-3. **Criar componente `PlatformAttributesEditor`**: Renderiza os campos específicos de cada plataforma baseado no slug:
-   - `mercado_livre`: 3 selects (Reputação com cores, Medalha, Envios)
-   - `shopee`: 4 switches/checkboxes (Vendedor Indicado, Shopee Express, Entrega Direta, Full Shopee)
-   - `shein`: 1 select (Reputação L1-L5)
-
-4. **Integrar no `PlatformOperationalPanel`** (ClientDetailModal): Renderizar o `PlatformAttributesEditor` dentro de cada plataforma expandida, abaixo dos campos existentes (fase, squad, responsável, prazo)
-
-5. **Exibir resumo no `ClientCard`** (ClientsPage): Mostrar badges compactos com os atributos principais (ex: 🟢 Gold · Full para Mercado Livre)
-
-### Detalhes Técnicos
-
-- A definição de quais atributos cada plataforma possui ficará em um mapa constante no código (`PLATFORM_ATTRIBUTE_DEFINITIONS`), facilitando adicionar novas plataformas ou atributos sem mudar o banco
-- O componente de edição será dinâmico, renderizando selects ou switches conforme o tipo de cada atributo
-- A coluna JSONB permite queries futuras (ex: filtrar clientes com reputação vermelha no ML)
+- Reutilizar a função `getPlatformAttributeSummary` já existente, sem duplicar lógica
+- Os badges terão o mesmo estilo compacto usado na `ClientsPage` (`text-[10px]` com fundo `muted`)
+- Nenhuma mudança de banco de dados necessária — os dados já existem na coluna `platform_attributes`
 
