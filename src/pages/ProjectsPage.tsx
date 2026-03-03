@@ -347,6 +347,20 @@ export function ProjectsPage() {
       setClientColDropTarget(null);
     };
 
+    const phaseLabels: Record<string, string> = {
+      onboarding: 'Onboarding',
+      implementacao: 'Implementação',
+      escala: 'Escala',
+      performance: 'Performance',
+      active: 'Ativo',
+      inativo: 'Inativo',
+    };
+
+    const filteredSquadClients = squadClients.filter((c) =>
+      c.name.toLowerCase().includes(search.toLowerCase()) ||
+      c.segment.toLowerCase().includes(search.toLowerCase())
+    );
+
     return (
       <div className="p-6 animate-fade-in h-full flex flex-col">
         <PageHeader
@@ -361,9 +375,19 @@ export function ProjectsPage() {
             </button>
           } />
 
-        <div className="flex gap-4 h-[calc(100vh-140px)] overflow-x-auto pb-4">
+        <div className="relative mb-4">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            placeholder="Buscar cliente por nome ou segmento..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-9 max-w-sm"
+          />
+        </div>
+
+        <div className="flex gap-4 h-[calc(100vh-190px)] overflow-x-auto pb-4">
           {clientCols.map((col) => {
-            const colClients = squadClients.filter((c) => c.status === col.status);
+            const colClients = filteredSquadClients.filter((c) => c.status === col.status);
             const conf = clientStatusMap[col.status as string];
             return (
               <div
@@ -478,6 +502,9 @@ export function ProjectsPage() {
                                 <span key={slug} className="inline-flex items-center gap-1 text-[10px] text-muted-foreground bg-muted/60 rounded px-1.5 py-0.5 font-medium">
                                   <ShoppingBag className="w-2.5 h-2.5 shrink-0" />
                                   {plat?.name ?? slug}
+                                  {cp?.phase && (
+                                    <span className="text-primary font-semibold">· {phaseLabels[cp.phase] ?? cp.phase}</span>
+                                  )}
                                   {attrSummary.length > 0 && (
                                     <span className="text-foreground/70">· {attrSummary.join(' · ')}</span>
                                   )}
