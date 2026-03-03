@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
-import { Plus, Search, Calendar, ChevronDown, CheckCircle2, Circle, ArrowLeft, Users2, X, Pencil, Trash2, MessageSquare } from 'lucide-react';
+import { Plus, Search, Calendar, ChevronDown, CheckCircle2, Circle, ArrowLeft, Users2, X, Pencil, Trash2, MessageSquare, ShoppingBag, LayoutGrid } from 'lucide-react';
+import { usePlatformsQuery } from '@/hooks/usePlatformsQuery';
 import { TaskDetailModal } from '@/components/TaskDetailModal';
 import { useProjectsQuery } from '@/hooks/useProjectsQuery';
 import { PageHeader, StatusBadge, Avatar, ProgressBar } from '@/components/ui/shared';
@@ -34,7 +35,7 @@ const statusCols: {status: ProjectStatus;label: string;}[] = [
 export function ProjectsPage() {
   const { currentUser } = useAuth();
   const { squads, addSquad, removeSquad, updateSquad } = useSquads();
-  const { addTask } = useTasks();
+  const { tasks: allTasksData, addTask } = useTasks();
   const { data: projects = [] } = useProjectsQuery();
   const { updateClientField, getVisibleClients } = useClients();
   const { data: appUsers = [] } = useAppUsersQuery();
@@ -44,8 +45,10 @@ export function ProjectsPage() {
   const deleteStatusMut = useDeleteClientStatus();
   const updateStatusMut = useUpdateClientStatus();
   const clients = getVisibleClients();
+  const { data: platformOptions = [] } = usePlatformsQuery();
   const [selectedSquad, setSelectedSquad] = useState<Squad | null>(null);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+  const [selectedPlatform, setSelectedPlatform] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [view, setView] = useState<'kanban' | 'list'>('kanban');
   const [addDemandOpen, setAddDemandOpen] = useState(false);
@@ -437,7 +440,7 @@ export function ProjectsPage() {
                           e.dataTransfer.setData('text/plain', client.id);
                           e.dataTransfer.effectAllowed = 'move';
                         }}
-                        onClick={() => setSelectedClient(client)}
+                        onClick={() => { setSelectedPlatform(null); setSelectedClient(client); }}
                         className="w-full bg-card rounded-xl border border-border p-4 shadow-sm-custom hover:shadow-md-custom hover:-translate-y-0.5 transition-all text-left group cursor-grab active:cursor-grabbing">
                         <h3 className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors mb-1">
                           {client.name}
@@ -513,25 +516,113 @@ export function ProjectsPage() {
     );
   }
 
-  // Step 3: Show projects of selected client
-  const filtered = projects.
-  filter((p) => p.clientId === selectedClient.id).
-  filter((p) =>
-  p.name.toLowerCase().includes(search.toLowerCase()) ||
-  p.clientName.toLowerCase().includes(search.toLowerCase())
-  );
+  // Step 2.5: Platform selection for this client
+  if (selectedPlatform === null && selectedClient.platforms && selectedClient.platforms.length > 0) {
+    const clientTasks = allTasksData.filter(t => t.clientId === selectedClient.id);
+    const clientProjects = projects.filter(p => p.clientId === selectedClient.id);
+
+    return (
+      <div className="p-6 animate-fade-in">
+        <PageHeader
+          title={selectedClient.name}
+          subtitle="Selecione uma plataforma para ver os projetos"
+          actions={
+            <button
+              onClick={() => setSelectedClient(null)}
+              className="flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Voltar
+            </button>
+          }
+        />
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mt-2">
+          {/* "Ver Todos" card */}
+          <div
+            onClick={() => setSelectedPlatform('all')}
+            className="bg-card rounded-xl border border-border p-5 shadow-sm-custom hover:shadow-md-custom hover:-translate-y-0.5 transition-all cursor-pointer group"
+          >
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                <LayoutGrid className="w-5 h-5 text-primary" />
+              </div>
+              <h3 className="text-sm font-bold text-foreground group-hover:text-primary transition-colors">Todas</h3>
+            </div>
+            <div className="flex items-center gap-3 text-xs text-muted-foreground">
+              <span>{clientProjects.length} projetos</span>
+              <span>•</span>
+              <span>{clientTasks.length} demandas</span>
+            </div>
+          </div>
+
+          {/* One card per platform */}
+          {selectedClient.platforms.map((slug) => {
+            const plat = platformOptions.find(p => p.slug === slug);
+            const platTasks = clientTasks.filter(t => t.platforms?.includes(slug));
+            const platProjectIds = new Set(platTasks.map(t => t.projectId).filter(Boolean));
+            const platProjects = clientProjects.filter(p => platProjectIds.has(p.id));
+            return (
+              <div
+                key={slug}
+                onClick={() => setSelectedPlatform(slug)}
+                className="bg-card rounded-xl border border-border p-5 shadow-sm-custom hover:shadow-md-custom hover:-translate-y-0.5 transition-all cursor-pointer group"
+              >
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-10 h-10 rounded-lg bg-accent/60 flex items-center justify-center">
+                    <ShoppingBag className="w-5 h-5 text-accent-foreground" />
+                  </div>
+                  <h3 className="text-sm font-bold text-foreground group-hover:text-primary transition-colors">{plat?.name ?? slug}</h3>
+                </div>
+                <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                  <span>{platProjects.length} projetos</span>
+                  <span>•</span>
+                  <span>{platTasks.length} demandas</span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
+  // Step 3: Show projects of selected client (optionally filtered by platform)
+  const allClientTasks = allTasksData.filter(t => t.clientId === selectedClient.id);
+  const filtered = projects
+    .filter((p) => p.clientId === selectedClient.id)
+    .filter((p) => {
+      if (selectedPlatform && selectedPlatform !== 'all') {
+        // Show project only if it has at least one task with this platform
+        const projectTasks = allClientTasks.filter(t => t.projectId === p.id);
+        return projectTasks.some(t => t.platforms?.includes(selectedPlatform));
+      }
+      return true;
+    })
+    .filter((p) =>
+      p.name.toLowerCase().includes(search.toLowerCase()) ||
+      p.clientName.toLowerCase().includes(search.toLowerCase())
+    );
+
+  const platformLabel = selectedPlatform && selectedPlatform !== 'all'
+    ? platformOptions.find(p => p.slug === selectedPlatform)?.name ?? selectedPlatform
+    : null;
 
   return (
     <div className="p-6 animate-fade-in h-full flex flex-col">
       <PageHeader
-        title={`Projetos — ${selectedClient.name}`}
+        title={`Projetos — ${selectedClient.name}${platformLabel ? ` — ${platformLabel}` : ''}`}
         subtitle={`${filtered.filter((p) => p.status === 'in_progress').length} projetos em andamento`}
         actions={
         <>
             <button
-            onClick={() => setSelectedClient(null)}
+            onClick={() => {
+              if (selectedPlatform !== null) {
+                setSelectedPlatform(null);
+              } else {
+                setSelectedClient(null);
+              }
+            }}
             className="flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
-
               <ArrowLeft className="w-4 h-4" />
               Voltar
             </button>
