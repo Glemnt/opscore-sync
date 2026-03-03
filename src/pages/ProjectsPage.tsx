@@ -430,9 +430,25 @@ export function ProjectsPage() {
                   </button>
                 </div>
                 <div className={cn(
-                  'space-y-3 min-h-[60px] rounded-xl transition-colors p-1 flex-1',
+                  'space-y-3 min-h-[calc(100vh-280px)] rounded-xl transition-colors p-1 flex-1',
                   dragOverClientCol === col.id && 'bg-primary/5 ring-2 ring-primary/20'
-                )}>
+                )}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  if (!draggingClientColId) {
+                    setDragOverClientCol(col.id);
+                  }
+                }}
+                onDrop={(e) => {
+                  if (!draggingClientColId) {
+                    e.preventDefault();
+                    setDragOverClientCol(null);
+                    const clientId = e.dataTransfer.getData('text/plain');
+                    if (clientId) {
+                      updateClientField(clientId, 'status', col.status, 'Status');
+                    }
+                  }
+                }}>
                   {colClients.map((client) => {
                     const clientProjects = projects.filter((p) => p.clientId === client.id);
                     const activeCount = clientProjects.filter((p) => p.status === 'in_progress').length;
