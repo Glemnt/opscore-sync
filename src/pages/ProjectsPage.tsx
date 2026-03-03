@@ -367,7 +367,7 @@ export function ProjectsPage() {
               <div
                 key={col.id}
                 className={cn(
-                  'flex-shrink-0 w-72 group/col relative',
+                  'flex-shrink-0 w-72 group/col relative flex flex-col',
                   draggingClientColId === col.id && 'opacity-50'
                 )}
                 onDragOver={(e) => {
@@ -430,7 +430,7 @@ export function ProjectsPage() {
                   </button>
                 </div>
                 <div className={cn(
-                  'space-y-3 min-h-[60px] rounded-xl transition-colors p-1',
+                  'space-y-3 min-h-[60px] rounded-xl transition-colors p-1 flex-1',
                   dragOverClientCol === col.id && 'bg-primary/5 ring-2 ring-primary/20'
                 )}>
                   {colClients.map((client) => {
