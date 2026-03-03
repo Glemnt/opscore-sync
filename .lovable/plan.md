@@ -1,37 +1,48 @@
 
 
-## Exibir Plataformas no modal de detalhes do Cliente
+## Visão por Plataforma dentro do Squad → Cliente
 
 ### Problema
-Ao abrir o modal de detalhes de um cliente, as plataformas associadas não aparecem nas informações visíveis (modo visualização). Elas só são mostradas no formulário de edição.
+Quando um cliente tem múltiplas plataformas (Mercado Livre, Shopee, Shein), cada uma avança em ritmos diferentes. Hoje, ao clicar num cliente dentro do Squad, vão direto para os projetos sem distinção de plataforma, impossibilitando gerenciar e transferir o trabalho por plataforma.
 
 ### Solução
-Adicionar uma seção "Plataformas" logo abaixo do grid de informações editáveis (após o grid de Entrada/Mensalidade/Squad/Responsável), exibindo as plataformas como badges — similar ao que já é feito no card do cliente na listagem.
+Adicionar um nível intermediário entre a seleção do cliente e a visualização de projetos. Ao clicar num cliente dentro do Squad, o usuário verá:
 
-### Alteração em `src/components/ClientDetailModal.tsx`
+1. **Painel de plataformas do cliente** — cards para cada plataforma associada ao cliente, mostrando quantos projetos/demandas existem para aquela plataforma
+2. **Opção "Ver Todos"** — para continuar vendo todos os projetos sem filtro (comportamento atual)
+3. **Ao selecionar uma plataforma** — filtra projetos e demandas apenas daquela plataforma
 
-Após o grid editável (linha ~285), antes da seção "Saúde do Cliente" (linha ~288), inserir:
-
-```tsx
-{/* Plataformas */}
-{client.platforms && client.platforms.length > 0 && (
-  <div className="mt-3">
-    <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1.5">Plataformas</p>
-    <div className="flex flex-wrap gap-1.5">
-      {client.platforms.map((slug) => {
-        const plat = platformOptions.find(p => p.slug === slug);
-        return (
-          <span key={slug} className="inline-flex items-center gap-1 text-xs text-muted-foreground bg-muted/60 rounded-md px-2.5 py-1 font-medium">
-            <ShoppingBag className="w-3 h-3 shrink-0" />
-            {plat?.name ?? slug}
-          </span>
-        );
-      })}
-    </div>
-  </div>
-)}
+```text
+Squads → Squad X → Clientes (kanban) → Cliente Y
+                                          ├── [Todas] → projetos sem filtro
+                                          ├── [Mercado Livre] → projetos filtrados
+                                          ├── [Shopee] → projetos filtrados
+                                          └── [Shein] → projetos filtrados
 ```
 
-- Usar o ícone `ShoppingBag` (já importado na página de clientes, precisa importar no modal)
-- Reutilizar `platformOptions` que já é carregado no modal via `usePlatformsQuery`
+### Alterações em `src/pages/ProjectsPage.tsx`
+
+**1. Novo estado**
+- `selectedPlatform: string | null` — `null` = mostrar painel de plataformas, `'all'` = todos, ou o slug da plataforma selecionada
+
+**2. Novo nível intermediário (Step 2.5)**
+Após selecionar o cliente (`selectedClient` definido) e antes de mostrar projetos, se `selectedPlatform === null`:
+- Exibir header com nome do cliente e botão "Voltar"
+- Grid de cards: um card por plataforma do cliente (usando `client.platforms` + dados de `usePlatformsQuery`)
+- Cada card mostra: ícone, nome da plataforma, contagem de projetos/demandas daquela plataforma
+- Card "Ver Todos" para acessar a visão completa sem filtro
+- Badge com plataformas no card do cliente no kanban para visibilidade rápida
+
+**3. Filtro de projetos por plataforma (Step 3 existente)**
+Quando `selectedPlatform` for definido (não null), a variável `filtered` passa a incluir filtro pela plataforma selecionada no campo `platform` dos tasks/projects. Como a tabela `projects` não tem campo `platform`, o filtro será aplicado nas **demandas** (tasks) que têm `platform[]`. Os projetos serão mostrados se possuírem pelo menos uma demanda com aquela plataforma.
+
+**4. Botão "Voltar" ajustado**
+- Se `selectedPlatform !== null`: voltar limpa `selectedPlatform` (volta ao painel de plataformas)
+- Se `selectedPlatform === null`: voltar limpa `selectedClient`
+
+### Arquivos alterados
+
+| Arquivo | Alteração |
+|---------|-----------|
+| `src/pages/ProjectsPage.tsx` | Novo estado `selectedPlatform`, novo painel intermediário de plataformas, filtro de projetos por plataforma, ajuste na navegação de volta |
 
