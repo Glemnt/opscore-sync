@@ -32,8 +32,8 @@ import { TransferPlatformDialog } from '@/components/TransferPlatformDialog';
 import { FlowManagerDialog, FlowDialogMode } from '@/components/FlowManagerDialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
-type KanbanColumn = { id: string; label: string; status: ClientStatus | string };
-type ProjectKanbanColumn = { id: string; label: string; status: ProjectStatus | string };
+type KanbanColumn = {id: string;label: string;status: ClientStatus | string;};
+type ProjectKanbanColumn = {id: string;label: string;status: ProjectStatus | string;};
 
 const statusCols: {status: ProjectStatus;label: string;}[] = [
 { status: 'backlog', label: 'Backlog' },
@@ -80,17 +80,17 @@ export function ProjectsPage() {
   const [addDemandOpen, setAddDemandOpen] = useState(false);
   const [addColDialogOpen, setAddColDialogOpen] = useState(false);
   const [newColLabel, setNewColLabel] = useState('');
-  const [deleteColConfirm, setDeleteColConfirm] = useState<{ id: string; label: string; status: string } | null>(null);
+  const [deleteColConfirm, setDeleteColConfirm] = useState<{id: string;label: string;status: string;} | null>(null);
 
   // Generate demands & transfer platform state
-  const [generateTarget, setGenerateTarget] = useState<{ phase: string; clientId: string; clientName: string; platformSlug: string; squadId: string | null } | null>(null);
-  const [transferTarget, setTransferTarget] = useState<{ platformId: string; squadId: string | null; responsible: string } | null>(null);
+  const [generateTarget, setGenerateTarget] = useState<{phase: string;clientId: string;clientName: string;platformSlug: string;squadId: string | null;} | null>(null);
+  const [transferTarget, setTransferTarget] = useState<{platformId: string;squadId: string | null;responsible: string;} | null>(null);
   const [flowDialogOpen, setFlowDialogOpen] = useState(false);
 
   // Platform kanban editing state
   const [platAddColOpen, setPlatAddColOpen] = useState(false);
   const [platNewColLabel, setPlatNewColLabel] = useState('');
-  const [platDeleteColConfirm, setPlatDeleteColConfirm] = useState<{ key: string; label: string } | null>(null);
+  const [platDeleteColConfirm, setPlatDeleteColConfirm] = useState<{key: string;label: string;} | null>(null);
   const [platEditingColKey, setPlatEditingColKey] = useState<string | null>(null);
   const [platDragOverCol, setPlatDragOverCol] = useState<string | null>(null);
   const [draggingPlatColKey, setDraggingPlatColKey] = useState<string | null>(null);
@@ -129,7 +129,7 @@ export function ProjectsPage() {
 
   const toggleMember = (name: string) => {
     setSquadMemberNames((prev) =>
-      prev.includes(name) ? prev.filter((n) => n !== name) : [...prev, name]
+    prev.includes(name) ? prev.filter((n) => n !== name) : [...prev, name]
     );
   };
 
@@ -148,16 +148,16 @@ export function ProjectsPage() {
   };
   const reorderClientMut = useReorderClientStatuses();
   const [clientCols, setClientCols] = useState<KanbanColumn[]>([
-    { id: 'onboarding', label: 'Onboarding', status: 'onboarding' },
-    { id: 'active', label: 'Ativo', status: 'active' },
-    { id: 'paused', label: 'Pausado', status: 'paused' },
-    { id: 'churned', label: 'Churned', status: 'churned' },
-  ]);
+  { id: 'onboarding', label: 'Onboarding', status: 'onboarding' },
+  { id: 'active', label: 'Ativo', status: 'active' },
+  { id: 'paused', label: 'Pausado', status: 'paused' },
+  { id: 'churned', label: 'Churned', status: 'churned' }]
+  );
 
   // Sync kanban columns when dynamic statuses load
   useEffect(() => {
     if (clientStatuses.length > 0) {
-      setClientCols(clientStatuses.map(s => ({ id: s.key, label: s.label, status: s.key })));
+      setClientCols(clientStatuses.map((s) => ({ id: s.key, label: s.label, status: s.key })));
     }
   }, [clientStatuses]);
   const [dragOverClientCol, setDragOverClientCol] = useState<string | null>(null);
@@ -176,45 +176,45 @@ export function ProjectsPage() {
           title="Squads"
           subtitle="Selecione um squad para ver os clientes e projetos"
           actions={
-            isAdmin ? (
-              <Button onClick={openAddSquad} className="gradient-primary shadow-primary">
+          isAdmin ?
+          <Button onClick={openAddSquad} className="gradient-primary shadow-primary">
                 <Plus className="w-4 h-4 mr-2" />
                 Novo Squad
-              </Button>
-            ) : undefined
-          }
-        />
+              </Button> :
+          undefined
+          } />
+        
         <div className="grid grid-cols-3 gap-4">
           {visibleSquads.map((squad) => {
             const squadClients = clients.filter((c) => c.squadId === squad.id);
-            const activeStatusKeys = clientStatuses
-              .filter(s => s.label.toLowerCase().includes('ativo') || s.key === 'active')
-              .map(s => s.key);
-            const activeClients = squadClients.filter(c => activeStatusKeys.includes(c.status)).length;
+            const activeStatusKeys = clientStatuses.
+            filter((s) => s.label.toLowerCase().includes('ativo') || s.key === 'active').
+            map((s) => s.key);
+            const activeClients = squadClients.filter((c) => activeStatusKeys.includes(c.status)).length;
             return (
               <div
                 key={squad.id}
-                className="bg-card rounded-xl border border-border p-6 shadow-sm-custom hover:shadow-md-custom hover:-translate-y-0.5 transition-all text-left group cursor-pointer relative"
-              >
+                className="bg-card rounded-xl border border-border p-6 shadow-sm-custom hover:shadow-md-custom hover:-translate-y-0.5 transition-all text-left group cursor-pointer relative">
+                
                 {/* Action buttons — admin only */}
-                {isAdmin && (
-                  <div className="absolute top-3 right-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                {isAdmin &&
+                <div className="absolute top-3 right-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button
-                      onClick={(e) => openEditSquad(squad, e)}
-                      className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-                      title="Editar squad"
-                    >
+                    onClick={(e) => openEditSquad(squad, e)}
+                    className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                    title="Editar squad">
+                    
                       <Pencil className="w-3.5 h-3.5" />
                     </button>
                     <button
-                      onClick={(e) => handleDeleteSquad(squad.id, e)}
-                      className="p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
-                      title="Apagar squad"
-                    >
+                    onClick={(e) => handleDeleteSquad(squad.id, e)}
+                    className="p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+                    title="Apagar squad">
+                    
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </div>
-                )}
+                }
 
                 <div onClick={() => setSelectedSquad(squad)} className="h-full">
                   <div className="flex items-center gap-3 mb-4">
@@ -233,12 +233,12 @@ export function ProjectsPage() {
                   </div>
                   <div className="mt-3 flex flex-wrap gap-1">
                     {squad.members.map((m) =>
-                      <Avatar key={m} name={m} size="sm" />
+                    <Avatar key={m} name={m} size="sm" />
                     )}
                   </div>
                 </div>
-              </div>
-            );
+              </div>);
+
           })}
         </div>
 
@@ -260,38 +260,38 @@ export function ProjectsPage() {
                     <SelectValue placeholder="Selecione o líder" />
                   </SelectTrigger>
                   <SelectContent>
-                    {appUsers.map((u) => (
-                      <SelectItem key={u.id} value={u.name}>{u.name}</SelectItem>
-                    ))}
+                    {appUsers.map((u) =>
+                    <SelectItem key={u.id} value={u.name}>{u.name}</SelectItem>
+                    )}
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
                 <Label>Membros</Label>
                 <div className="flex flex-wrap gap-2">
-                  {appUsers
-                    .filter((u) => u.name !== squadLeader)
-                    .map((u) => {
-                      const selected = squadMemberNames.includes(u.name);
-                      return (
-                        <button
-                          key={u.id}
-                          type="button"
-                          onClick={() => toggleMember(u.name)}
-                          className={cn(
-                            'px-3 py-1.5 rounded-full text-xs font-medium border transition-colors',
-                            selected
-                              ? 'bg-primary text-primary-foreground border-primary'
-                              : 'bg-muted text-muted-foreground border-border hover:border-primary/40'
-                          )}
-                        >
+                  {appUsers.
+                  filter((u) => u.name !== squadLeader).
+                  map((u) => {
+                    const selected = squadMemberNames.includes(u.name);
+                    return (
+                      <button
+                        key={u.id}
+                        type="button"
+                        onClick={() => toggleMember(u.name)}
+                        className={cn(
+                          'px-3 py-1.5 rounded-full text-xs font-medium border transition-colors',
+                          selected ?
+                          'bg-primary text-primary-foreground border-primary' :
+                          'bg-muted text-muted-foreground border-border hover:border-primary/40'
+                        )}>
+                        
                           {u.name}
-                        </button>
-                      );
-                    })}
-                  {appUsers.length === 0 && (
-                    <p className="text-xs text-muted-foreground">Nenhum colaborador cadastrado. Adicione em Configurações.</p>
-                  )}
+                        </button>);
+
+                  })}
+                  {appUsers.length === 0 &&
+                  <p className="text-xs text-muted-foreground">Nenhum colaborador cadastrado. Adicione em Configurações.</p>
+                  }
                 </div>
               </div>
             </div>
@@ -303,8 +303,8 @@ export function ProjectsPage() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
-      </div>
-    );
+      </div>);
+
   }
 
   // Step 2: Show clients of selected squad (Kanban by status)
@@ -312,7 +312,7 @@ export function ProjectsPage() {
     const squadClients = clients.filter((c) => c.squadId === selectedSquad.id);
 
     const handleRenameCol = (id: string, newLabel: string) => {
-      const col = clientCols.find(c => c.id === id);
+      const col = clientCols.find((c) => c.id === id);
       if (col) {
         updateStatusMut.mutate({ key: col.status as string, label: newLabel });
       }
@@ -320,7 +320,7 @@ export function ProjectsPage() {
     };
 
     const handleRemoveCol = (id: string) => {
-      const col = clientCols.find(c => c.id === id);
+      const col = clientCols.find((c) => c.id === id);
       if (col) {
         setDeleteColConfirm({ id: col.id, label: col.label, status: col.status as string });
       }
@@ -367,7 +367,7 @@ export function ProjectsPage() {
         setClientColDropTarget(null);
         return;
       }
-      const currentIds = clientCols.map(c => c.id);
+      const currentIds = clientCols.map((c) => c.id);
       const sourceIdx = currentIds.indexOf(sourceId);
       const targetIdx = currentIds.indexOf(targetId);
       if (sourceIdx === -1 || targetIdx === -1) return;
@@ -391,10 +391,10 @@ export function ProjectsPage() {
       escala: 'Escala',
       performance: 'Performance',
       active: 'Ativo',
-      inativo: 'Inativo',
+      inativo: 'Inativo'
     };
 
-    const uniqueResponsibles = [...new Set(squadClients.map(c => c.responsible).filter(Boolean))];
+    const uniqueResponsibles = [...new Set(squadClients.map((c) => c.responsible).filter(Boolean))];
 
     const filteredSquadClients = squadClients.filter((c) => {
       const matchSearch = c.name.toLowerCase().includes(search.toLowerCase()) || c.segment.toLowerCase().includes(search.toLowerCase());
@@ -407,7 +407,7 @@ export function ProjectsPage() {
       return matchSearch && matchStatus && matchResponsible && matchHealth && matchPlatform && matchDateFrom && matchDateTo;
     });
 
-    const visibleCols = squadStatusFilter === 'all' ? clientCols : clientCols.filter(col => col.status === squadStatusFilter);
+    const visibleCols = squadStatusFilter === 'all' ? clientCols : clientCols.filter((col) => col.status === squadStatusFilter);
 
     return (
       <div className="p-6 animate-fade-in h-full flex flex-col">
@@ -432,15 +432,15 @@ export function ProjectsPage() {
               placeholder="Buscar cliente..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 text-sm bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition"
-            />
+              className="w-full pl-9 pr-4 py-2 text-sm bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition" />
+            
           </div>
 
           <select
             value={squadResponsibleFilter}
             onChange={(e) => setSquadResponsibleFilter(e.target.value)}
-            className="px-3 py-2 text-sm bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition text-foreground"
-          >
+            className="px-3 py-2 text-sm bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition text-foreground">
+            
             <option value="all">Responsável</option>
             {uniqueResponsibles.map((r) => <option key={r} value={r}>{r}</option>)}
           </select>
@@ -448,8 +448,8 @@ export function ProjectsPage() {
           <select
             value={squadHealthFilter}
             onChange={(e) => setSquadHealthFilter(e.target.value)}
-            className="px-3 py-2 text-sm bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition text-foreground"
-          >
+            className="px-3 py-2 text-sm bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition text-foreground">
+            
             <option value="all">Saúde</option>
             <option value="green">🟢 Saudável</option>
             <option value="yellow">🟡 Atenção</option>
@@ -460,8 +460,8 @@ export function ProjectsPage() {
           <select
             value={squadPlatformFilter}
             onChange={(e) => setSquadPlatformFilter(e.target.value)}
-            className="px-3 py-2 text-sm bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition text-foreground"
-          >
+            className="px-3 py-2 text-sm bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition text-foreground">
+            
             <option value="all">Plataforma</option>
             {platformOptions.map((p) => <option key={p.slug} value={p.slug}>{p.name}</option>)}
           </select>
@@ -470,56 +470,56 @@ export function ProjectsPage() {
             <input type="date" value={squadDateFrom} onChange={(e) => setSquadDateFrom(e.target.value)} className="px-3 py-2 text-sm bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition text-foreground" />
             <span className="text-xs text-muted-foreground">até</span>
             <input type="date" value={squadDateTo} onChange={(e) => setSquadDateTo(e.target.value)} className="px-3 py-2 text-sm bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition text-foreground" />
-            {(squadDateFrom || squadDateTo) && (
-              <button onClick={() => { setSquadDateFrom(''); setSquadDateTo(''); }} className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
+            {(squadDateFrom || squadDateTo) &&
+            <button onClick={() => {setSquadDateFrom('');setSquadDateTo('');}} className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
                 <X className="w-4 h-4" />
               </button>
-            )}
+            }
           </div>
         </div>
 
         {/* Row 2: Status pipeline tabs */}
-        <div className="flex items-center gap-1.5 mb-4 bg-card border border-border p-1 rounded-lg overflow-x-auto">
-          <button
-            onClick={() => setSquadStatusFilter('all')}
-            className={cn(
-              'px-3 py-1.5 rounded-md text-xs font-medium transition-all',
-              squadStatusFilter === 'all' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground hover:bg-muted'
-            )}
-          >
-            Todos ({squadClients.length})
-          </button>
-          {clientCols.map(col => {
-            const count = squadClients.filter(c => c.status === col.status).length;
-            return (
-              <div key={col.id} className="relative group flex items-center">
-                <button
-                  onClick={() => setSquadStatusFilter(col.status as string)}
-                  className={cn(
-                    'px-3 py-1.5 rounded-md text-xs font-medium transition-all',
-                    squadStatusFilter === col.status ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground hover:bg-muted'
-                  )}
-                >
-                  {col.label} ({count})
-                </button>
-                <button
-                  onClick={(e) => { e.stopPropagation(); handleRemoveCol(col.id); }}
-                  className="ml-0.5 p-0.5 rounded text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
-                  title="Excluir status"
-                >
-                  <X className="w-3 h-3" />
-                </button>
-              </div>
-            );
-          })}
-          <button
-            onClick={handleAddCol}
-            className="px-2 py-1.5 rounded-md text-xs text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all"
-            title="Novo Status"
-          >
-            <Plus className="w-3.5 h-3.5" />
-          </button>
-        </div>
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
 
         <div className="flex gap-4 h-[calc(100vh-260px)] overflow-x-auto pb-4">
           {visibleCols.map((col) => {
@@ -540,7 +540,7 @@ export function ProjectsPage() {
                     setDragOverClientCol(col.id);
                   }
                 }}
-                onDragLeave={() => { setDragOverClientCol(null); setClientColDropTarget(null); }}
+                onDragLeave={() => {setDragOverClientCol(null);setClientColDropTarget(null);}}
                 onDrop={(e) => {
                   if (draggingClientColId) {
                     handleClientColDrop(e, col.id);
@@ -552,42 +552,42 @@ export function ProjectsPage() {
                       updateClientField(clientId, 'status', col.status, 'Status');
                     }
                   }
-                }}
-              >
+                }}>
+                
                 {/* Column drop indicator */}
-                {clientColDropTarget === col.id && draggingClientColId && (
-                  <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary rounded-full z-10" />
-                )}
+                {clientColDropTarget === col.id && draggingClientColId &&
+                <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary rounded-full z-10" />
+                }
                 <div
                   draggable
                   onDragStart={(e) => handleClientColDragStart(e, col.id)}
                   onDragEnd={handleClientColDragEnd}
-                  className="flex items-center gap-2 mb-3 cursor-grab active:cursor-grabbing"
-                >
-                  {editingColId === col.id ? (
-                    <EditableColInput
-                      value={col.label}
-                      onSave={(v) => handleRenameCol(col.id, v)}
-                      onCancel={() => setEditingColId(null)}
-                    />
-                  ) : (
-                    <button
-                      onClick={() => setEditingColId(col.id)}
-                      className="cursor-text"
-                    >
+                  className="flex items-center gap-2 mb-3 cursor-grab active:cursor-grabbing">
+                  
+                  {editingColId === col.id ?
+                  <EditableColInput
+                    value={col.label}
+                    onSave={(v) => handleRenameCol(col.id, v)}
+                    onCancel={() => setEditingColId(null)} /> :
+
+
+                  <button
+                    onClick={() => setEditingColId(col.id)}
+                    className="cursor-text">
+                    
                       <StatusBadge className={conf?.className ?? 'bg-muted text-muted-foreground border-border'}>
                         {col.label}
                       </StatusBadge>
                     </button>
-                  )}
+                  }
                   <span className="text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded-full font-medium">
                     {colClients.length}
                   </span>
                   <button
                     onClick={() => handleRemoveCol(col.id)}
                     className="ml-auto opacity-0 group-hover/col:opacity-100 transition-opacity p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
-                    title="Remover coluna"
-                  >
+                    title="Remover coluna">
+                    
                     <X className="w-3.5 h-3.5" />
                   </button>
                 </div>
@@ -627,7 +627,7 @@ export function ProjectsPage() {
                           e.dataTransfer.setData('text/plain', client.id);
                           e.dataTransfer.effectAllowed = 'move';
                         }}
-                        onClick={() => { setSelectedPlatform(null); setSelectedClient(client); }}
+                        onClick={() => {setSelectedPlatform(null);setSelectedClient(client);}}
                         className="w-full bg-card rounded-xl border border-border p-5 shadow-sm-custom hover:shadow-md-custom hover:-translate-y-0.5 transition-all text-left group cursor-grab active:cursor-grabbing">
                         {/* Header */}
                         <div className="flex items-start justify-between mb-3">
@@ -653,26 +653,26 @@ export function ProjectsPage() {
                               <span key={slug} className="inline-flex items-center gap-1 text-xs text-muted-foreground bg-muted/60 rounded-md px-2 py-1 font-medium">
                                 <ShoppingBag className="w-3 h-3 shrink-0" />
                                 {plat?.name ?? slug}
-                              </span>
-                            );
+                              </span>);
+
                           })}
                           <div
                             className={cn(
                               'w-3.5 h-3.5 rounded-full border border-border shrink-0 ml-auto',
                               { green: 'bg-success', yellow: 'bg-warning', red: 'bg-destructive', white: 'bg-border' }[client.healthColor ?? 'white']
                             )}
-                            title={`Saúde: ${client.healthColor ?? 'não avaliado'}`}
-                          />
+                            title={`Saúde: ${client.healthColor ?? 'não avaliado'}`} />
+                          
                         </div>
 
                         {/* Metadata line */}
                         <div className="flex flex-wrap items-center gap-1.5 mb-3">
-                          {client.responsible && (
-                            <span className="inline-flex items-center gap-1 text-xs text-muted-foreground bg-muted/60 rounded-md px-2 py-1 font-medium">
+                          {client.responsible &&
+                          <span className="inline-flex items-center gap-1 text-xs text-muted-foreground bg-muted/60 rounded-md px-2 py-1 font-medium">
                               <User className="w-3 h-3 shrink-0" />
                               {client.responsible}
                             </span>
-                          )}
+                          }
                           <span className="inline-flex items-center gap-1 text-xs text-muted-foreground bg-muted/60 rounded-md px-2 py-1 font-medium">
                             <Calendar className="w-3 h-3 shrink-0" />
                             {new Date(client.startDate + 'T00:00:00').toLocaleDateString('pt-BR')}
@@ -700,19 +700,19 @@ export function ProjectsPage() {
                             </div>
                           </div>
                         </div>
-                      </div>
-                    );
+                      </div>);
+
                   })}
                 </div>
-              </div>
-            );
+              </div>);
+
           })}
           {/* Add new column button */}
           <div className="flex-shrink-0 w-80">
             <button
               onClick={handleAddCol}
-              className="w-full py-3 border-2 border-dashed border-border rounded-xl text-sm text-muted-foreground hover:border-primary/40 hover:text-primary transition-colors flex items-center justify-center gap-2"
-            >
+              className="w-full py-3 border-2 border-dashed border-border rounded-xl text-sm text-muted-foreground hover:border-primary/40 hover:text-primary transition-colors flex items-center justify-center gap-2">
+              
               <Plus className="w-4 h-4" />
               Nova Coluna
             </button>
@@ -732,8 +732,8 @@ export function ProjectsPage() {
                 onChange={(e) => setNewColLabel(e.target.value)}
                 placeholder="Ex: Em Revisão"
                 onKeyDown={(e) => e.key === 'Enter' && confirmAddCol()}
-                autoFocus
-              />
+                autoFocus />
+              
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setAddColDialogOpen(false)}>Cancelar</Button>
@@ -761,37 +761,37 @@ export function ProjectsPage() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
-      </div>
-    );
+      </div>);
+
   }
 
   // Step 2.5: Platform selection for this client
   if (selectedPlatform === null && selectedClient.platforms && selectedClient.platforms.length > 0) {
-    const clientTasks = allTasksData.filter(t => t.clientId === selectedClient.id);
-    const clientProjects = projects.filter(p => p.clientId === selectedClient.id);
+    const clientTasks = allTasksData.filter((t) => t.clientId === selectedClient.id);
+    const clientProjects = projects.filter((p) => p.clientId === selectedClient.id);
 
     return (
-    <>
+      <>
       <div className="p-6 animate-fade-in">
         <PageHeader
-          title={selectedClient.name}
-          subtitle="Selecione uma plataforma para ver os projetos"
-          actions={
+            title={selectedClient.name}
+            subtitle="Selecione uma plataforma para ver os projetos"
+            actions={
             <button
               onClick={() => setSelectedClient(null)}
-              className="flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
-            >
+              className="flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
+              
               <ArrowLeft className="w-4 h-4" />
               Voltar
             </button>
-          }
-        />
+            } />
+          
         {/* Ver Todos button + Adicionar Plataforma */}
         <div className="flex items-center gap-3 mt-2 mb-4">
           <div
-            onClick={() => setSelectedPlatform('all')}
-            className="bg-card rounded-xl border border-border p-5 shadow-sm-custom hover:shadow-md-custom hover:-translate-y-0.5 transition-all cursor-pointer group inline-flex items-center gap-3"
-          >
+              onClick={() => setSelectedPlatform('all')}
+              className="bg-card rounded-xl border border-border p-5 shadow-sm-custom hover:shadow-md-custom hover:-translate-y-0.5 transition-all cursor-pointer group inline-flex items-center gap-3">
+              
             <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
               <LayoutGrid className="w-5 h-5 text-primary" />
             </div>
@@ -805,186 +805,186 @@ export function ProjectsPage() {
             </div>
           </div>
           {(() => {
-            const currentSlugs = selectedClient.platforms ?? [];
-            const available = platformOptions.filter(p => !currentSlugs.includes(p.slug));
-            return available.length > 0 ? (
-              <Button variant="outline" onClick={() => { setNewPlatformSlug(''); setAddPlatformDialogOpen(true); }} className="gap-2">
+              const currentSlugs = selectedClient.platforms ?? [];
+              const available = platformOptions.filter((p) => !currentSlugs.includes(p.slug));
+              return available.length > 0 ?
+              <Button variant="outline" onClick={() => {setNewPlatformSlug('');setAddPlatformDialogOpen(true);}} className="gap-2">
                 <Plus className="w-4 h-4" />
                 Adicionar Plataforma
-              </Button>
-            ) : null;
-          })()}
+              </Button> :
+              null;
+            })()}
         </div>
 
         {/* Kanban by phase — editable */}
         {(() => {
-          const platformsByPhase: Record<string, string[]> = {};
-          for (const slug of selectedClient.platforms!) {
-            const cp = clientPlatformsData.find(c => c.clientId === selectedClient.id && c.platformSlug === slug);
-            const phase = cp?.phase ?? 'onboarding';
-            if (!platformsByPhase[phase]) platformsByPhase[phase] = [];
-            platformsByPhase[phase].push(slug);
-          }
-
-          const columns = platformPhaseStatuses.length > 0
-            ? platformPhaseStatuses
-            : [{ key: 'onboarding', label: 'Onboarding' }, { key: 'implementacao', label: 'Implementação' }, { key: 'escala', label: 'Escala' }, { key: 'performance', label: 'Performance' }];
-
-          const handlePlatColDragStart = (e: React.DragEvent, key: string) => {
-            e.dataTransfer.setData('plat-column-key', key);
-            e.dataTransfer.effectAllowed = 'move';
-            setDraggingPlatColKey(key);
-          };
-          const handlePlatColDragEnd = () => { setDraggingPlatColKey(null); setPlatColDropTarget(null); };
-          const handlePlatColDrop = (e: React.DragEvent, targetKey: string) => {
-            e.preventDefault();
-            const sourceKey = e.dataTransfer.getData('plat-column-key');
-            if (!sourceKey || sourceKey === targetKey) { handlePlatColDragEnd(); return; }
-            const keys = columns.map(c => c.key);
-            const si = keys.indexOf(sourceKey);
-            const ti = keys.indexOf(targetKey);
-            if (si === -1 || ti === -1) return;
-            const newKeys = [...keys];
-            newKeys.splice(si, 1);
-            newKeys.splice(ti, 0, sourceKey);
-            reorderPlatPhaseMut.mutate(newKeys.map((k, i) => ({ key: k, sort_order: i })));
-            handlePlatColDragEnd();
-          };
-
-          const handlePlatCardDrop = (e: React.DragEvent, targetPhase: string) => {
-            e.preventDefault();
-            setPlatDragOverCol(null);
-            const slug = e.dataTransfer.getData('plat-card-slug');
-            if (!slug) return;
-            const cp = clientPlatformsData.find(c => c.clientId === selectedClient.id && c.platformSlug === slug);
-            if (cp && cp.phase !== targetPhase) {
-              updatePlatformMut.mutate({ id: cp.id, updates: { phase: targetPhase } });
+            const platformsByPhase: Record<string, string[]> = {};
+            for (const slug of selectedClient.platforms!) {
+              const cp = clientPlatformsData.find((c) => c.clientId === selectedClient.id && c.platformSlug === slug);
+              const phase = cp?.phase ?? 'onboarding';
+              if (!platformsByPhase[phase]) platformsByPhase[phase] = [];
+              platformsByPhase[phase].push(slug);
             }
-          };
 
-          return (
-            <div className="flex gap-4 overflow-x-auto pb-4">
+            const columns = platformPhaseStatuses.length > 0 ?
+            platformPhaseStatuses :
+            [{ key: 'onboarding', label: 'Onboarding' }, { key: 'implementacao', label: 'Implementação' }, { key: 'escala', label: 'Escala' }, { key: 'performance', label: 'Performance' }];
+
+            const handlePlatColDragStart = (e: React.DragEvent, key: string) => {
+              e.dataTransfer.setData('plat-column-key', key);
+              e.dataTransfer.effectAllowed = 'move';
+              setDraggingPlatColKey(key);
+            };
+            const handlePlatColDragEnd = () => {setDraggingPlatColKey(null);setPlatColDropTarget(null);};
+            const handlePlatColDrop = (e: React.DragEvent, targetKey: string) => {
+              e.preventDefault();
+              const sourceKey = e.dataTransfer.getData('plat-column-key');
+              if (!sourceKey || sourceKey === targetKey) {handlePlatColDragEnd();return;}
+              const keys = columns.map((c) => c.key);
+              const si = keys.indexOf(sourceKey);
+              const ti = keys.indexOf(targetKey);
+              if (si === -1 || ti === -1) return;
+              const newKeys = [...keys];
+              newKeys.splice(si, 1);
+              newKeys.splice(ti, 0, sourceKey);
+              reorderPlatPhaseMut.mutate(newKeys.map((k, i) => ({ key: k, sort_order: i })));
+              handlePlatColDragEnd();
+            };
+
+            const handlePlatCardDrop = (e: React.DragEvent, targetPhase: string) => {
+              e.preventDefault();
+              setPlatDragOverCol(null);
+              const slug = e.dataTransfer.getData('plat-card-slug');
+              if (!slug) return;
+              const cp = clientPlatformsData.find((c) => c.clientId === selectedClient.id && c.platformSlug === slug);
+              if (cp && cp.phase !== targetPhase) {
+                updatePlatformMut.mutate({ id: cp.id, updates: { phase: targetPhase } });
+              }
+            };
+
+            return (
+              <div className="flex gap-4 overflow-x-auto pb-4">
               {columns.map((col) => {
-                const colKey = col.key;
-                const colLabel = col.label;
-                const slugsInCol = platformsByPhase[colKey] ?? [];
+                  const colKey = col.key;
+                  const colLabel = col.label;
+                  const slugsInCol = platformsByPhase[colKey] ?? [];
 
-                return (
-                  <div
-                    key={colKey}
-                    className={cn(
-                      'min-w-[240px] w-[260px] shrink-0 group/col relative flex flex-col',
-                      draggingPlatColKey === colKey && 'opacity-50'
-                    )}
-                    onDragOver={(e) => {
-                      e.preventDefault();
-                      if (draggingPlatColKey && draggingPlatColKey !== colKey) {
-                        setPlatColDropTarget(colKey);
-                      } else if (!draggingPlatColKey) {
-                        setPlatDragOverCol(colKey);
-                      }
-                    }}
-                    onDragLeave={() => { setPlatDragOverCol(null); setPlatColDropTarget(null); }}
-                    onDrop={(e) => {
-                      if (draggingPlatColKey) {
-                        handlePlatColDrop(e, colKey);
-                      } else {
-                        handlePlatCardDrop(e, colKey);
-                      }
-                    }}
-                  >
-                    {platColDropTarget === colKey && draggingPlatColKey && (
-                      <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary rounded-full z-10" />
-                    )}
+                  return (
                     <div
-                      draggable
-                      onDragStart={(e) => handlePlatColDragStart(e, colKey)}
-                      onDragEnd={handlePlatColDragEnd}
-                      className="flex items-center gap-2 mb-3 px-1 cursor-grab active:cursor-grabbing"
-                    >
-                      {platEditingColKey === colKey ? (
+                      key={colKey}
+                      className={cn(
+                        'min-w-[240px] w-[260px] shrink-0 group/col relative flex flex-col',
+                        draggingPlatColKey === colKey && 'opacity-50'
+                      )}
+                      onDragOver={(e) => {
+                        e.preventDefault();
+                        if (draggingPlatColKey && draggingPlatColKey !== colKey) {
+                          setPlatColDropTarget(colKey);
+                        } else if (!draggingPlatColKey) {
+                          setPlatDragOverCol(colKey);
+                        }
+                      }}
+                      onDragLeave={() => {setPlatDragOverCol(null);setPlatColDropTarget(null);}}
+                      onDrop={(e) => {
+                        if (draggingPlatColKey) {
+                          handlePlatColDrop(e, colKey);
+                        } else {
+                          handlePlatCardDrop(e, colKey);
+                        }
+                      }}>
+                      
+                    {platColDropTarget === colKey && draggingPlatColKey &&
+                      <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary rounded-full z-10" />
+                      }
+                    <div
+                        draggable
+                        onDragStart={(e) => handlePlatColDragStart(e, colKey)}
+                        onDragEnd={handlePlatColDragEnd}
+                        className="flex items-center gap-2 mb-3 px-1 cursor-grab active:cursor-grabbing">
+                        
+                      {platEditingColKey === colKey ?
                         <EditableColInput
                           value={colLabel}
-                          onSave={(v) => { updatePlatPhaseMut.mutate({ key: colKey, label: v }); setPlatEditingColKey(null); }}
-                          onCancel={() => setPlatEditingColKey(null)}
-                        />
-                      ) : (
+                          onSave={(v) => {updatePlatPhaseMut.mutate({ key: colKey, label: v });setPlatEditingColKey(null);}}
+                          onCancel={() => setPlatEditingColKey(null)} /> :
+
+
                         <button onClick={() => setPlatEditingColKey(colKey)} className="cursor-text">
                           <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{colLabel}</span>
                         </button>
-                      )}
+                        }
                       <span className="text-xs text-muted-foreground bg-muted rounded-full px-2 py-0.5">{slugsInCol.length}</span>
                       <button
-                        onClick={() => setPlatDeleteColConfirm({ key: colKey, label: colLabel })}
-                        className="ml-auto opacity-0 group-hover/col:opacity-100 transition-opacity p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
-                        title="Remover coluna"
-                      >
+                          onClick={() => setPlatDeleteColConfirm({ key: colKey, label: colLabel })}
+                          className="ml-auto opacity-0 group-hover/col:opacity-100 transition-opacity p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
+                          title="Remover coluna">
+                          
                         <X className="w-3.5 h-3.5" />
                       </button>
                     </div>
                     <div className={cn(
-                      'space-y-3 min-h-[80px] bg-muted/30 rounded-lg p-2 flex-1',
-                      platDragOverCol === colKey && !draggingPlatColKey && 'bg-primary/5 ring-2 ring-primary/20'
-                    )}
-                    onDragOver={(e) => { e.preventDefault(); if (!draggingPlatColKey) setPlatDragOverCol(colKey); }}
-                    onDrop={(e) => { if (!draggingPlatColKey) handlePlatCardDrop(e, colKey); }}
-                    >
-                      {slugsInCol.length === 0 && (
-                        <p className="text-xs text-muted-foreground text-center py-6 italic">Nenhuma plataforma</p>
+                        'space-y-3 min-h-[80px] bg-muted/30 rounded-lg p-2 flex-1',
+                        platDragOverCol === colKey && !draggingPlatColKey && 'bg-primary/5 ring-2 ring-primary/20'
                       )}
+                      onDragOver={(e) => {e.preventDefault();if (!draggingPlatColKey) setPlatDragOverCol(colKey);}}
+                      onDrop={(e) => {if (!draggingPlatColKey) handlePlatCardDrop(e, colKey);}}>
+                        
+                      {slugsInCol.length === 0 &&
+                        <p className="text-xs text-muted-foreground text-center py-6 italic">Nenhuma plataforma</p>
+                        }
                       {slugsInCol.map((slug) => {
-                        const plat = platformOptions.find(p => p.slug === slug);
-                        const platTasks = clientTasks.filter(t => t.platforms?.includes(slug));
-                        const platProjectIds = new Set(platTasks.map(t => t.projectId).filter(Boolean));
-                        const platProjects = clientProjects.filter(p => platProjectIds.has(p.id));
-                        const cp = clientPlatformsData.find(c => c.clientId === selectedClient.id && c.platformSlug === slug);
-                        const cpSquad = cp?.squadId ? squads.find(s => s.id === cp.squadId) : null;
-                        const displaySquad = cpSquad ?? (selectedClient.squadId ? squads.find(s => s.id === selectedClient.squadId) : null);
-                        const fieldDefs = PLATFORM_ATTRIBUTE_DEFINITIONS[slug] ?? [];
-                        const attrs = cp?.platformAttributes ?? {};
+                          const plat = platformOptions.find((p) => p.slug === slug);
+                          const platTasks = clientTasks.filter((t) => t.platforms?.includes(slug));
+                          const platProjectIds = new Set(platTasks.map((t) => t.projectId).filter(Boolean));
+                          const platProjects = clientProjects.filter((p) => platProjectIds.has(p.id));
+                          const cp = clientPlatformsData.find((c) => c.clientId === selectedClient.id && c.platformSlug === slug);
+                          const cpSquad = cp?.squadId ? squads.find((s) => s.id === cp.squadId) : null;
+                          const displaySquad = cpSquad ?? (selectedClient.squadId ? squads.find((s) => s.id === selectedClient.squadId) : null);
+                          const fieldDefs = PLATFORM_ATTRIBUTE_DEFINITIONS[slug] ?? [];
+                          const attrs = cp?.platformAttributes ?? {};
 
-                        const getAttrDisplay = (field: typeof fieldDefs[number]) => {
-                          const val = attrs[field.key];
-                          if (field.type === 'toggle') return val ? 'Sim' : 'Não';
-                          if (field.type === 'select') {
-                            if (!val) return '—';
-                            const opt = field.options?.find(o => o.value === val);
-                            return opt?.label ?? val;
-                          }
-                          return val ?? '—';
-                        };
+                          const getAttrDisplay = (field: typeof fieldDefs[number]) => {
+                            const val = attrs[field.key];
+                            if (field.type === 'toggle') return val ? 'Sim' : 'Não';
+                            if (field.type === 'select') {
+                              if (!val) return '—';
+                              const opt = field.options?.find((o) => o.value === val);
+                              return opt?.label ?? val;
+                            }
+                            return val ?? '—';
+                          };
 
-                        const getReputationBorder = () => {
-                          const rep = attrs.reputacao;
-                          if (!rep) return '';
-                          if (slug === 'mercado_livre') {
-                            const map: Record<string, string> = { verde: 'border-l-green-500', amarelo: 'border-l-yellow-500', laranja: 'border-l-orange-500', vermelho: 'border-l-red-500' };
-                            return map[rep] ? `border-l-4 ${map[rep]}` : '';
-                          }
-                          if (slug === 'shein') {
-                            const map: Record<string, string> = { L5: 'border-l-green-500', L4: 'border-l-green-500', L3: 'border-l-yellow-500', L2: 'border-l-orange-500', L1: 'border-l-red-500' };
-                            return map[rep] ? `border-l-4 ${map[rep]}` : '';
-                          }
-                          return '';
-                        };
+                          const getReputationBorder = () => {
+                            const rep = attrs.reputacao;
+                            if (!rep) return '';
+                            if (slug === 'mercado_livre') {
+                              const map: Record<string, string> = { verde: 'border-l-green-500', amarelo: 'border-l-yellow-500', laranja: 'border-l-orange-500', vermelho: 'border-l-red-500' };
+                              return map[rep] ? `border-l-4 ${map[rep]}` : '';
+                            }
+                            if (slug === 'shein') {
+                              const map: Record<string, string> = { L5: 'border-l-green-500', L4: 'border-l-green-500', L3: 'border-l-yellow-500', L2: 'border-l-orange-500', L1: 'border-l-red-500' };
+                              return map[rep] ? `border-l-4 ${map[rep]}` : '';
+                            }
+                            return '';
+                          };
 
-                        return (
-                          <div
-                            key={slug}
-                            draggable
-                            onDragStart={(e) => {
-                              e.dataTransfer.setData('plat-card-slug', slug);
-                              e.dataTransfer.effectAllowed = 'move';
-                              setDraggingPlatCardSlug(slug);
-                            }}
-                            onDragEnd={() => setDraggingPlatCardSlug(null)}
-                            onClick={() => setSelectedPlatform(slug)}
-                            className={cn(
-                              'bg-card rounded-xl border border-border p-4 shadow-sm-custom hover:shadow-md-custom hover:-translate-y-0.5 transition-all cursor-grab active:cursor-grabbing group',
-                              getReputationBorder(),
-                              draggingPlatCardSlug === slug && 'opacity-50'
-                            )}
-                          >
+                          return (
+                            <div
+                              key={slug}
+                              draggable
+                              onDragStart={(e) => {
+                                e.dataTransfer.setData('plat-card-slug', slug);
+                                e.dataTransfer.effectAllowed = 'move';
+                                setDraggingPlatCardSlug(slug);
+                              }}
+                              onDragEnd={() => setDraggingPlatCardSlug(null)}
+                              onClick={() => setSelectedPlatform(slug)}
+                              className={cn(
+                                'bg-card rounded-xl border border-border p-4 shadow-sm-custom hover:shadow-md-custom hover:-translate-y-0.5 transition-all cursor-grab active:cursor-grabbing group',
+                                getReputationBorder(),
+                                draggingPlatCardSlug === slug && 'opacity-50'
+                              )}>
+                              
                             {/* ── Header ── */}
                             <div className="flex items-center gap-2.5 mb-2.5">
                               <div className="w-8 h-8 rounded-lg bg-accent/60 flex items-center justify-center shrink-0">
@@ -995,14 +995,14 @@ export function ProjectsPage() {
                               </div>
                               <div className="flex items-center gap-1.5 shrink-0">
                                 {cp?.qualityLevel && (() => {
-                                  const qMap: Record<string, { emoji: string; label: string }> = { seller: { emoji: '🛒', label: 'Seller' }, lojista: { emoji: '🏪', label: 'Lojista' } };
-                                  const q = qMap[cp.qualityLevel];
-                                  return <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-accent text-[10px] font-semibold text-accent-foreground">{q ? `${q.emoji} ${q.label}` : cp.qualityLevel}</span>;
-                                })()}
+                                    const qMap: Record<string, {emoji: string;label: string;}> = { seller: { emoji: '🛒', label: 'Seller' }, lojista: { emoji: '🏪', label: 'Lojista' } };
+                                    const q = qMap[cp.qualityLevel];
+                                    return <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-accent text-[10px] font-semibold text-accent-foreground">{q ? `${q.emoji} ${q.label}` : cp.qualityLevel}</span>;
+                                  })()}
                                 {cp?.healthColor && (() => {
-                                  const hMap: Record<string, string> = { green: 'bg-green-500', orange: 'bg-orange-500', red: 'bg-red-500' };
-                                  return <span className={cn('w-2.5 h-2.5 rounded-full shrink-0', hMap[cp.healthColor] ?? 'bg-muted')} title={cp.healthColor} />;
-                                })()}
+                                    const hMap: Record<string, string> = { green: 'bg-green-500', orange: 'bg-orange-500', red: 'bg-red-500' };
+                                    return <span className={cn('w-2.5 h-2.5 rounded-full shrink-0', hMap[cp.healthColor] ?? 'bg-muted')} title={cp.healthColor} />;
+                                  })()}
                               </div>
                             </div>
 
@@ -1016,27 +1016,27 @@ export function ProjectsPage() {
                                 <UserCircle className="w-3.5 h-3.5 shrink-0" />
                                 <span className="truncate font-medium text-foreground">{cp?.responsible || '—'}</span>
                               </div>
-                              {cp?.platformAttributes?.tempo_contrato && (
+                              {cp?.platformAttributes?.tempo_contrato &&
                                 <div className="flex items-center gap-1.5 text-muted-foreground col-span-2 min-w-0">
                                   <CalendarDays className="w-3.5 h-3.5 shrink-0" />
                                   <span className="font-medium text-foreground">{cp.platformAttributes.tempo_contrato} meses</span>
                                 </div>
-                              )}
+                                }
                             </div>
 
                             {/* ── Operational Attributes as badges ── */}
                             {(() => {
-                              const summaryBadges = getPlatformAttributeSummary(slug, attrs);
-                              return summaryBadges.length > 0 ? (
+                                const summaryBadges = getPlatformAttributeSummary(slug, attrs);
+                                return summaryBadges.length > 0 ?
                                 <div className="flex flex-wrap gap-1 mb-2.5 pt-2 border-t border-border/50">
-                                  {summaryBadges.map((badge, i) => (
-                                    <span key={i} className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-secondary text-[10px] font-medium text-secondary-foreground border border-border/50">
+                                  {summaryBadges.map((badge, i) =>
+                                  <span key={i} className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-secondary text-[10px] font-medium text-secondary-foreground border border-border/50">
                                       {badge}
                                     </span>
-                                  ))}
-                                </div>
-                              ) : null;
-                            })()}
+                                  )}
+                                </div> :
+                                null;
+                              })()}
 
                             {/* ── Footer ── */}
                             <div className="flex items-center justify-between text-xs text-muted-foreground pt-2 border-t border-border/50">
@@ -1045,35 +1045,35 @@ export function ProjectsPage() {
                                 <span className="inline-flex items-center gap-1"><ListChecks className="w-3 h-3" />{platTasks.length}</span>
                               </div>
                               <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-6 w-6"
-                                title="Transferir Plataforma"
-                                onClick={(e) => { e.stopPropagation(); setTransferTarget({ platformId: cp?.id ?? '', squadId: cp?.squadId ?? null, responsible: cp?.responsible ?? '' }); }}
-                              >
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-6 w-6"
+                                  title="Transferir Plataforma"
+                                  onClick={(e) => {e.stopPropagation();setTransferTarget({ platformId: cp?.id ?? '', squadId: cp?.squadId ?? null, responsible: cp?.responsible ?? '' });}}>
+                                  
                                 <ArrowRightLeft className="w-3.5 h-3.5" />
                               </Button>
                             </div>
-                          </div>
-                        );
-                      })}
+                          </div>);
+
+                        })}
                     </div>
-                  </div>
-                );
-              })}
+                  </div>);
+
+                })}
               {/* Add new column button */}
               <div className="min-w-[240px] w-[260px] shrink-0">
                 <button
-                  onClick={() => { setPlatNewColLabel(''); setPlatAddColOpen(true); }}
-                  className="w-full py-3 border-2 border-dashed border-border rounded-xl text-sm text-muted-foreground hover:border-primary/40 hover:text-primary transition-colors flex items-center justify-center gap-2"
-                >
+                    onClick={() => {setPlatNewColLabel('');setPlatAddColOpen(true);}}
+                    className="w-full py-3 border-2 border-dashed border-border rounded-xl text-sm text-muted-foreground hover:border-primary/40 hover:text-primary transition-colors flex items-center justify-center gap-2">
+                    
                   <Plus className="w-4 h-4" />
                   Nova Coluna
                 </button>
               </div>
-            </div>
-          );
-        })()}
+            </div>);
+
+          })()}
       </div>
 
       {/* Platform Phase Add Column Dialog */}
@@ -1085,31 +1085,31 @@ export function ProjectsPage() {
           <div className="space-y-3">
             <Label>Nome da coluna</Label>
             <Input
-              value={platNewColLabel}
-              onChange={(e) => setPlatNewColLabel(e.target.value)}
-              placeholder="Ex: Maturação"
-              onKeyDown={(e) => e.key === 'Enter' && (() => {
-                const label = platNewColLabel.trim();
-                if (!label) return;
-                const key = label.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
-                addPlatPhaseMut.mutate({ key, label, class_name: 'bg-muted text-muted-foreground border-border' });
-                setPlatAddColOpen(false);
-              })()}
-              autoFocus
-            />
+                value={platNewColLabel}
+                onChange={(e) => setPlatNewColLabel(e.target.value)}
+                placeholder="Ex: Maturação"
+                onKeyDown={(e) => e.key === 'Enter' && (() => {
+                  const label = platNewColLabel.trim();
+                  if (!label) return;
+                  const key = label.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+                  addPlatPhaseMut.mutate({ key, label, class_name: 'bg-muted text-muted-foreground border-border' });
+                  setPlatAddColOpen(false);
+                })()}
+                autoFocus />
+              
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setPlatAddColOpen(false)}>Cancelar</Button>
             <Button
-              onClick={() => {
-                const label = platNewColLabel.trim();
-                if (!label) return;
-                const key = label.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
-                addPlatPhaseMut.mutate({ key, label, class_name: 'bg-muted text-muted-foreground border-border' });
-                setPlatAddColOpen(false);
-              }}
-              disabled={!platNewColLabel.trim() || addPlatPhaseMut.isPending}
-            >
+                onClick={() => {
+                  const label = platNewColLabel.trim();
+                  if (!label) return;
+                  const key = label.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+                  addPlatPhaseMut.mutate({ key, label, class_name: 'bg-muted text-muted-foreground border-border' });
+                  setPlatAddColOpen(false);
+                }}
+                disabled={!platNewColLabel.trim() || addPlatPhaseMut.isPending}>
+                
               {addPlatPhaseMut.isPending ? 'Criando...' : 'Criar'}
             </Button>
           </DialogFooter>
@@ -1128,9 +1128,9 @@ export function ProjectsPage() {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction
-              onClick={() => { if (platDeleteColConfirm) { deletePlatPhaseMut.mutate(platDeleteColConfirm.key); setPlatDeleteColConfirm(null); } }}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
+                onClick={() => {if (platDeleteColConfirm) {deletePlatPhaseMut.mutate(platDeleteColConfirm.key);setPlatDeleteColConfirm(null);}}}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                
               Excluir
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -1150,86 +1150,86 @@ export function ProjectsPage() {
                 <SelectValue placeholder="Selecione uma plataforma" />
               </SelectTrigger>
               <SelectContent>
-                {platformOptions
-                  .filter(p => !(selectedClient.platforms ?? []).includes(p.slug))
-                  .map(p => (
-                    <SelectItem key={p.id} value={p.slug}>{p.name}</SelectItem>
-                  ))}
+                {platformOptions.
+                  filter((p) => !(selectedClient.platforms ?? []).includes(p.slug)).
+                  map((p) =>
+                  <SelectItem key={p.id} value={p.slug}>{p.name}</SelectItem>
+                  )}
               </SelectContent>
             </Select>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setAddPlatformDialogOpen(false)}>Cancelar</Button>
             <Button
-              disabled={!newPlatformSlug || addClientPlatformMut.isPending}
-              onClick={() => {
-                const firstPhase = platformPhaseStatuses.length > 0 ? platformPhaseStatuses[0].key : 'onboarding';
-                addClientPlatformMut.mutate({
-                  clientId: selectedClient.id,
-                  platformSlug: newPlatformSlug,
-                  phase: firstPhase,
-                  squadId: selectedClient.squadId,
-                });
-                const currentPlatforms = selectedClient.platforms ?? [];
-                updateClientField(selectedClient.id, 'platforms', [...currentPlatforms, newPlatformSlug], 'Plataformas');
-                setSelectedClient({ ...selectedClient, platforms: [...currentPlatforms, newPlatformSlug] });
-                setAddPlatformDialogOpen(false);
-              }}
-            >
+                disabled={!newPlatformSlug || addClientPlatformMut.isPending}
+                onClick={() => {
+                  const firstPhase = platformPhaseStatuses.length > 0 ? platformPhaseStatuses[0].key : 'onboarding';
+                  addClientPlatformMut.mutate({
+                    clientId: selectedClient.id,
+                    platformSlug: newPlatformSlug,
+                    phase: firstPhase,
+                    squadId: selectedClient.squadId
+                  });
+                  const currentPlatforms = selectedClient.platforms ?? [];
+                  updateClientField(selectedClient.id, 'platforms', [...currentPlatforms, newPlatformSlug], 'Plataformas');
+                  setSelectedClient({ ...selectedClient, platforms: [...currentPlatforms, newPlatformSlug] });
+                  setAddPlatformDialogOpen(false);
+                }}>
+                
               {addClientPlatformMut.isPending ? 'Adicionando...' : 'Adicionar'}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {generateTarget && (
+      {generateTarget &&
         <GenerateDemandsDialog
           open={!!generateTarget}
-          onOpenChange={(v) => { if (!v) setGenerateTarget(null); }}
+          onOpenChange={(v) => {if (!v) setGenerateTarget(null);}}
           phase={generateTarget.phase}
           clientId={generateTarget.clientId}
           clientName={generateTarget.clientName}
           platformSlug={generateTarget.platformSlug}
-          squadId={generateTarget.squadId}
-        />
-      )}
-      {transferTarget && (
+          squadId={generateTarget.squadId} />
+
+        }
+      {transferTarget &&
         <TransferPlatformDialog
           open={!!transferTarget}
-          onOpenChange={(v) => { if (!v) setTransferTarget(null); }}
+          onOpenChange={(v) => {if (!v) setTransferTarget(null);}}
           platformId={transferTarget.platformId}
           currentSquadId={transferTarget.squadId}
-          currentResponsible={transferTarget.responsible}
-        />
-      )}
-    </>
-    );
+          currentResponsible={transferTarget.responsible} />
+
+        }
+    </>);
+
   }
 
   // Step 3: Show projects of selected client (optionally filtered by platform)
   const currentPlatformData = clientPlatformsData.find(
-    cp => cp.clientId === selectedClient.id && cp.platformSlug === selectedPlatform
+    (cp) => cp.clientId === selectedClient.id && cp.platformSlug === selectedPlatform
   );
   const currentPhase = currentPlatformData?.phase ?? 'onboarding';
-  const allClientTasks = allTasksData.filter(t => t.clientId === selectedClient.id);
-  const filtered = projects
-    .filter((p) => p.clientId === selectedClient.id)
-    .filter((p) => {
-      if (selectedPlatform && selectedPlatform !== 'all') {
-        // Show project only if it has at least one task with this platform
-        const projectTasks = allClientTasks.filter(t => t.projectId === p.id);
-        return projectTasks.some(t => t.platforms?.includes(selectedPlatform));
-      }
-      return true;
-    })
-    .filter((p) =>
-      p.name.toLowerCase().includes(search.toLowerCase()) ||
-      p.clientName.toLowerCase().includes(search.toLowerCase())
-    );
+  const allClientTasks = allTasksData.filter((t) => t.clientId === selectedClient.id);
+  const filtered = projects.
+  filter((p) => p.clientId === selectedClient.id).
+  filter((p) => {
+    if (selectedPlatform && selectedPlatform !== 'all') {
+      // Show project only if it has at least one task with this platform
+      const projectTasks = allClientTasks.filter((t) => t.projectId === p.id);
+      return projectTasks.some((t) => t.platforms?.includes(selectedPlatform));
+    }
+    return true;
+  }).
+  filter((p) =>
+  p.name.toLowerCase().includes(search.toLowerCase()) ||
+  p.clientName.toLowerCase().includes(search.toLowerCase())
+  );
 
-  const platformLabel = selectedPlatform && selectedPlatform !== 'all'
-    ? platformOptions.find(p => p.slug === selectedPlatform)?.name ?? selectedPlatform
-    : null;
+  const platformLabel = selectedPlatform && selectedPlatform !== 'all' ?
+  platformOptions.find((p) => p.slug === selectedPlatform)?.name ?? selectedPlatform :
+  null;
 
   return (
     <div className="p-6 animate-fade-in h-full flex flex-col">
@@ -1273,30 +1273,30 @@ export function ProjectsPage() {
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => { setFlowMode('create'); setFlowDialogOpen(true); }}>
+                <DropdownMenuItem onClick={() => {setFlowMode('create');setFlowDialogOpen(true);}}>
                   Criar Fluxo
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => { setFlowMode('edit'); setFlowDialogOpen(true); }}>
+                <DropdownMenuItem onClick={() => {setFlowMode('edit');setFlowDialogOpen(true);}}>
                   Editar Fluxo
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => { setFlowMode('assign'); setFlowDialogOpen(true); }}>
+                <DropdownMenuItem onClick={() => {setFlowMode('assign');setFlowDialogOpen(true);}}>
                   Atribuir Fluxo
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setGenerateTarget({
-                  phase: currentPhase,
-                  clientId: selectedClient.id,
-                  clientName: selectedClient.name,
-                  platformSlug: selectedPlatform ?? '',
-                  squadId: selectedClient.squadId ?? null,
-                })}>
+                phase: currentPhase,
+                clientId: selectedClient.id,
+                clientName: selectedClient.name,
+                platformSlug: selectedPlatform ?? '',
+                squadId: selectedClient.squadId ?? null
+              })}>
                   <Zap className="w-4 h-4 mr-1" />
                   Gerar Demandas da Fase
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
             <button
-              onClick={() => setAddDemandOpen(true)}
-              className="flex items-center gap-2 px-4 py-2 gradient-primary text-primary-foreground rounded-lg text-sm font-medium shadow-primary hover:opacity-90 transition-opacity">
+            onClick={() => setAddDemandOpen(true)}
+            className="flex items-center gap-2 px-4 py-2 gradient-primary text-primary-foreground rounded-lg text-sm font-medium shadow-primary hover:opacity-90 transition-opacity">
               <Plus className="w-4 h-4" />
               Adicionar Demanda
             </button>
@@ -1309,16 +1309,16 @@ export function ProjectsPage() {
         defaultStatus="backlog"
         defaultClientId={selectedClient.id}
         defaultClientName={selectedClient.name}
-        defaultPlatformSlug={selectedPlatform && selectedPlatform !== 'all' ? selectedPlatform : undefined}
-      />
+        defaultPlatformSlug={selectedPlatform && selectedPlatform !== 'all' ? selectedPlatform : undefined} />
+      
 
       <FlowManagerDialog
         open={flowDialogOpen}
         onOpenChange={setFlowDialogOpen}
         mode={flowMode}
         defaultClientId={selectedClient.id}
-        defaultClientName={selectedClient.name}
-      />
+        defaultClientName={selectedClient.name} />
+      
 
       <div className="flex gap-4 flex-1 overflow-hidden">
         <div className="flex-1 flex flex-col overflow-hidden">
@@ -1341,32 +1341,32 @@ export function ProjectsPage() {
         <ProjectSummaryPanel projects={filtered} />
       </div>
 
-      {generateTarget && (
-        <GenerateDemandsDialog
-          open={!!generateTarget}
-          onOpenChange={(v) => !v && setGenerateTarget(null)}
-          phase={generateTarget.phase}
-          clientId={generateTarget.clientId}
-          clientName={generateTarget.clientName}
-          platformSlug={generateTarget.platformSlug}
-          squadId={generateTarget.squadId}
-        />
-      )}
+      {generateTarget &&
+      <GenerateDemandsDialog
+        open={!!generateTarget}
+        onOpenChange={(v) => !v && setGenerateTarget(null)}
+        phase={generateTarget.phase}
+        clientId={generateTarget.clientId}
+        clientName={generateTarget.clientName}
+        platformSlug={generateTarget.platformSlug}
+        squadId={generateTarget.squadId} />
 
-      {transferTarget && (
-        <TransferPlatformDialog
-          open={!!transferTarget}
-          onOpenChange={(v) => !v && setTransferTarget(null)}
-          platformId={transferTarget.platformId}
-          currentSquadId={transferTarget.squadId}
-          currentResponsible={transferTarget.responsible}
-        />
-      )}
+      }
+
+      {transferTarget &&
+      <TransferPlatformDialog
+        open={!!transferTarget}
+        onOpenChange={(v) => !v && setTransferTarget(null)}
+        platformId={transferTarget.platformId}
+        currentSquadId={transferTarget.squadId}
+        currentResponsible={transferTarget.responsible} />
+
+      }
     </div>);
 
 }
 
-function KanbanView({ filtered, clientId, clientName, squadMembers, platformSlug }: {filtered: Project[]; clientId: string; clientName: string; squadMembers: string[]; platformSlug?: string;}) {
+function KanbanView({ filtered, clientId, clientName, squadMembers, platformSlug }: {filtered: Project[];clientId: string;clientName: string;squadMembers: string[];platformSlug?: string;}) {
   const { tasks: allTasks, addTask, updateTask, deleteTask } = useTasks();
   const { currentUser } = useAuth();
   const { squads } = useSquads();
@@ -1375,13 +1375,13 @@ function KanbanView({ filtered, clientId, clientName, squadMembers, platformSlug
   const [localProjects, setLocalProjects] = useState<Project[]>([]);
   const allProjects = [...filtered, ...localProjects];
   const [cols, setCols] = useState<ProjectKanbanColumn[]>([
-    { id: 'backlog', label: 'Backlog', status: 'backlog' },
-    { id: 'in_progress', label: 'Em Andamento', status: 'in_progress' },
-    { id: 'waiting_client', label: 'Aguard. Cliente', status: 'waiting_client' },
-    { id: 'done', label: 'Concluído', status: 'done' },
-  ]);
+  { id: 'backlog', label: 'Backlog', status: 'backlog' },
+  { id: 'in_progress', label: 'Em Andamento', status: 'in_progress' },
+  { id: 'waiting_client', label: 'Aguard. Cliente', status: 'waiting_client' },
+  { id: 'done', label: 'Concluído', status: 'done' }]
+  );
   const [editingColId, setEditingColId] = useState<string | null>(null);
-  const [demandDialog, setDemandDialog] = useState<{ open: boolean; status: TaskStatus }>({ open: false, status: 'backlog' });
+  const [demandDialog, setDemandDialog] = useState<{open: boolean;status: TaskStatus;}>({ open: false, status: 'backlog' });
   const [dragOverCol, setDragOverCol] = useState<string | null>(null);
   const [selectedTask, setSelectedTask] = useState<string | null>(null);
 
@@ -1401,13 +1401,13 @@ function KanbanView({ filtered, clientId, clientName, squadMembers, platformSlug
       priority: task.priority,
       status: task.status as ProjectStatus,
       checklist: [],
-      progress: 0,
+      progress: 0
     };
     setLocalProjects((prev) => [...prev, newProject]);
   };
 
   const handleRenameCol = (id: string, newLabel: string) => {
-    setCols((c) => c.map((col) => (col.id === id ? { ...col, label: newLabel } : col)));
+    setCols((c) => c.map((col) => col.id === id ? { ...col, label: newLabel } : col));
     setEditingColId(null);
   };
 
@@ -1455,31 +1455,31 @@ function KanbanView({ filtered, clientId, clientName, squadMembers, platformSlug
             <div
               key={col.id}
               className="flex-shrink-0 w-72 group/col"
-              onDragOver={(e) => { e.preventDefault(); setDragOverCol(col.id); }}
+              onDragOver={(e) => {e.preventDefault();setDragOverCol(col.id);}}
               onDragLeave={() => setDragOverCol(null)}
-              onDrop={(e) => handleDrop(col.status, e)}
-            >
+              onDrop={(e) => handleDrop(col.status, e)}>
+              
               <div className="flex items-center gap-2 mb-3">
                 {conf && <div className={cn('w-2 h-2 rounded-full', conf.dot)} />}
-                {editingColId === col.id ? (
-                  <EditableColInput
-                    value={col.label}
-                    onSave={(v) => handleRenameCol(col.id, v)}
-                    onCancel={() => setEditingColId(null)}
-                  />
-                ) : (
-                  <button onClick={() => setEditingColId(col.id)} className="cursor-text">
+                {editingColId === col.id ?
+                <EditableColInput
+                  value={col.label}
+                  onSave={(v) => handleRenameCol(col.id, v)}
+                  onCancel={() => setEditingColId(null)} /> :
+
+
+                <button onClick={() => setEditingColId(col.id)} className="cursor-text">
                     <h3 className="text-sm font-semibold text-foreground">{col.label}</h3>
                   </button>
-                )}
+                }
                 <span className="text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded-full font-medium">
                   {colTasks.length}
                 </span>
                 <button
                   onClick={() => handleRemoveCol(col.id)}
                   className="ml-auto opacity-0 group-hover/col:opacity-100 transition-opacity p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
-                  title="Remover coluna"
-                >
+                  title="Remover coluna">
+                  
                   <X className="w-3.5 h-3.5" />
                 </button>
               </div>
@@ -1502,17 +1502,17 @@ function KanbanView({ filtered, clientId, clientName, squadMembers, platformSlug
                       task={task}
                       onClick={() => setSelectedTask(task.id)}
                       canDelete={canDel}
-                      onDelete={() => deleteTask(task.id)}
-                    />
-                  );
+                      onDelete={() => deleteTask(task.id)} />);
+
+
                 })}
-                {colProjects.filter(p => !colTasks.some(t => t.title === p.name)).map((project) =>
-                  <ProjectCard key={project.id} project={project} />
+                {colProjects.filter((p) => !colTasks.some((t) => t.title === p.name)).map((project) =>
+                <ProjectCard key={project.id} project={project} />
                 )}
                 <button
-                  onClick={() => setDemandDialog({ open: true, status: (col.status as TaskStatus) || 'backlog' })}
-                  className="w-full py-2.5 border-2 border-dashed border-border rounded-xl text-xs text-muted-foreground hover:border-primary/40 hover:text-primary transition-colors flex items-center justify-center gap-1.5"
-                >
+                  onClick={() => setDemandDialog({ open: true, status: col.status as TaskStatus || 'backlog' })}
+                  className="w-full py-2.5 border-2 border-dashed border-border rounded-xl text-xs text-muted-foreground hover:border-primary/40 hover:text-primary transition-colors flex items-center justify-center gap-1.5">
+                  
                   <Plus className="w-3.5 h-3.5" />
                   Adicionar demanda
                 </button>
@@ -1522,8 +1522,8 @@ function KanbanView({ filtered, clientId, clientName, squadMembers, platformSlug
         <div className="flex-shrink-0 w-72">
           <button
             onClick={handleAddCol}
-            className="w-full py-3 border-2 border-dashed border-border rounded-xl text-sm text-muted-foreground hover:border-primary/40 hover:text-primary transition-colors flex items-center justify-center gap-2"
-          >
+            className="w-full py-3 border-2 border-dashed border-border rounded-xl text-sm text-muted-foreground hover:border-primary/40 hover:text-primary transition-colors flex items-center justify-center gap-2">
+            
             <Plus className="w-4 h-4" />
             Nova Coluna
           </button>
@@ -1536,21 +1536,21 @@ function KanbanView({ filtered, clientId, clientName, squadMembers, platformSlug
         defaultStatus={demandDialog.status}
         defaultClientId={clientId}
         defaultClientName={clientName}
-        defaultPlatformSlug={platformSlug}
-      />
+        defaultPlatformSlug={platformSlug} />
+      
 
       <TaskDetailModal
         task={liveSelectedTask}
         open={!!selectedTask}
-        onOpenChange={(open) => { if (!open) setSelectedTask(null); }}
-      />
-    </>
-  );
+        onOpenChange={(open) => {if (!open) setSelectedTask(null);}} />
+      
+    </>);
+
 }
 
-function DemandCard({ task, onClick, canDelete, onDelete }: { task: import('@/types').Task; onClick: () => void; canDelete: boolean; onDelete: () => void }) {
+function DemandCard({ task, onClick, canDelete, onDelete }: {task: import('@/types').Task;onClick: () => void;canDelete: boolean;onDelete: () => void;}) {
   const subtasks = task.subtasks ?? [];
-  const progress = subtasks.length > 0 ? Math.round((subtasks.filter(s => s.done).length / subtasks.length) * 100) : -1;
+  const progress = subtasks.length > 0 ? Math.round(subtasks.filter((s) => s.done).length / subtasks.length * 100) : -1;
 
   const handleDragStart = (e: React.DragEvent) => {
     e.dataTransfer.setData('text/plain', task.id);
@@ -1562,45 +1562,45 @@ function DemandCard({ task, onClick, canDelete, onDelete }: { task: import('@/ty
       draggable
       onDragStart={handleDragStart}
       onClick={onClick}
-      className="bg-card rounded-xl border border-border p-4 shadow-sm-custom hover:shadow-md-custom transition-all cursor-grab active:cursor-grabbing"
-    >
+      className="bg-card rounded-xl border border-border p-4 shadow-sm-custom hover:shadow-md-custom transition-all cursor-grab active:cursor-grabbing">
+      
       <p className="text-sm font-semibold text-foreground line-clamp-2 leading-snug mb-2">{task.title}</p>
       <div className="flex items-center gap-2 mb-2">
         <Avatar name={task.responsible} size="sm" />
         <span className="text-xs text-muted-foreground truncate">{task.responsible}</span>
       </div>
-      {progress >= 0 && (
-        <div className="mb-2">
+      {progress >= 0 &&
+      <div className="mb-2">
           <ProgressBar value={progress} className="mb-1" />
           <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span>Subtarefas</span>
             <span className="font-medium">{progress}%</span>
           </div>
         </div>
-      )}
-      {task.comments && (
-        <div className="flex items-start gap-1.5 text-xs text-muted-foreground bg-muted/50 rounded-lg p-2 mb-2">
+      }
+      {task.comments &&
+      <div className="flex items-start gap-1.5 text-xs text-muted-foreground bg-muted/50 rounded-lg p-2 mb-2">
           <MessageSquare className="w-3 h-3 mt-0.5 shrink-0" />
           <span className="line-clamp-2">{task.comments}</span>
         </div>
-      )}
+      }
       <div className="flex items-center justify-between text-xs text-muted-foreground">
         <div className="flex items-center gap-1">
           <Calendar className="w-3 h-3" />
           {new Date(task.deadline).toLocaleDateString('pt-BR')}
         </div>
-        {canDelete && (
-          <button
-            onClick={(e) => { e.stopPropagation(); onDelete(); }}
-            className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
-            title="Excluir demanda"
-          >
+        {canDelete &&
+        <button
+          onClick={(e) => {e.stopPropagation();onDelete();}}
+          className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+          title="Excluir demanda">
+          
             <Trash2 className="w-3.5 h-3.5" />
           </button>
-        )}
+        }
       </div>
-    </div>
-  );
+    </div>);
+
 }
 
 function ListView({ filtered }: {filtered: Project[];}) {
@@ -1712,7 +1712,7 @@ function ProjectCard({ project }: {project: Project;}) {
 
 }
 
-function EditableColInput({ value, onSave, onCancel }: { value: string; onSave: (v: string) => void; onCancel: () => void }) {
+function EditableColInput({ value, onSave, onCancel }: {value: string;onSave: (v: string) => void;onCancel: () => void;}) {
   const [text, setText] = useState(value);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -1736,7 +1736,7 @@ function EditableColInput({ value, onSave, onCancel }: { value: string; onSave: 
       onChange={(e) => setText(e.target.value)}
       onBlur={() => onSave(text.trim() || value)}
       onKeyDown={handleKeyDown}
-      className="text-sm font-medium bg-background border border-primary/30 rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-primary/30 w-32"
-    />
-  );
+      className="text-sm font-medium bg-background border border-primary/30 rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-primary/30 w-32" />);
+
+
 }
