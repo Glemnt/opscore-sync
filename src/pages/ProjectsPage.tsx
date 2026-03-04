@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Plus, Search, Calendar, ChevronDown, CheckCircle2, Circle, ArrowLeft, Users2, X, Pencil, Trash2, MessageSquare, ShoppingBag, LayoutGrid, Zap, ArrowRightLeft, Workflow, CreditCard, Building2, User, Phone, Mail, FileText } from 'lucide-react';
+import { Plus, Search, Calendar, CalendarDays, ChevronDown, CheckCircle2, Circle, ArrowLeft, Users2, X, Pencil, Trash2, MessageSquare, ShoppingBag, LayoutGrid, Zap, ArrowRightLeft, Workflow, CreditCard, Building2, User, Phone, Mail, FileText, UserCircle, Briefcase, ListChecks } from 'lucide-react';
 import { mockAnalysisData } from '@/components/ClientAIAnalysis';
 import { usePlatformsQuery } from '@/hooks/usePlatformsQuery';
 import { TaskDetailModal } from '@/components/TaskDetailModal';
