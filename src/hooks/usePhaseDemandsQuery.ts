@@ -6,6 +6,7 @@ export interface PhaseDemandTemplate {
   phase: string;
   title: string;
   demandOwner: string;
+  flowId: string | null;
   sortOrder: number;
   createdAt: string;
 }
@@ -16,6 +17,7 @@ function mapRow(row: any): PhaseDemandTemplate {
     phase: row.phase,
     title: row.title,
     demandOwner: row.demand_owner,
+    flowId: row.flow_id ?? null,
     sortOrder: row.sort_order,
     createdAt: row.created_at,
   };
@@ -38,11 +40,12 @@ export function usePhaseDemandsQuery() {
 export function useAddPhaseDemand() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (input: { phase: string; title: string; demandOwner: string; sortOrder?: number }) => {
+    mutationFn: async (input: { phase: string; title: string; demandOwner: string; flowId?: string | null; sortOrder?: number }) => {
       const { error } = await supabase.from('phase_demand_templates' as any).insert({
         phase: input.phase,
         title: input.title,
         demand_owner: input.demandOwner,
+        flow_id: input.flowId ?? null,
         sort_order: input.sortOrder ?? 0,
       } as any);
       if (error) throw error;
@@ -54,10 +57,11 @@ export function useAddPhaseDemand() {
 export function useUpdatePhaseDemand() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, updates }: { id: string; updates: Partial<{ title: string; demandOwner: string; sortOrder: number }> }) => {
+    mutationFn: async ({ id, updates }: { id: string; updates: Partial<{ title: string; demandOwner: string; flowId: string | null; sortOrder: number }> }) => {
       const dbUpdates: Record<string, any> = {};
       if (updates.title !== undefined) dbUpdates.title = updates.title;
       if (updates.demandOwner !== undefined) dbUpdates.demand_owner = updates.demandOwner;
+      if (updates.flowId !== undefined) dbUpdates.flow_id = updates.flowId;
       if (updates.sortOrder !== undefined) dbUpdates.sort_order = updates.sortOrder;
       const { error } = await supabase.from('phase_demand_templates' as any).update(dbUpdates).eq('id', id);
       if (error) throw error;
