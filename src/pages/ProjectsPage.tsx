@@ -918,6 +918,13 @@ export function ProjectsPage() {
         defaultPlatformSlug={selectedPlatform && selectedPlatform !== 'all' ? selectedPlatform : undefined}
       />
 
+      <FlowManagerDialog
+        open={flowDialogOpen}
+        onOpenChange={setFlowDialogOpen}
+        mode={flowMode}
+        defaultClientId={selectedClient.id}
+        defaultClientName={selectedClient.name}
+      />
 
       <div className="flex gap-4 flex-1 overflow-hidden">
         <div className="flex-1 flex flex-col overflow-hidden">
