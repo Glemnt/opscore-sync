@@ -377,7 +377,7 @@ export function ClientDetailModal({ client, open, onClose }: ClientDetailModalPr
             <div className="flex items-center gap-2">
               <StatusBadge className={statusConf.className}>{statusConf.label}</StatusBadge>
               <span className="text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground font-medium">
-                {client.contractType === 'mrr' ? 'MRR' : `TCV ${client.contractDurationMonths}m`}
+                {client.contractType === 'mrr' ? 'MRR' : 'TCV'} {client.contractDurationMonths ? `${client.contractDurationMonths}m` : ''}
               </span>
               <button
                 onClick={() => { setEditMode(true); setEditData({ name: client.name, companyName: client.companyName, segment: client.segment, status: client.status, platforms: client.platforms ?? (client.platform ? [client.platform] : []), contractType: client.contractType, paymentDay: client.paymentDay, contractDurationMonths: client.contractDurationMonths, notes: client.notes, monthlyRevenue: client.monthlyRevenue, responsible: client.responsible, setupFee: client.setupFee, phone: client.phone, cnpj: client.cnpj, email: client.email }); }}
@@ -469,12 +469,13 @@ export function ClientDetailModal({ client, open, onClose }: ClientDetailModalPr
                   <Label className="text-xs">Dia de Pagamento</Label>
                   <Input type="number" min={1} max={31} value={editData.paymentDay ?? 10} onChange={e => setEditData(p => ({ ...p, paymentDay: Number(e.target.value) }))} className="h-8 text-sm" />
                 </div>
-                {editData.contractType === 'tcv' && (
-                  <div>
-                    <Label className="text-xs">Duração (meses)</Label>
-                    <Input type="number" value={editData.contractDurationMonths ?? 3} onChange={e => setEditData(p => ({ ...p, contractDurationMonths: Number(e.target.value) }))} className="h-8 text-sm" />
+                <div>
+                    <Label className="text-xs">Duração do Contrato</Label>
+                    <select value={editData.contractDurationMonths ?? 6} onChange={e => setEditData(p => ({ ...p, contractDurationMonths: Number(e.target.value) }))} className="w-full h-8 px-2 text-sm bg-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring text-foreground">
+                      <option value={6}>6 meses</option>
+                      <option value={12}>12 meses</option>
+                    </select>
                   </div>
-                )}
               </div>
               <div>
                 <Label className="text-xs">Plataformas</Label>

@@ -40,7 +40,7 @@ export function AddClientDialog({ open, onClose }: AddClientDialogProps) {
   const [companyName, setCompanyName] = useState('');
   const [contractType, setContractType] = useState<ContractType>('mrr');
   const [paymentDay, setPaymentDay] = useState('10');
-  const [contractDuration, setContractDuration] = useState('3');
+  const [contractDuration, setContractDuration] = useState('6');
   const [segment, setSegment] = useState('');
   const { squads } = useSquads();
   const [squadId, setSquadId] = useState(squads[0]?.id ?? '');
@@ -100,7 +100,7 @@ export function AddClientDialog({ open, onClose }: AddClientDialogProps) {
       pendingTasks: selectedTemplateIds.length,
       contractType,
       paymentDay: Number(paymentDay),
-      contractDurationMonths: contractType === 'tcv' ? Number(contractDuration) : undefined,
+      contractDurationMonths: Number(contractDuration),
       platform: platforms[0],
       platforms,
       phone: phone.trim() || undefined,
@@ -268,16 +268,13 @@ export function AddClientDialog({ open, onClose }: AddClientDialogProps) {
                 </div>
               </RadioGroup>
             </div>
-            {contractType === 'tcv' && (
-              <div className="animate-in fade-in slide-in-from-top-1 duration-200">
-                <Label className="text-xs">Duração do Contrato</Label>
-                <select value={contractDuration} onChange={e => setContractDuration(e.target.value)} className="w-full h-8 px-2 text-sm bg-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring text-foreground">
-                  <option value="3">3 meses</option>
-                  <option value="6">6 meses</option>
-                  <option value="12">12 meses</option>
-                </select>
-              </div>
-            )}
+            <div>
+              <Label className="text-xs">Duração do Contrato</Label>
+              <select value={contractDuration} onChange={e => setContractDuration(e.target.value)} className="w-full h-8 px-2 text-sm bg-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring text-foreground">
+                <option value="6">6 meses</option>
+                <option value="12">12 meses</option>
+              </select>
+            </div>
 
             {/* Summary of selected templates */}
             {selectedTemplateIds.length > 0 && (
