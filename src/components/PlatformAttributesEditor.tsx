@@ -39,17 +39,9 @@ export const PLATFORM_ATTRIBUTE_DEFINITIONS: Record<string, AttrFieldDef[]> = {
         { value: 'loja_oficial', label: 'Loja Oficial' },
       ],
     },
-    {
-      key: 'envios',
-      label: 'Envios',
-      type: 'select',
-      options: [
-        { value: '', label: '—' },
-        { value: 'full', label: 'Full' },
-        { value: 'flex', label: 'Flex' },
-        { value: 'turbo', label: 'Turbo' },
-      ],
-    },
+    { key: 'envios_full', label: 'Full', type: 'toggle' },
+    { key: 'envios_flex', label: 'Flex', type: 'toggle' },
+    { key: 'envios_turbo', label: 'Turbo', type: 'toggle' },
   ],
   shopee: [
     { key: 'vendedor_indicado', label: 'Vendedor Indicado', type: 'toggle' },
@@ -91,7 +83,9 @@ export function getPlatformAttributeSummary(slug: string, attrs: Record<string, 
   if (slug === 'mercado_livre') {
     if (attrs.reputacao) parts.push(REPUTACAO_EMOJI[attrs.reputacao] ?? attrs.reputacao);
     if (attrs.medalha) parts.push(MEDALHA_LABEL[attrs.medalha] ?? attrs.medalha);
-    if (attrs.envios) parts.push(attrs.envios.charAt(0).toUpperCase() + attrs.envios.slice(1));
+    if (attrs.envios_full) parts.push('Full');
+    if (attrs.envios_flex) parts.push('Flex');
+    if (attrs.envios_turbo) parts.push('Turbo');
   } else if (slug === 'shopee') {
     if (attrs.vendedor_indicado) parts.push('Indicado');
     if (attrs.shopee_express) parts.push('Express');
