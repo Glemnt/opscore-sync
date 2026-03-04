@@ -1,17 +1,20 @@
 import { useState, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
 import { usePhaseDemandsQuery } from '@/hooks/usePhaseDemandsQuery';
 import { useAddTask } from '@/hooks/useTasksQuery';
 import { useAppUsersQuery } from '@/hooks/useAppUsersQuery';
 import { useTaskStatusesQuery } from '@/hooks/useTaskStatusesQuery';
 import { useSquads } from '@/contexts/SquadsContext';
 import { toast } from 'sonner';
-import { Zap, Settings } from 'lucide-react';
+import { Zap, Settings, CalendarIcon } from 'lucide-react';
+import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
 import { PhaseDemandConfigDialog } from './PhaseDemandConfigDialog';
 
 interface DemandRow {
