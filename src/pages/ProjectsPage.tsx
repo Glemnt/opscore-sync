@@ -827,6 +827,10 @@ export function ProjectsPage() {
   }
 
   // Step 3: Show projects of selected client (optionally filtered by platform)
+  const currentPlatformData = clientPlatformsData.find(
+    cp => cp.clientId === selectedClient.id && cp.platformSlug === selectedPlatform
+  );
+  const currentPhase = currentPlatformData?.phase ?? 'onboarding';
   const allClientTasks = allTasksData.filter(t => t.clientId === selectedClient.id);
   const filtered = projects
     .filter((p) => p.clientId === selectedClient.id)
@@ -897,6 +901,16 @@ export function ProjectsPage() {
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => { setFlowMode('assign'); setFlowDialogOpen(true); }}>
                   Atribuir Fluxo
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setGenerateTarget({
+                  phase: currentPhase,
+                  clientId: selectedClient.id,
+                  clientName: selectedClient.name,
+                  platformSlug: selectedPlatform ?? '',
+                  squadId: selectedClient.squadId ?? null,
+                })}>
+                  <Zap className="w-4 h-4 mr-1" />
+                  Gerar Demandas da Fase
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
