@@ -104,7 +104,7 @@ export function AddTaskDialog({ open, onOpenChange, defaultStatus = 'backlog', d
   }, [selectedClient, appUsers]);
 
   const resetForm = () => {
-    setClientId('');
+    setClientId(defaultClientId ?? '');
     setType('anuncio');
     setTitle('');
     setDeadline(undefined);
@@ -114,7 +114,7 @@ export function AddTaskDialog({ open, onOpenChange, defaultStatus = 'backlog', d
     setComments('');
     setSubtaskInput('');
     setSubtasks([]);
-    setSelectedPlatforms([]);
+    setSelectedPlatforms(defaultPlatformSlug ? [defaultPlatformSlug] : []);
   };
 
   const handleSubmit = () => {
@@ -169,17 +169,24 @@ export function AddTaskDialog({ open, onOpenChange, defaultStatus = 'backlog', d
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 py-2">
           {/* Cliente */}
-          <div className="space-y-1.5">
-            <Label>Cliente *</Label>
-            <Select value={clientId} onValueChange={handleClientChange}>
-              <SelectTrigger><SelectValue placeholder="Selecione o cliente" /></SelectTrigger>
-              <SelectContent>
-                {visibleClients.map((c) => (
-                  <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          {defaultClientId ? (
+            <div className="space-y-1.5">
+              <Label>Cliente</Label>
+              <div className="px-3 py-2 rounded-md bg-muted text-sm font-medium">{defaultClientName}</div>
+            </div>
+          ) : (
+            <div className="space-y-1.5">
+              <Label>Cliente *</Label>
+              <Select value={clientId} onValueChange={handleClientChange}>
+                <SelectTrigger><SelectValue placeholder="Selecione o cliente" /></SelectTrigger>
+                <SelectContent>
+                  {visibleClients.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
 
           {/* Tipo de demanda */}
@@ -268,28 +275,30 @@ export function AddTaskDialog({ open, onOpenChange, defaultStatus = 'backlog', d
           </div>
 
           {/* Plataformas */}
-          <div className="space-y-1.5 sm:col-span-2">
-            <Label>Plataformas</Label>
-            <div className="flex flex-wrap gap-2">
-              {platforms.map((p) => {
-                const active = selectedPlatforms.includes(p.slug);
-                return (
-                  <button
-                    key={p.id}
-                    type="button"
-                    onClick={() => setSelectedPlatforms(prev => active ? prev.filter(s => s !== p.slug) : [...prev, p.slug])}
-                    className={cn(
-                      'px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors',
-                      active ? 'bg-primary text-primary-foreground border-primary' : 'bg-muted text-muted-foreground border-border hover:border-primary/40'
-                    )}
-                  >
-                    {p.name}
-                  </button>
-                );
-              })}
-              {platforms.length === 0 && <span className="text-xs text-muted-foreground">Nenhuma plataforma cadastrada</span>}
+          {!defaultPlatformSlug && (
+            <div className="space-y-1.5 sm:col-span-2">
+              <Label>Plataformas</Label>
+              <div className="flex flex-wrap gap-2">
+                {platforms.map((p) => {
+                  const active = selectedPlatforms.includes(p.slug);
+                  return (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => setSelectedPlatforms(prev => active ? prev.filter(s => s !== p.slug) : [...prev, p.slug])}
+                      className={cn(
+                        'px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors',
+                        active ? 'bg-primary text-primary-foreground border-primary' : 'bg-muted text-muted-foreground border-border hover:border-primary/40'
+                      )}
+                    >
+                      {p.name}
+                    </button>
+                  );
+                })}
+                {platforms.length === 0 && <span className="text-xs text-muted-foreground">Nenhuma plataforma cadastrada</span>}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Tempo estimado */}
           <div className="space-y-1.5">
