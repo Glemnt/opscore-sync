@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useTasks } from '@/contexts/TasksContext';
 import { useAddFlow } from '@/hooks/useFlowsQuery';
+import { useAddClientFlow } from '@/hooks/useClientFlowsQuery';
 import { useClients } from '@/contexts/ClientsContext';
 import { toast } from 'sonner';
 
@@ -16,23 +17,26 @@ interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   mode: FlowDialogMode;
+  defaultClientId?: string;
+  defaultClientName?: string;
 }
 
-export function FlowManagerDialog({ open, onOpenChange, mode }: Props) {
+export function FlowManagerDialog({ open, onOpenChange, mode, defaultClientId, defaultClientName }: Props) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
-        {mode === 'create' && <CreateFlowView onClose={() => onOpenChange(false)} />}
+        {mode === 'create' && <CreateFlowView onClose={() => onOpenChange(false)} defaultClientId={defaultClientId} />}
         {mode === 'edit' && <EditFlowView onClose={() => onOpenChange(false)} />}
-        {mode === 'assign' && <AssignFlowView onClose={() => onOpenChange(false)} />}
+        {mode === 'assign' && <AssignFlowView onClose={() => onOpenChange(false)} defaultClientId={defaultClientId} defaultClientName={defaultClientName} />}
       </DialogContent>
     </Dialog>
   );
 }
 
-function CreateFlowView({ onClose }: { onClose: () => void }) {
+function CreateFlowView({ onClose, defaultClientId }: { onClose: () => void; defaultClientId?: string }) {
   const { flows } = useTasks();
   const addFlowMut = useAddFlow();
+  const addClientFlowMut = useAddClientFlow();
   const [name, setName] = useState('');
   const [steps, setSteps] = useState<string[]>(['']);
 
@@ -46,7 +50,16 @@ function CreateFlowView({ onClose }: { onClose: () => void }) {
     if (!trimmedName) { toast.error('Informe o nome do fluxo'); return; }
     if (validSteps.length === 0) { toast.error('Adicione pelo menos uma etapa'); return; }
     try {
-      await addFlowMut.mutateAsync({ name: trimmedName, steps: validSteps, createdAt: new Date().toISOString() } as any);
+      const result = await addFlowMut.mutateAsync({ name: trimmedName, steps: validSteps, createdAt: new Date().toISOString() } as any);
+      // Auto-assign to client if defaultClientId is provided
+      if (defaultClientId) {
+        // We need to find the newly created flow - refetch flows and find by name
+        const { data: newFlows } = await (await import('@/integrations/supabase/client')).supabase
+          .from('flows').select('id').eq('name', trimmedName).order('created_at', { ascending: false }).limit(1);
+        if (newFlows && newFlows.length > 0) {
+          await addClientFlowMut.mutateAsync({ clientId: defaultClientId, flowId: newFlows[0].id });
+        }
+      }
       toast.success('Fluxo criado!');
       onClose();
     } catch { toast.error('Erro ao criar fluxo'); }
@@ -177,11 +190,11 @@ function EditFlowView({ onClose }: { onClose: () => void }) {
   );
 }
 
-function AssignFlowView({ onClose }: { onClose: () => void }) {
+function AssignFlowView({ onClose, defaultClientId, defaultClientName }: { onClose: () => void; defaultClientId?: string; defaultClientName?: string }) {
   const { flows, assignFlowToClient } = useTasks();
   const { getVisibleClients } = useClients();
   const clients = getVisibleClients();
-  const [clientId, setClientId] = useState('');
+  const [clientId, setClientId] = useState(defaultClientId || '');
   const [flowId, setFlowId] = useState('');
 
   const handleAssign = () => {
@@ -200,15 +213,22 @@ function AssignFlowView({ onClose }: { onClose: () => void }) {
         <DialogDescription>Vincule um fluxo existente a um cliente. As etapas serão criadas como demandas.</DialogDescription>
       </DialogHeader>
       <div className="space-y-4 mt-2">
-        <div className="space-y-1.5">
-          <Label>Cliente *</Label>
-          <Select value={clientId} onValueChange={setClientId}>
-            <SelectTrigger><SelectValue placeholder="Selecione o cliente" /></SelectTrigger>
-            <SelectContent>
-              {clients.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-            </SelectContent>
-          </Select>
-        </div>
+        {defaultClientId ? (
+          <div className="space-y-1.5">
+            <Label>Cliente</Label>
+            <div className="px-3 py-2 rounded-md bg-muted text-sm font-medium">{defaultClientName}</div>
+          </div>
+        ) : (
+          <div className="space-y-1.5">
+            <Label>Cliente *</Label>
+            <Select value={clientId} onValueChange={setClientId}>
+              <SelectTrigger><SelectValue placeholder="Selecione o cliente" /></SelectTrigger>
+              <SelectContent>
+                {clients.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
         <div className="space-y-1.5">
           <Label>Fluxo *</Label>
           <Select value={flowId} onValueChange={setFlowId}>

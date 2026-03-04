@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Plus, Search, Calendar, ChevronDown, CheckCircle2, Circle, ArrowLeft, Users2, X, Pencil, Trash2, MessageSquare, ShoppingBag, LayoutGrid, Zap, ArrowRightLeft } from 'lucide-react';
+import { Plus, Search, Calendar, ChevronDown, CheckCircle2, Circle, ArrowLeft, Users2, X, Pencil, Trash2, MessageSquare, ShoppingBag, LayoutGrid, Zap, ArrowRightLeft, Workflow } from 'lucide-react';
 import { usePlatformsQuery } from '@/hooks/usePlatformsQuery';
 import { TaskDetailModal } from '@/components/TaskDetailModal';
 import { useProjectsQuery } from '@/hooks/useProjectsQuery';
@@ -26,6 +26,8 @@ import { getPlatformAttributeSummary, PLATFORM_ATTRIBUTE_DEFINITIONS } from '@/c
 import { format } from 'date-fns';
 import { GenerateDemandsDialog } from '@/components/GenerateDemandsDialog';
 import { TransferPlatformDialog } from '@/components/TransferPlatformDialog';
+import { FlowManagerDialog, FlowDialogMode } from '@/components/FlowManagerDialog';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 type KanbanColumn = { id: string; label: string; status: ClientStatus | string };
 type ProjectKanbanColumn = { id: string; label: string; status: ProjectStatus | string };
@@ -65,6 +67,8 @@ export function ProjectsPage() {
   // Generate demands & transfer platform state
   const [generateTarget, setGenerateTarget] = useState<{ phase: string; clientId: string; clientName: string; platformSlug: string; squadId: string | null } | null>(null);
   const [transferTarget, setTransferTarget] = useState<{ platformId: string; squadId: string | null; responsible: string } | null>(null);
+  const [flowDialogOpen, setFlowDialogOpen] = useState(false);
+  const [flowMode, setFlowMode] = useState<FlowDialogMode>('create');
 
   // Squad management state
   const [squadDialogOpen, setSquadDialogOpen] = useState(false);
@@ -876,6 +880,26 @@ export function ProjectsPage() {
                 </button>
             )}
             </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="flex items-center gap-2 px-4 py-2 border border-border rounded-lg text-sm font-medium hover:bg-muted transition-colors">
+                  <Workflow className="w-4 h-4" />
+                  Fluxos
+                  <ChevronDown className="w-3.5 h-3.5" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => { setFlowMode('create'); setFlowDialogOpen(true); }}>
+                  Criar Fluxo
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => { setFlowMode('edit'); setFlowDialogOpen(true); }}>
+                  Editar Fluxo
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => { setFlowMode('assign'); setFlowDialogOpen(true); }}>
+                  Atribuir Fluxo
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <button
               onClick={() => setAddDemandOpen(true)}
               className="flex items-center gap-2 px-4 py-2 gradient-primary text-primary-foreground rounded-lg text-sm font-medium shadow-primary hover:opacity-90 transition-opacity">
@@ -894,6 +918,13 @@ export function ProjectsPage() {
         defaultPlatformSlug={selectedPlatform && selectedPlatform !== 'all' ? selectedPlatform : undefined}
       />
 
+      <FlowManagerDialog
+        open={flowDialogOpen}
+        onOpenChange={setFlowDialogOpen}
+        mode={flowMode}
+        defaultClientId={selectedClient.id}
+        defaultClientName={selectedClient.name}
+      />
 
       <div className="flex gap-4 flex-1 overflow-hidden">
         <div className="flex-1 flex flex-col overflow-hidden">
