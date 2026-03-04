@@ -114,6 +114,16 @@ export function AddClientDialog({ open, onClose }: AddClientDialogProps) {
 
     addClient(newClient);
 
+    // Auto-create client_platforms records for each selected platform
+    platforms.forEach(slug => {
+      addClientPlatformMut.mutate({
+        clientId: clientId,
+        platformSlug: slug,
+        phase: 'onboarding',
+        squadId: squadId || null,
+      });
+    });
+
     // Persist flow associations for selected flows (not default/custom templates)
     const flowIds = flows.map(f => f.id);
     selectedTemplateIds
