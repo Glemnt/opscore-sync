@@ -134,9 +134,23 @@ export function GenerateDemandsDialog({ open, onOpenChange, phase, clientId, cli
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Zap className="w-5 h-5 text-primary" />
-              Gerar Demandas — {phaseLabel}
+              Gerar Demandas
             </DialogTitle>
           </DialogHeader>
+
+          <div className="space-y-1">
+            <label className="text-sm font-medium">Fase da pipeline</label>
+            <Select value={selectedPhase} onValueChange={setSelectedPhase}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione a fase" />
+              </SelectTrigger>
+              <SelectContent>
+                {clientStatuses.map((s) => (
+                  <SelectItem key={s.key} value={s.key}>{s.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
           {phaseTemplates.length === 0 ? (
             <div className="text-center py-8 space-y-3">
