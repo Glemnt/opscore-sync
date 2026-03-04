@@ -890,7 +890,7 @@ export function ProjectsPage() {
                             {/* ── Context: Squad / Responsável / Contrato ── */}
                             <div className="grid grid-cols-2 gap-x-2 gap-y-1.5 mb-2.5 text-xs">
                               <div className="flex items-center gap-1.5 text-muted-foreground min-w-0">
-                                <Users className="w-3.5 h-3.5 shrink-0" />
+                                <Users2 className="w-3.5 h-3.5 shrink-0" />
                                 <span className="truncate font-medium text-foreground">{displaySquad?.name ?? '—'}</span>
                               </div>
                               <div className="flex items-center gap-1.5 text-muted-foreground min-w-0">
