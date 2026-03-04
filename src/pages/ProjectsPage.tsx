@@ -889,6 +889,9 @@ export function ProjectsPage() {
         open={addDemandOpen}
         onOpenChange={setAddDemandOpen}
         defaultStatus="backlog"
+        defaultClientId={selectedClient.id}
+        defaultClientName={selectedClient.name}
+        defaultPlatformSlug={selectedPlatform && selectedPlatform !== 'all' ? selectedPlatform : undefined}
       />
 
 
@@ -938,7 +941,7 @@ export function ProjectsPage() {
 
 }
 
-function KanbanView({ filtered, clientId, clientName, squadMembers }: {filtered: Project[]; clientId: string; clientName: string; squadMembers: string[];}) {
+function KanbanView({ filtered, clientId, clientName, squadMembers, platformSlug }: {filtered: Project[]; clientId: string; clientName: string; squadMembers: string[]; platformSlug?: string;}) {
   const { tasks: allTasks, addTask, updateTask, deleteTask } = useTasks();
   const { currentUser } = useAuth();
   const { squads } = useSquads();
@@ -1106,9 +1109,9 @@ function KanbanView({ filtered, clientId, clientName, squadMembers }: {filtered:
         open={demandDialog.open}
         onOpenChange={(open) => setDemandDialog((prev) => ({ ...prev, open }))}
         defaultStatus={demandDialog.status}
-        defaultClientId={selectedClient?.id}
-        defaultClientName={selectedClient?.name}
-        defaultPlatformSlug={selectedPlatform ?? undefined}
+        defaultClientId={clientId}
+        defaultClientName={clientName}
+        defaultPlatformSlug={platformSlug}
       />
 
       <TaskDetailModal
