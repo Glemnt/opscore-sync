@@ -908,7 +908,7 @@ export function ProjectsPage() {
           </div>
 
           {view === 'kanban' ?
-          <KanbanView filtered={filtered} clientId={selectedClient.id} clientName={selectedClient.name} squadMembers={selectedSquad.members} /> :
+          <KanbanView filtered={filtered} clientId={selectedClient.id} clientName={selectedClient.name} squadMembers={selectedSquad.members} platformSlug={selectedPlatform && selectedPlatform !== 'all' ? selectedPlatform : undefined} /> :
           <ListView filtered={filtered} />
           }
         </div>
