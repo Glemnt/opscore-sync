@@ -1033,6 +1033,51 @@ export function ProjectsPage() {
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* Add Platform Dialog */}
+      <Dialog open={addPlatformDialogOpen} onOpenChange={setAddPlatformDialogOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Adicionar Plataforma</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <Label>Plataforma</Label>
+            <Select value={newPlatformSlug} onValueChange={setNewPlatformSlug}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione uma plataforma" />
+              </SelectTrigger>
+              <SelectContent>
+                {platformOptions
+                  .filter(p => !(selectedClient.platforms ?? []).includes(p.slug))
+                  .map(p => (
+                    <SelectItem key={p.id} value={p.slug}>{p.name}</SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAddPlatformDialogOpen(false)}>Cancelar</Button>
+            <Button
+              disabled={!newPlatformSlug || addClientPlatformMut.isPending}
+              onClick={() => {
+                const firstPhase = platformPhaseStatuses.length > 0 ? platformPhaseStatuses[0].key : 'onboarding';
+                addClientPlatformMut.mutate({
+                  clientId: selectedClient.id,
+                  platformSlug: newPlatformSlug,
+                  phase: firstPhase,
+                  squadId: selectedClient.squadId,
+                });
+                const currentPlatforms = selectedClient.platforms ?? [];
+                updateClientField(selectedClient.id, 'platforms', [...currentPlatforms, newPlatformSlug], 'Plataformas');
+                setSelectedClient({ ...selectedClient, platforms: [...currentPlatforms, newPlatformSlug] });
+                setAddPlatformDialogOpen(false);
+              }}
+            >
+              {addClientPlatformMut.isPending ? 'Adicionando...' : 'Adicionar'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {generateTarget && (
         <GenerateDemandsDialog
           open={!!generateTarget}
