@@ -682,21 +682,35 @@ export function ProjectsPage() {
             </button>
           }
         />
-        {/* Ver Todos button */}
-        <div
-          onClick={() => setSelectedPlatform('all')}
-          className="bg-card rounded-xl border border-border p-5 shadow-sm-custom hover:shadow-md-custom hover:-translate-y-0.5 transition-all cursor-pointer group inline-flex items-center gap-3 mt-2 mb-4"
-        >
-          <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-            <LayoutGrid className="w-5 h-5 text-primary" />
-          </div>
-          <div>
-            <h3 className="text-sm font-bold text-foreground group-hover:text-primary transition-colors">Todas</h3>
-            <div className="flex items-center gap-3 text-xs text-muted-foreground">
-              <span>{clientProjects.length} projetos</span>
-              <span>•</span>
-              <span>{clientTasks.length} demandas</span>
+        {/* Ver Todos button + Adicionar Plataforma */}
+        <div className="flex items-center gap-3 mt-2 mb-4">
+          <div
+            onClick={() => setSelectedPlatform('all')}
+            className="bg-card rounded-xl border border-border p-5 shadow-sm-custom hover:shadow-md-custom hover:-translate-y-0.5 transition-all cursor-pointer group inline-flex items-center gap-3"
+          >
+            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+              <LayoutGrid className="w-5 h-5 text-primary" />
             </div>
+            <div>
+              <h3 className="text-sm font-bold text-foreground group-hover:text-primary transition-colors">Todas</h3>
+              <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                <span>{clientProjects.length} projetos</span>
+                <span>•</span>
+                <span>{clientTasks.length} demandas</span>
+              </div>
+            </div>
+          </div>
+          {(() => {
+            const currentSlugs = selectedClient.platforms ?? [];
+            const available = platformOptions.filter(p => !currentSlugs.includes(p.slug));
+            return available.length > 0 ? (
+              <Button variant="outline" onClick={() => { setNewPlatformSlug(''); setAddPlatformDialogOpen(true); }} className="gap-2">
+                <Plus className="w-4 h-4" />
+                Adicionar Plataforma
+              </Button>
+            ) : null;
+          })()}
+        </div>
           </div>
         </div>
 
