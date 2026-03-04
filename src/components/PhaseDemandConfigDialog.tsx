@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { usePhaseDemandsQuery, useAddPhaseDemand, useDeletePhaseDemand } from '@/hooks/usePhaseDemandsQuery';
-import { useClientStatusesQuery } from '@/hooks/useClientStatusesQuery';
+import { useTaskStatusesQuery } from '@/hooks/useTaskStatusesQuery';
 import { useFlowsQuery } from '@/hooks/useFlowsQuery';
 import { Trash2, Plus, Workflow } from 'lucide-react';
 import { toast } from 'sonner';
@@ -16,7 +16,7 @@ interface Props {
 }
 
 export function PhaseDemandConfigDialog({ open, onOpenChange }: Props) {
-  const { data: clientStatuses = [] } = useClientStatusesQuery();
+  const { data: taskStatuses = [] } = useTaskStatusesQuery();
   const { data: flows = [] } = useFlowsQuery();
   const [selectedPhase, setSelectedPhase] = useState('');
   const [newTitle, setNewTitle] = useState('');
@@ -64,7 +64,7 @@ export function PhaseDemandConfigDialog({ open, onOpenChange }: Props) {
             <Select value={selectedPhase} onValueChange={setSelectedPhase}>
               <SelectTrigger><SelectValue placeholder="Selecionar status..." /></SelectTrigger>
               <SelectContent>
-                {clientStatuses.map((s) => (
+                {taskStatuses.map((s) => (
                   <SelectItem key={s.key} value={s.key}>{s.label}</SelectItem>
                 ))}
               </SelectContent>
