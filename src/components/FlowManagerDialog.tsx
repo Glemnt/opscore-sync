@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useTasks } from '@/contexts/TasksContext';
 import { useAddFlow } from '@/hooks/useFlowsQuery';
+import { useAddClientFlow } from '@/hooks/useClientFlowsQuery';
 import { useClients } from '@/contexts/ClientsContext';
 import { toast } from 'sonner';
 
