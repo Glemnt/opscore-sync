@@ -46,6 +46,9 @@ export function AddClientDialog({ open, onClose }: AddClientDialogProps) {
   const [squadId, setSquadId] = useState(squads[0]?.id ?? '');
   const [monthlyRevenue, setMonthlyRevenue] = useState('');
   const [setupFee, setSetupFee] = useState('');
+  const [phone, setPhone] = useState('');
+  const [cnpj, setCnpj] = useState('');
+  const [email, setEmail] = useState('');
   const [platforms, setPlatforms] = useState<Platform[]>([]);
   const [responsible, setResponsible] = useState('');
   const { data: platformOptions = [] } = usePlatformsQuery();
@@ -70,6 +73,7 @@ export function AddClientDialog({ open, onClose }: AddClientDialogProps) {
     setPaymentDay('10'); setContractDuration('3'); setSegment('');
     setSquadId(squads[0]?.id ?? ''); setMonthlyRevenue(''); setSetupFee('');
     setPlatforms([]); setResponsible('');
+    setPhone(''); setCnpj(''); setEmail('');
     setSelectedTemplateIds([]);
     setTab('dados');
   };
@@ -99,6 +103,9 @@ export function AddClientDialog({ open, onClose }: AddClientDialogProps) {
       contractDurationMonths: contractType === 'tcv' ? Number(contractDuration) : undefined,
       platform: platforms[0],
       platforms,
+      phone: phone.trim() || undefined,
+      cnpj: cnpj.trim() || undefined,
+      email: email.trim() || undefined,
       changeLogs: [],
       chatNotes: [],
     };
@@ -190,6 +197,20 @@ export function AddClientDialog({ open, onClose }: AddClientDialogProps) {
               <div>
                 <Label className="text-xs">Setup Pago (R$)</Label>
                 <Input type="number" value={setupFee} onChange={e => setSetupFee(e.target.value)} placeholder="1500" className="h-8 text-sm" />
+              </div>
+              <div>
+                <Label className="text-xs">CNPJ</Label>
+                <Input value={cnpj} onChange={e => setCnpj(e.target.value)} placeholder="00.000.000/0000-00" className="h-8 text-sm" />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs">Telefone</Label>
+                <Input value={phone} onChange={e => setPhone(e.target.value)} placeholder="(11) 99999-9999" className="h-8 text-sm" />
+              </div>
+              <div>
+                <Label className="text-xs">Email</Label>
+                <Input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="cliente@empresa.com" className="h-8 text-sm" />
               </div>
             </div>
             <div>

@@ -246,10 +246,12 @@ export type Database = {
       clients: {
         Row: {
           active_projects: number
+          cnpj: string
           company_name: string
           contract_duration_months: number | null
           contract_type: Database["public"]["Enums"]["contract_type"]
           created_at: string
+          email: string
           health_color: Database["public"]["Enums"]["health_color"] | null
           id: string
           logo: string | null
@@ -258,6 +260,7 @@ export type Database = {
           notes: string
           payment_day: number
           pending_tasks: number
+          phone: string
           platforms: string[] | null
           responsible: string
           segment: string
@@ -269,10 +272,12 @@ export type Database = {
         }
         Insert: {
           active_projects?: number
+          cnpj?: string
           company_name: string
           contract_duration_months?: number | null
           contract_type?: Database["public"]["Enums"]["contract_type"]
           created_at?: string
+          email?: string
           health_color?: Database["public"]["Enums"]["health_color"] | null
           id?: string
           logo?: string | null
@@ -281,6 +286,7 @@ export type Database = {
           notes?: string
           payment_day?: number
           pending_tasks?: number
+          phone?: string
           platforms?: string[] | null
           responsible?: string
           segment?: string
@@ -292,10 +298,12 @@ export type Database = {
         }
         Update: {
           active_projects?: number
+          cnpj?: string
           company_name?: string
           contract_duration_months?: number | null
           contract_type?: Database["public"]["Enums"]["contract_type"]
           created_at?: string
+          email?: string
           health_color?: Database["public"]["Enums"]["health_color"] | null
           id?: string
           logo?: string | null
@@ -304,6 +312,7 @@ export type Database = {
           notes?: string
           payment_day?: number
           pending_tasks?: number
+          phone?: string
           platforms?: string[] | null
           responsible?: string
           segment?: string

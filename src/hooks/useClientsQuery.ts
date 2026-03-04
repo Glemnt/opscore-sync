@@ -52,6 +52,9 @@ export function useAddClient() {
         platforms: (client.platforms as any) ?? null,
         health_color: client.healthColor ?? null,
         setup_fee: client.setupFee ?? null,
+        phone: client.phone ?? '',
+        cnpj: client.cnpj ?? '',
+        email: client.email ?? '',
       } as any);
       if (error) throw error;
     },
@@ -72,6 +75,9 @@ export function useUpdateClient() {
         paymentDay: 'payment_day', contractDurationMonths: 'contract_duration_months',
         healthColor: 'health_color',
         setupFee: 'setup_fee',
+        phone: 'phone',
+        cnpj: 'cnpj',
+        email: 'email',
       };
       for (const [k, v] of Object.entries(updates)) {
         if (k === 'changeLogs' || k === 'chatNotes') continue;

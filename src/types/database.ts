@@ -48,6 +48,9 @@ export function mapDbClient(
     platforms: (row.platforms as any) ?? undefined,
     healthColor: row.health_color ?? undefined,
     setupFee: (row as any).setup_fee ?? undefined,
+    phone: (row as any).phone ?? undefined,
+    cnpj: (row as any).cnpj ?? undefined,
+    email: (row as any).email ?? undefined,
     changeLogs: changeLogs.map(mapDbChangeLog),
     chatNotes: chatNotes.map(mapDbChatNote),
   };
