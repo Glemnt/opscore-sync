@@ -48,6 +48,8 @@ export function ClientsPage() {
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [healthFilter, setHealthFilter] = useState<'all' | 'green' | 'yellow' | 'red' | 'white'>('all');
+  const [responsibleFilter, setResponsibleFilter] = useState<string>('all');
+  const [platformFilter, setPlatformFilter] = useState<string>('all');
   const [addStatusOpen, setAddStatusOpen] = useState(false);
   const [newStatusLabel, setNewStatusLabel] = useState('');
   const [newStatusColor, setNewStatusColor] = useState(COLOR_OPTIONS[0].value);
