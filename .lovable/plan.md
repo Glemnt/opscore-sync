@@ -1,25 +1,33 @@
 
 
-## Plano: Corrigir crash do modal de cliente (TimelineItem)
+## Plano: Corrigir dialogs de Gerar Demandas e Transferir Plataforma
 
 ### Problema
-O componente `TimelineItem` em `ClientDetailModal.tsx` (linha 742) faz `taskStatusConfig[task.status]` sem verificar se o status existe no mapa. O tipo `TaskStatus` permite valores arbitrários (`string & {}`), mas `taskStatusConfig` só tem 4 entradas fixas (`backlog`, `in_progress`, `waiting_client`, `done`). Quando uma task tem um status customizado (ex: nome de fase de pipeline), `statusConf` retorna `undefined` e o acesso a `statusConf.className` na linha 756 causa um `TypeError`, quebrando toda a renderização do modal.
+Os dialogs `GenerateDemandsDialog` e `TransferPlatformDialog` nunca aparecem porque estão renderizados no bloco `return` final do componente (linha 902-922), mas os botões que ativam o estado estão no bloco `return` do step 2.5 (linha 615-808). Como o step 2.5 faz um `return` antecipado, o código nunca chega à renderização dos dialogs.
 
-### Correção
+### Solução
 
-**Arquivo: `src/components/ClientDetailModal.tsx`**
+**Arquivo: `src/pages/ProjectsPage.tsx`**
 
-Na linha 742, adicionar fallback para quando o status não existe no config:
+Mover os dois blocos de renderização condicional dos dialogs (`generateTarget` e `transferTarget`) para dentro do bloco `return` do step 2.5, logo antes do `</div>` final (linha ~807), envolvendo tudo em um fragment `<>...</>`:
 
-```typescript
-const statusConf = taskStatusConfig[task.status as TaskStatus] ?? { 
-  label: task.status, 
-  className: 'bg-muted text-muted-foreground' 
-};
+```tsx
+// Antes do fechamento do return do step 2.5 (linha 808):
+return (
+  <>
+    <div className="p-6 animate-fade-in">
+      {/* ... conteúdo existente do step 2.5 ... */}
+    </div>
+
+    {generateTarget && (
+      <GenerateDemandsDialog ... />
+    )}
+    {transferTarget && (
+      <TransferPlatformDialog ... />
+    )}
+  </>
+);
 ```
 
-Isso garante que qualquer status desconhecido será exibido com o próprio nome como label e um estilo neutro, em vez de crashar o componente.
-
-### Resultado
-O modal do cliente voltará a abrir corretamente, e após a correção poderemos testar o calendário conforme solicitado.
+Nenhuma outra mudança necessária. A renderização no bloco final (linha 902-922) pode ser mantida para cobrir o step 3, ou removida se não houver botões lá.
 
