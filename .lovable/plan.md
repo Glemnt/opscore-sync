@@ -1,33 +1,47 @@
 
 
-## Plano: Corrigir dialogs de Gerar Demandas e Transferir Plataforma
+## Plano: Adicionar "Gerar Demandas Automáticas" no dropdown de Fluxos (Step 3 - Squads)
 
-### Problema
-Os dialogs `GenerateDemandsDialog` e `TransferPlatformDialog` nunca aparecem porque estão renderizados no bloco `return` final do componente (linha 902-922), mas os botões que ativam o estado estão no bloco `return` do step 2.5 (linha 615-808). Como o step 2.5 faz um `return` antecipado, o código nunca chega à renderização dos dialogs.
+### O que muda
 
-### Solução
+**`src/pages/ProjectsPage.tsx`**
 
-**Arquivo: `src/pages/ProjectsPage.tsx`**
+- No dropdown "Fluxos" do step 3 (linha 891-901), adicionar uma nova opção **"Gerar Demandas da Fase"** que abre o `GenerateDemandsDialog` já existente
+- Detectar automaticamente a fase da plataforma atual do cliente usando `clientPlatformsData` (buscar o `client_platform` correspondente ao `selectedClient.id` + `selectedPlatform`)
+- Setar o `generateTarget` com `phase`, `clientId`, `clientName`, `platformSlug` e `squadId` automaticamente ao clicar
+- O dialog `GenerateDemandsDialog` já existe e faz exatamente o que o usuário quer: lista templates da fase, pede apenas responsável e prazo
 
-Mover os dois blocos de renderização condicional dos dialogs (`generateTarget` e `transferTarget`) para dentro do bloco `return` do step 2.5, logo antes do `</div>` final (linha ~807), envolvendo tudo em um fragment `<>...</>`:
+### Detalhes técnicos
 
+No step 3, antes do return, calcular a fase da plataforma:
 ```tsx
-// Antes do fechamento do return do step 2.5 (linha 808):
-return (
-  <>
-    <div className="p-6 animate-fade-in">
-      {/* ... conteúdo existente do step 2.5 ... */}
-    </div>
-
-    {generateTarget && (
-      <GenerateDemandsDialog ... />
-    )}
-    {transferTarget && (
-      <TransferPlatformDialog ... />
-    )}
-  </>
+const currentPlatformData = clientPlatformsData.find(
+  cp => cp.clientId === selectedClient.id && cp.platformSlug === selectedPlatform
 );
+const currentPhase = currentPlatformData?.phase ?? 'onboarding';
 ```
 
-Nenhuma outra mudança necessária. A renderização no bloco final (linha 902-922) pode ser mantida para cobrir o step 3, ou removida se não houver botões lá.
+Adicionar item no dropdown:
+```tsx
+<DropdownMenuItem onClick={() => setGenerateTarget({
+  phase: currentPhase,
+  clientId: selectedClient.id,
+  clientName: selectedClient.name,
+  platformSlug: selectedPlatform ?? '',
+  squadId: selectedClient.squadId ?? null,
+})}>
+  <Zap className="w-4 h-4 mr-1" />
+  Gerar Demandas da Fase
+</DropdownMenuItem>
+```
+
+O `GenerateDemandsDialog` já é renderizado no step 3 (linhas 948-960), então não precisa adicionar novo JSX -- apenas garantir que o `generateTarget` esteja acessível.
+
+### Arquivos afetados
+
+| Arquivo | Ação |
+|---|---|
+| `src/pages/ProjectsPage.tsx` | Adicionar item no dropdown + calcular fase da plataforma |
+
+Nenhuma mudança de banco de dados.
 
