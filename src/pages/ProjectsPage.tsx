@@ -784,15 +784,6 @@ export function ProjectsPage() {
                                 >
                                   <ArrowRightLeft className="w-3.5 h-3.5" />
                                 </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-6 w-6 text-primary"
-                                  title="Gerar Demandas"
-                                  onClick={(e) => { e.stopPropagation(); setGenerateTarget({ phase: cp?.phase ?? 'onboarding', clientId: selectedClient.id, clientName: selectedClient.name, platformSlug: slug, squadId: cp?.squadId ?? null }); }}
-                                >
-                                  <Zap className="w-3.5 h-3.5" />
-                                </Button>
                               </div>
                             </div>
                           </div>
@@ -1115,6 +1106,9 @@ function KanbanView({ filtered, clientId, clientName, squadMembers }: {filtered:
         open={demandDialog.open}
         onOpenChange={(open) => setDemandDialog((prev) => ({ ...prev, open }))}
         defaultStatus={demandDialog.status}
+        defaultClientId={selectedClient?.id}
+        defaultClientName={selectedClient?.name}
+        defaultPlatformSlug={selectedPlatform ?? undefined}
       />
 
       <TaskDetailModal

@@ -24,6 +24,9 @@ interface AddTaskDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   defaultStatus?: TaskStatus;
+  defaultClientId?: string;
+  defaultClientName?: string;
+  defaultPlatformSlug?: string;
 }
 
 export function AddTaskDialog({ open, onOpenChange, defaultStatus = 'backlog' }: AddTaskDialogProps) {
