@@ -503,7 +503,7 @@ export function ProjectsPage() {
                   {col.label} ({count})
                 </button>
                 <button
-                  onClick={(e) => { e.stopPropagation(); handleDeleteCol(col.id); }}
+                  onClick={(e) => { e.stopPropagation(); handleRemoveCol(col.id); }}
                   className="ml-0.5 p-0.5 rounded text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
                   title="Excluir status"
                 >
