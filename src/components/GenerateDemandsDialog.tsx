@@ -100,7 +100,7 @@ export function GenerateDemandsDialog({ open, onOpenChange, phase, clientId, cli
           type: row.demandOwner === 'client' ? 'reuniao' : 'setup',
           estimatedTime: 0,
           deadline: new Date().toISOString().split('T')[0],
-          status: phase,
+          status: selectedPhase,
           priority: 'medium',
           comments: `Gerada automaticamente - Fase: ${phaseLabel}`,
           createdAt: new Date().toISOString(),
