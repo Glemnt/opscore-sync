@@ -65,6 +65,9 @@ export function ClientsPage() {
     ...clientStatuses.map(s => ({ label: s.label, value: s.key })),
   ];
 
+  const { data: platforms = [] } = usePlatformsQuery();
+  const uniqueResponsibles = [...new Set(clients.map(c => c.responsible).filter(Boolean))];
+
   const filtered = clients.filter((c) => {
     const matchSearch = c.name.toLowerCase().includes(search.toLowerCase()) || c.segment.toLowerCase().includes(search.toLowerCase());
     const matchStatus = statusFilter === 'all' || c.status === statusFilter;
@@ -72,7 +75,9 @@ export function ClientsPage() {
     const matchDateFrom = !dateFrom || c.startDate >= dateFrom;
     const matchDateTo = !dateTo || c.startDate <= dateTo;
     const matchHealth = healthFilter === 'all' || (c.healthColor ?? 'white') === healthFilter;
-    return matchSearch && matchStatus && matchSquad && matchDateFrom && matchDateTo && matchHealth;
+    const matchResponsible = responsibleFilter === 'all' || c.responsible === responsibleFilter;
+    const matchPlatform = platformFilter === 'all' || (c.platforms?.includes(platformFilter) ?? false);
+    return matchSearch && matchStatus && matchSquad && matchDateFrom && matchDateTo && matchHealth && matchResponsible && matchPlatform;
   });
 
   const hasDateFilter = dateFrom || dateTo;
