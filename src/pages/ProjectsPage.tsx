@@ -827,6 +827,10 @@ export function ProjectsPage() {
   }
 
   // Step 3: Show projects of selected client (optionally filtered by platform)
+  const currentPlatformData = clientPlatformsData.find(
+    cp => cp.clientId === selectedClient.id && cp.platformSlug === selectedPlatform
+  );
+  const currentPhase = currentPlatformData?.phase ?? 'onboarding';
   const allClientTasks = allTasksData.filter(t => t.clientId === selectedClient.id);
   const filtered = projects
     .filter((p) => p.clientId === selectedClient.id)
