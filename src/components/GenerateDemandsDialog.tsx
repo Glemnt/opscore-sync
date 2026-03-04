@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { usePhaseDemandsQuery } from '@/hooks/usePhaseDemandsQuery';
 import { useFlowsQuery } from '@/hooks/useFlowsQuery';
 import { useAddTask } from '@/hooks/useTasksQuery';
-import { useClientStatusesQuery } from '@/hooks/useClientStatusesQuery';
+import { useTaskStatusesQuery } from '@/hooks/useTaskStatusesQuery';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Zap, Settings, Workflow } from 'lucide-react';
@@ -33,7 +33,7 @@ interface Props {
 export function GenerateDemandsDialog({ open, onOpenChange, phase, clientId, clientName, platformSlug }: Props) {
   const { data: templates = [] } = usePhaseDemandsQuery();
   const { data: flows = [] } = useFlowsQuery();
-  const { data: clientStatuses = [] } = useClientStatusesQuery();
+  const { data: taskStatuses = [] } = useTaskStatusesQuery();
   const addTask = useAddTask();
   const [configOpen, setConfigOpen] = useState(false);
   const [rows, setRows] = useState<DemandRow[]>([]);
@@ -45,9 +45,9 @@ export function GenerateDemandsDialog({ open, onOpenChange, phase, clientId, cli
   }, [open, phase]);
 
   const phaseLabel = useMemo(() => {
-    const found = clientStatuses.find(s => s.key === selectedPhase);
+    const found = taskStatuses.find(s => s.key === selectedPhase);
     return found?.label ?? selectedPhase;
-  }, [clientStatuses, selectedPhase]);
+  }, [taskStatuses, selectedPhase]);
 
   const phaseTemplates = useMemo(
     () => templates.filter((t) => t.phase === selectedPhase),
@@ -145,7 +145,7 @@ export function GenerateDemandsDialog({ open, onOpenChange, phase, clientId, cli
                 <SelectValue placeholder="Selecione a fase" />
               </SelectTrigger>
               <SelectContent>
-                {clientStatuses.map((s) => (
+                {taskStatuses.map((s) => (
                   <SelectItem key={s.key} value={s.key}>{s.label}</SelectItem>
                 ))}
               </SelectContent>
