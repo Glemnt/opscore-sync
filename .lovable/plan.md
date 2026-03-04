@@ -1,30 +1,33 @@
 
 
-## Plano: Melhorar o fluxo de geração de demandas por fase
+## Plano: Corrigir dialogs de Gerar Demandas e Transferir Plataforma
 
 ### Problema
-1. Ao clicar em "Editar Templates" no `GenerateDemandsDialog`, o `PhaseDemandConfigDialog` abre sem a fase previamente selecionada -- o usuário precisa selecionar novamente.
-2. Ao gerar demandas, não há campos de **responsável** e **prazo** -- as demandas são criadas com responsável vazio e prazo = hoje.
-3. O fluxo vinculado ao template não é salvo como subtarefas na tarefa criada de forma que apareça no card da demanda (o fluxo já gera subtasks, mas o responsável e prazo ficam incorretos).
+Os dialogs `GenerateDemandsDialog` e `TransferPlatformDialog` nunca aparecem porque estão renderizados no bloco `return` final do componente (linha 902-922), mas os botões que ativam o estado estão no bloco `return` do step 2.5 (linha 615-808). Como o step 2.5 faz um `return` antecipado, o código nunca chega à renderização dos dialogs.
 
-### Mudanças
+### Solução
 
-**1. `PhaseDemandConfigDialog` -- receber fase inicial como prop**
-- Adicionar prop `initialPhase?: string`
-- Inicializar `selectedPhase` com `initialPhase` quando fornecido
-- No `GenerateDemandsDialog`, passar `selectedPhase` como `initialPhase` ao abrir o config dialog
+**Arquivo: `src/pages/ProjectsPage.tsx`**
 
-**2. `GenerateDemandsDialog` -- adicionar campos de responsável e prazo por demanda**
-- Expandir a interface `DemandRow` com `responsible: string` e `deadline: string`
-- Importar `useAppUsersQuery` para listar membros disponíveis
-- Para cada row selecionada, adicionar um `Select` de responsável e um date picker (ou input date) de prazo
-- Usar esses valores ao chamar `addTask.mutateAsync` em vez de `responsible: ''` e `deadline: hoje`
+Mover os dois blocos de renderização condicional dos dialogs (`generateTarget` e `transferTarget`) para dentro do bloco `return` do step 2.5, logo antes do `</div>` final (linha ~807), envolvendo tudo em um fragment `<>...</>`:
 
-**3. Garantir que fluxo gere subtarefas corretamente**
-- O código atual já cria subtasks a partir do `flowId` do template (linhas 111-119). Verificar que o `taskId` usado no insert de subtasks corresponde ao ID real da tarefa criada (atualmente usa `crypto.randomUUID()` antes do insert, e o mesmo ID é passado para subtasks -- está correto).
+```tsx
+// Antes do fechamento do return do step 2.5 (linha 808):
+return (
+  <>
+    <div className="p-6 animate-fade-in">
+      {/* ... conteúdo existente do step 2.5 ... */}
+    </div>
 
-### Resultado
-- Ao abrir "Editar Templates", a fase já vem selecionada automaticamente
-- O usuário define responsável e prazo para cada demanda antes de criar
-- A demanda criada terá responsável, prazo e subtarefas do fluxo visíveis no card
+    {generateTarget && (
+      <GenerateDemandsDialog ... />
+    )}
+    {transferTarget && (
+      <TransferPlatformDialog ... />
+    )}
+  </>
+);
+```
+
+Nenhuma outra mudança necessária. A renderização no bloco final (linha 902-922) pode ser mantida para cobrir o step 3, ou removida se não houver botões lá.
 

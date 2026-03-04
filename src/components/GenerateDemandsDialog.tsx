@@ -2,11 +2,13 @@ import { useState, useMemo, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { usePhaseDemandsQuery } from '@/hooks/usePhaseDemandsQuery';
 import { useFlowsQuery } from '@/hooks/useFlowsQuery';
 import { useAddTask } from '@/hooks/useTasksQuery';
 import { useTaskStatusesQuery } from '@/hooks/useTaskStatusesQuery';
+import { useAppUsersQuery } from '@/hooks/useAppUsersQuery';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Zap, Settings, Workflow } from 'lucide-react';
@@ -18,6 +20,8 @@ interface DemandRow {
   demandOwner: string;
   flowId: string | null;
   selected: boolean;
+  responsible: string;
+  deadline: string;
 }
 
 interface Props {
@@ -34,12 +38,12 @@ export function GenerateDemandsDialog({ open, onOpenChange, phase, clientId, cli
   const { data: templates = [] } = usePhaseDemandsQuery();
   const { data: flows = [] } = useFlowsQuery();
   const { data: taskStatuses = [] } = useTaskStatusesQuery();
+  const { data: appUsers = [] } = useAppUsersQuery();
   const addTask = useAddTask();
   const [configOpen, setConfigOpen] = useState(false);
   const [rows, setRows] = useState<DemandRow[]>([]);
   const [selectedPhase, setSelectedPhase] = useState(phase);
 
-  // Reset selectedPhase when dialog opens with a new phase prop
   useEffect(() => {
     if (open) setSelectedPhase(phase);
   }, [open, phase]);
@@ -54,7 +58,8 @@ export function GenerateDemandsDialog({ open, onOpenChange, phase, clientId, cli
     [templates, selectedPhase]
   );
 
-  // Sync rows when templates change — useEffect instead of render-time setState
+  const todayStr = new Date().toISOString().split('T')[0];
+
   useEffect(() => {
     setRows(
       phaseTemplates.map((t) => ({
@@ -63,6 +68,8 @@ export function GenerateDemandsDialog({ open, onOpenChange, phase, clientId, cli
         demandOwner: t.demandOwner,
         flowId: t.flowId,
         selected: true,
+        responsible: '',
+        deadline: todayStr,
       }))
     );
   }, [phaseTemplates]);
@@ -96,10 +103,10 @@ export function GenerateDemandsDialog({ open, onOpenChange, phase, clientId, cli
           title: row.title,
           clientId,
           clientName,
-          responsible: '',
+          responsible: row.responsible,
           type: row.demandOwner === 'client' ? 'reuniao' : 'setup',
           estimatedTime: 0,
-          deadline: new Date().toISOString().split('T')[0],
+          deadline: row.deadline,
           status: selectedPhase,
           priority: 'medium',
           comments: `Gerada automaticamente - Fase: ${phaseLabel}`,
@@ -110,7 +117,7 @@ export function GenerateDemandsDialog({ open, onOpenChange, phase, clientId, cli
         // Create subtasks from flow steps
         const steps = getFlowSteps(row.flowId);
         if (steps.length > 0) {
-          const subtasks = steps.map((label, idx) => ({
+          const subtasks = steps.map((label) => ({
             task_id: taskId,
             label,
             done: false,
@@ -175,7 +182,7 @@ export function GenerateDemandsDialog({ open, onOpenChange, phase, clientId, cli
               {rows.map((row, idx) => {
                 const flowName = getFlowName(row.flowId);
                 return (
-                  <div key={row.templateId} className={`rounded-lg border p-3 transition-colors ${row.selected ? 'bg-card border-border' : 'bg-muted/30 border-transparent opacity-60'}`}>
+                  <div key={row.templateId} className={`rounded-lg border p-3 transition-colors space-y-2 ${row.selected ? 'bg-card border-border' : 'bg-muted/30 border-transparent opacity-60'}`}>
                     <div className="flex items-center gap-2">
                       <Checkbox
                         checked={row.selected}
@@ -192,6 +199,26 @@ export function GenerateDemandsDialog({ open, onOpenChange, phase, clientId, cli
                         </span>
                       )}
                     </div>
+                    {row.selected && (
+                      <div className="flex items-center gap-2 pl-6">
+                        <Select value={row.responsible} onValueChange={(v) => updateRow(idx, { responsible: v })}>
+                          <SelectTrigger className="h-8 text-xs flex-1">
+                            <SelectValue placeholder="Responsável" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {appUsers.map((u) => (
+                              <SelectItem key={u.id} value={u.name}>{u.name}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <Input
+                          type="date"
+                          value={row.deadline}
+                          onChange={(e) => updateRow(idx, { deadline: e.target.value })}
+                          className="h-8 text-xs w-36"
+                        />
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -213,7 +240,7 @@ export function GenerateDemandsDialog({ open, onOpenChange, phase, clientId, cli
         </DialogContent>
       </Dialog>
 
-      <PhaseDemandConfigDialog open={configOpen} onOpenChange={setConfigOpen} />
+      <PhaseDemandConfigDialog open={configOpen} onOpenChange={setConfigOpen} initialPhase={selectedPhase} />
     </>
   );
 }

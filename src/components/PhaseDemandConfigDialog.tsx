@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,12 +13,17 @@ import { toast } from 'sonner';
 interface Props {
   open: boolean;
   onOpenChange: (v: boolean) => void;
+  initialPhase?: string;
 }
 
-export function PhaseDemandConfigDialog({ open, onOpenChange }: Props) {
+export function PhaseDemandConfigDialog({ open, onOpenChange, initialPhase }: Props) {
   const { data: taskStatuses = [] } = useTaskStatusesQuery();
   const { data: flows = [] } = useFlowsQuery();
-  const [selectedPhase, setSelectedPhase] = useState('');
+  const [selectedPhase, setSelectedPhase] = useState(initialPhase || '');
+
+  useEffect(() => {
+    if (open && initialPhase) setSelectedPhase(initialPhase);
+  }, [open, initialPhase]);
   const [newTitle, setNewTitle] = useState('');
   const [newOwner, setNewOwner] = useState<'internal' | 'client'>('internal');
   const [newFlowId, setNewFlowId] = useState<string>('');
