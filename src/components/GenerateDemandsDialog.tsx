@@ -8,6 +8,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { usePhaseDemandsQuery } from '@/hooks/usePhaseDemandsQuery';
 import { useAddTask } from '@/hooks/useTasksQuery';
 import { useAppUsersQuery } from '@/hooks/useAppUsersQuery';
+import { useTaskStatusesQuery } from '@/hooks/useTaskStatusesQuery';
 import { useSquads } from '@/contexts/SquadsContext';
 import { toast } from 'sonner';
 import { Zap, Settings } from 'lucide-react';
@@ -32,19 +33,19 @@ interface Props {
   squadId?: string | null;
 }
 
-const phaseLabels: Record<string, string> = {
-  onboarding: 'Onboarding',
-  implementacao: 'Implementação',
-  performance: 'Performance',
-  escala: 'Escala',
-};
 
 export function GenerateDemandsDialog({ open, onOpenChange, phase, clientId, clientName, platformSlug, squadId }: Props) {
   const { data: templates = [] } = usePhaseDemandsQuery();
   const { data: appUsers = [] } = useAppUsersQuery();
+  const { data: taskStatuses = [] } = useTaskStatusesQuery();
   const { squads } = useSquads();
   const addTask = useAddTask();
   const [configOpen, setConfigOpen] = useState(false);
+
+  const phaseLabel = useMemo(() => {
+    const found = taskStatuses.find(s => s.key === phase);
+    return found?.label ?? phase;
+  }, [taskStatuses, phase]);
 
   const phaseTemplates = useMemo(
     () => templates.filter((t) => t.phase === phase),
@@ -102,9 +103,9 @@ export function GenerateDemandsDialog({ open, onOpenChange, phase, clientId, cli
           type: row.demandOwner === 'client' ? 'reuniao' : 'setup',
           estimatedTime: 0,
           deadline: row.deadline,
-          status: 'backlog',
+          status: phase,
           priority: 'medium',
-          comments: `Gerada automaticamente - Fase: ${phaseLabels[phase] ?? phase}`,
+          comments: `Gerada automaticamente - Fase: ${phaseLabel}`,
           createdAt: new Date().toISOString(),
           platforms: [platformSlug],
         });
@@ -125,14 +126,14 @@ export function GenerateDemandsDialog({ open, onOpenChange, phase, clientId, cli
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Zap className="w-5 h-5 text-primary" />
-              Gerar Demandas — {phaseLabels[phase] ?? phase}
+              Gerar Demandas — {phaseLabel}
             </DialogTitle>
           </DialogHeader>
 
           {phaseTemplates.length === 0 ? (
             <div className="text-center py-8 space-y-3">
               <p className="text-sm text-muted-foreground">
-                Nenhuma demanda padrão configurada para a fase <strong>{phaseLabels[phase] ?? phase}</strong>.
+                Nenhuma demanda padrão configurada para a fase <strong>{phaseLabel}</strong>.
               </p>
               <Button variant="outline" size="sm" onClick={() => setConfigOpen(true)}>
                 <Settings className="w-4 h-4 mr-1" />
