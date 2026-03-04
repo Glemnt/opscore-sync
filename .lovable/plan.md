@@ -1,33 +1,31 @@
 
 
-## Plano: Corrigir dialogs de Gerar Demandas e Transferir Plataforma
+## Plano: Adicionar Telefone, CNPJ e Email ao Cliente
 
-### Problema
-Os dialogs `GenerateDemandsDialog` e `TransferPlatformDialog` nunca aparecem porque estão renderizados no bloco `return` final do componente (linha 902-922), mas os botões que ativam o estado estão no bloco `return` do step 2.5 (linha 615-808). Como o step 2.5 faz um `return` antecipado, o código nunca chega à renderização dos dialogs.
+### Mudanças necessarias
 
-### Solução
-
-**Arquivo: `src/pages/ProjectsPage.tsx`**
-
-Mover os dois blocos de renderização condicional dos dialogs (`generateTarget` e `transferTarget`) para dentro do bloco `return` do step 2.5, logo antes do `</div>` final (linha ~807), envolvendo tudo em um fragment `<>...</>`:
-
-```tsx
-// Antes do fechamento do return do step 2.5 (linha 808):
-return (
-  <>
-    <div className="p-6 animate-fade-in">
-      {/* ... conteúdo existente do step 2.5 ... */}
-    </div>
-
-    {generateTarget && (
-      <GenerateDemandsDialog ... />
-    )}
-    {transferTarget && (
-      <TransferPlatformDialog ... />
-    )}
-  </>
-);
+**1. Migração de banco de dados** — Adicionar 3 colunas na tabela `clients`:
+```sql
+ALTER TABLE public.clients ADD COLUMN phone text DEFAULT '';
+ALTER TABLE public.clients ADD COLUMN cnpj text DEFAULT '';
+ALTER TABLE public.clients ADD COLUMN email text DEFAULT '';
 ```
 
-Nenhuma outra mudança necessária. A renderização no bloco final (linha 902-922) pode ser mantida para cobrir o step 3, ou removida se não houver botões lá.
+**2. Tipo TypeScript** (`src/types/index.ts`) — Adicionar `phone?: string`, `cnpj?: string`, `email?: string` na interface `Client`.
+
+**3. Formulário de criação** (`src/components/AddClientDialog.tsx`):
+- Adicionar 3 estados: `phone`, `cnpj`, `email`
+- Adicionar campos de input na aba "Dados" (telefone e email numa row grid-cols-2, CNPJ em row própria)
+- Incluir os campos no `resetForm` e no objeto `newClient` do `handleSubmit`
+
+**4. Hook de persistência** (`src/hooks/useClientsQuery.ts`):
+- No `useAddClient`, incluir `phone`, `cnpj`, `email` no insert
+- No `useUpdateClient`, adicionar mapeamento camelCase→snake_case
+- No `mapDbClient` (types/database.ts), mapear as novas colunas
+
+**5. Mapeamento DB** (`src/types/database.ts`) — Adicionar `phone`, `cnpj`, `email` na interface `DbClient` e no `mapDbClient`.
+
+**6. Card do cliente** (`src/pages/ClientsPage.tsx`) — Na linha de metadados (junto com Responsável e Data de Entrada), adicionar badges para Telefone, CNPJ e Email quando preenchidos.
+
+**7. Modal de detalhe** (`src/components/ClientDetailModal.tsx`) — Adicionar campos editáveis para telefone, CNPJ e email na seção de dados do cliente.
 
