@@ -625,7 +625,7 @@ export function ClientDetailModal({ client, open, onClose }: ClientDetailModalPr
             <span className="font-bold text-foreground">{clientTasks.length}</span>
           </div>
           <div className="flex items-center gap-2 text-sm ml-auto">
-            <Calendar className="w-4 h-4 text-muted-foreground" />
+            <CalendarIcon className="w-4 h-4 text-muted-foreground" />
             <span className="text-muted-foreground">Próx. pagamento</span>
             <span className="font-bold text-foreground">{nextPaymentDate}</span>
           </div>
@@ -770,7 +770,7 @@ function TimelineItem({ task, isLast }: { task: Task; isLast: boolean }) {
         </div>
         <div className="flex items-center flex-wrap gap-2 text-xs text-muted-foreground">
           <span className={cn('px-1.5 py-0.5 rounded text-[10px] font-medium', typeConf.color)}>{typeConf.label}</span>
-          <span className="flex items-center gap-1"><Calendar className="w-3 h-3" />Criada: {formatDate(task.createdAt)}</span>
+          <span className="flex items-center gap-1"><CalendarIcon className="w-3 h-3" />Criada: {formatDate(task.createdAt)}</span>
           <span className="flex items-center gap-1"><Clock className="w-3 h-3" />Prazo: {formatDate(task.deadline)}</span>
           {task.realTime && <span>{task.realTime}h realizadas</span>}
           <span className="flex items-center gap-1"><User className="w-3 h-3" />{task.responsible}</span>
