@@ -12,6 +12,7 @@ import { useTasks } from '@/contexts/TasksContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { ContractType, Client, Task, TaskType, SubTask, Platform } from '@/types';
 import { usePlatformsQuery } from '@/hooks/usePlatformsQuery';
+import { useAddClientPlatform } from '@/hooks/useClientPlatformsQuery';
 import { useAppUsersQuery } from '@/hooks/useAppUsersQuery';
 import { useAddClientFlow } from '@/hooks/useClientFlowsQuery';
 import { cn } from '@/lib/utils';
@@ -54,6 +55,7 @@ export function AddClientDialog({ open, onClose }: AddClientDialogProps) {
   const { data: platformOptions = [] } = usePlatformsQuery();
   const { data: appUsers = [] } = useAppUsersQuery();
   const addClientFlowMutation = useAddClientFlow();
+  const addClientPlatformMut = useAddClientPlatform();
 
   // Selected templates for auto-creation
   const [selectedTemplateIds, setSelectedTemplateIds] = useState<string[]>([]);
@@ -111,6 +113,16 @@ export function AddClientDialog({ open, onClose }: AddClientDialogProps) {
     };
 
     addClient(newClient);
+
+    // Auto-create client_platforms records for each selected platform
+    platforms.forEach(slug => {
+      addClientPlatformMut.mutate({
+        clientId: clientId,
+        platformSlug: slug,
+        phase: 'onboarding',
+        squadId: squadId || null,
+      });
+    });
 
     // Persist flow associations for selected flows (not default/custom templates)
     const flowIds = flows.map(f => f.id);

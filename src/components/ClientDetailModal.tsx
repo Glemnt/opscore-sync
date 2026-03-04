@@ -23,7 +23,7 @@ import { useAppUsersQuery } from '@/hooks/useAppUsersQuery';
 import { ClientAIAnalysis } from '@/components/ClientAIAnalysis';
 import { useClientFlowsQuery, useAddClientFlow, useRemoveClientFlow } from '@/hooks/useClientFlowsQuery';
 import { useFlowsQuery } from '@/hooks/useFlowsQuery';
-import { useClientPlatformsQuery, useAddClientPlatform, useUpdateClientPlatform } from '@/hooks/useClientPlatformsQuery';
+import { useClientPlatformsQuery, useAddClientPlatform, useUpdateClientPlatform, useDeleteClientPlatform } from '@/hooks/useClientPlatformsQuery';
 import type { ClientPlatform } from '@/hooks/useClientPlatformsQuery';
 import { PlatformAttributesEditor } from '@/components/PlatformAttributesEditor';
 import {
@@ -217,6 +217,9 @@ export function ClientDetailModal({ client, open, onClose }: ClientDetailModalPr
   const { data: allFlows = [] } = useFlowsQuery();
   const addClientFlow = useAddClientFlow();
   const removeClientFlow = useRemoveClientFlow();
+  const { data: allClientPlatforms = [] } = useClientPlatformsQuery();
+  const addClientPlatformMut = useAddClientPlatform();
+  const deleteClientPlatformMut = useDeleteClientPlatform();
   const [showFlowSelect, setShowFlowSelect] = useState(false);
   const [editingField, setEditingField] = useState<string | null>(null);
   const [editValue, setEditValue] = useState('');
@@ -494,7 +497,23 @@ export function ClientDetailModal({ client, open, onClose }: ClientDetailModalPr
               </div>
               <div className="flex items-center gap-2 justify-end">
                 <button onClick={() => setEditMode(false)} className="px-3 py-1.5 text-sm rounded-lg border border-border text-muted-foreground hover:bg-muted transition-colors">Cancelar</button>
-                <button onClick={() => { updateClient(client.id, editData); setEditMode(false); }} className="px-3 py-1.5 text-sm rounded-lg bg-primary text-primary-foreground hover:opacity-90 transition-opacity font-medium">Salvar</button>
+                <button onClick={() => {
+                  // Sync client_platforms: add new, remove old
+                  const oldPlatforms = client.platforms ?? [];
+                  const newPlatforms = editData.platforms ?? [];
+                  const added = newPlatforms.filter(p => !oldPlatforms.includes(p));
+                  const removed = oldPlatforms.filter(p => !newPlatforms.includes(p));
+                  added.forEach(slug => {
+                    addClientPlatformMut.mutate({ clientId: client.id, platformSlug: slug, phase: 'onboarding', squadId: client.squadId || null });
+                  });
+                  const clientCPs = allClientPlatforms.filter(cp => cp.clientId === client.id);
+                  removed.forEach(slug => {
+                    const record = clientCPs.find(cp => cp.platformSlug === slug);
+                    if (record) deleteClientPlatformMut.mutate(record.id);
+                  });
+                  updateClient(client.id, editData);
+                  setEditMode(false);
+                }} className="px-3 py-1.5 text-sm rounded-lg bg-primary text-primary-foreground hover:opacity-90 transition-opacity font-medium">Salvar</button>
               </div>
             </div>
           )}
