@@ -394,27 +394,20 @@ export function ProjectsPage() {
       inativo: 'Inativo',
     };
 
-    const [statusFilter, setStatusFilter] = useState('all');
-    const [responsibleFilter, setResponsibleFilter] = useState('all');
-    const [healthFilter, setHealthFilter] = useState('all');
-    const [platformFilter, setPlatformFilter] = useState('all');
-    const [dateFrom, setDateFrom] = useState('');
-    const [dateTo, setDateTo] = useState('');
-
     const uniqueResponsibles = [...new Set(squadClients.map(c => c.responsible).filter(Boolean))];
 
     const filteredSquadClients = squadClients.filter((c) => {
       const matchSearch = c.name.toLowerCase().includes(search.toLowerCase()) || c.segment.toLowerCase().includes(search.toLowerCase());
-      const matchStatus = statusFilter === 'all' || c.status === statusFilter;
-      const matchResponsible = responsibleFilter === 'all' || c.responsible === responsibleFilter;
-      const matchHealth = healthFilter === 'all' || c.healthColor === healthFilter;
-      const matchPlatform = platformFilter === 'all' || (c.platforms?.includes(platformFilter) ?? false);
-      const matchDateFrom = !dateFrom || c.startDate >= dateFrom;
-      const matchDateTo = !dateTo || c.startDate <= dateTo;
+      const matchStatus = squadStatusFilter === 'all' || c.status === squadStatusFilter;
+      const matchResponsible = squadResponsibleFilter === 'all' || c.responsible === squadResponsibleFilter;
+      const matchHealth = squadHealthFilter === 'all' || c.healthColor === squadHealthFilter;
+      const matchPlatform = squadPlatformFilter === 'all' || (c.platforms?.includes(squadPlatformFilter) ?? false);
+      const matchDateFrom = !squadDateFrom || c.startDate >= squadDateFrom;
+      const matchDateTo = !squadDateTo || c.startDate <= squadDateTo;
       return matchSearch && matchStatus && matchResponsible && matchHealth && matchPlatform && matchDateFrom && matchDateTo;
     });
 
-    const visibleCols = statusFilter === 'all' ? clientCols : clientCols.filter(col => col.status === statusFilter);
+    const visibleCols = squadStatusFilter === 'all' ? clientCols : clientCols.filter(col => col.status === squadStatusFilter);
 
     return (
       <div className="p-6 animate-fade-in h-full flex flex-col">
