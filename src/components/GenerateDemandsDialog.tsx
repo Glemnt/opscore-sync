@@ -112,6 +112,7 @@ export function GenerateDemandsDialog({ open, onOpenChange, phase, clientId, cli
           comments: `Gerada automaticamente - Fase: ${phaseLabel}`,
           createdAt: new Date().toISOString(),
           platforms: [platformSlug],
+          flowId: row.flowId ?? undefined,
         });
 
         // Create subtasks from flow steps

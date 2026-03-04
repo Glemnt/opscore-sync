@@ -662,6 +662,7 @@ export type Database = {
           created_at: string
           deadline: string
           estimated_time: number
+          flow_id: string | null
           id: string
           platform: string[] | null
           priority: Database["public"]["Enums"]["priority_level"]
@@ -681,6 +682,7 @@ export type Database = {
           created_at?: string
           deadline?: string
           estimated_time?: number
+          flow_id?: string | null
           id?: string
           platform?: string[] | null
           priority?: Database["public"]["Enums"]["priority_level"]
@@ -700,6 +702,7 @@ export type Database = {
           created_at?: string
           deadline?: string
           estimated_time?: number
+          flow_id?: string | null
           id?: string
           platform?: string[] | null
           priority?: Database["public"]["Enums"]["priority_level"]
@@ -718,6 +721,13 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_flow_id_fkey"
+            columns: ["flow_id"]
+            isOneToOne: false
+            referencedRelation: "flows"
             referencedColumns: ["id"]
           },
           {
