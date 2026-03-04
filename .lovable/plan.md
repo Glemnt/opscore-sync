@@ -1,33 +1,20 @@
 
 
-## Plano: Corrigir dialogs de Gerar Demandas e Transferir Plataforma
+## Plano: Replicar estrutura visual do ClientCard na pagina Squads
 
 ### Problema
-Os dialogs `GenerateDemandsDialog` e `TransferPlatformDialog` nunca aparecem porque estão renderizados no bloco `return` final do componente (linha 902-922), mas os botões que ativam o estado estão no bloco `return` do step 2.5 (linha 615-808). Como o step 2.5 faz um `return` antecipado, o código nunca chega à renderização dos dialogs.
+Os cards de clientes na pagina Squads (ProjectsPage) usam um layout diferente e mais simples que os cards da pagina Clientes (ClientsPage). O usuario quer unificar a estrutura visual.
 
-### Solução
+### Mudancas
 
-**Arquivo: `src/pages/ProjectsPage.tsx`**
+**`src/pages/ProjectsPage.tsx`** — Substituir o bloco do card do cliente (linhas 492-558) pela mesma estrutura do `ClientCard` da `ClientsPage`:
 
-Mover os dois blocos de renderização condicional dos dialogs (`generateTarget` e `transferTarget`) para dentro do bloco `return` do step 2.5, logo antes do `</div>` final (linha ~807), envolvendo tudo em um fragment `<>...</>`:
+1. **Header**: Icone Building2 + Nome + Segmento + StatusBadge (usando `statusMap` do cliente)
+2. **Linha de contexto**: Squad + Plataformas (badges simples) + Indicador de saude (circulo colorido)
+3. **Linha de metadata**: Responsavel + Data de entrada + Telefone + Email + CNPJ
+4. **Grid de metricas** (5 colunas): Pendentes, Mensalidade, Setup, Contrato, NPS
 
-```tsx
-// Antes do fechamento do return do step 2.5 (linha 808):
-return (
-  <>
-    <div className="p-6 animate-fade-in">
-      {/* ... conteúdo existente do step 2.5 ... */}
-    </div>
+Isso remove os mini-cards detalhados de plataforma (com fase, qualidade, atributos) que existem atualmente no card do Squads, substituindo pela versao compacta da pagina Clientes.
 
-    {generateTarget && (
-      <GenerateDemandsDialog ... />
-    )}
-    {transferTarget && (
-      <TransferPlatformDialog ... />
-    )}
-  </>
-);
-```
-
-Nenhuma outra mudança necessária. A renderização no bloco final (linha 902-922) pode ser mantida para cobrir o step 3, ou removida se não houver botões lá.
+Sera necessario garantir que os dados de `statusMap`, `tasks`, `platforms`, `allClientPlatforms`, `squads` e `mockAnalysisData` estejam disponiveis no escopo do card — alguns ja estao, outros precisarao ser passados ou buscados.
 
