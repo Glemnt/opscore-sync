@@ -33,9 +33,10 @@ export function FlowManagerDialog({ open, onOpenChange, mode, defaultClientId, d
   );
 }
 
-function CreateFlowView({ onClose }: { onClose: () => void }) {
+function CreateFlowView({ onClose, defaultClientId }: { onClose: () => void; defaultClientId?: string }) {
   const { flows } = useTasks();
   const addFlowMut = useAddFlow();
+  const addClientFlowMut = useAddClientFlow();
   const [name, setName] = useState('');
   const [steps, setSteps] = useState<string[]>(['']);
 
@@ -49,7 +50,16 @@ function CreateFlowView({ onClose }: { onClose: () => void }) {
     if (!trimmedName) { toast.error('Informe o nome do fluxo'); return; }
     if (validSteps.length === 0) { toast.error('Adicione pelo menos uma etapa'); return; }
     try {
-      await addFlowMut.mutateAsync({ name: trimmedName, steps: validSteps, createdAt: new Date().toISOString() } as any);
+      const result = await addFlowMut.mutateAsync({ name: trimmedName, steps: validSteps, createdAt: new Date().toISOString() } as any);
+      // Auto-assign to client if defaultClientId is provided
+      if (defaultClientId) {
+        // We need to find the newly created flow - refetch flows and find by name
+        const { data: newFlows } = await (await import('@/integrations/supabase/client')).supabase
+          .from('flows').select('id').eq('name', trimmedName).order('created_at', { ascending: false }).limit(1);
+        if (newFlows && newFlows.length > 0) {
+          await addClientFlowMut.mutateAsync({ clientId: defaultClientId, flowId: newFlows[0].id });
+        }
+      }
       toast.success('Fluxo criado!');
       onClose();
     } catch { toast.error('Erro ao criar fluxo'); }
@@ -180,11 +190,11 @@ function EditFlowView({ onClose }: { onClose: () => void }) {
   );
 }
 
-function AssignFlowView({ onClose }: { onClose: () => void }) {
+function AssignFlowView({ onClose, defaultClientId, defaultClientName }: { onClose: () => void; defaultClientId?: string; defaultClientName?: string }) {
   const { flows, assignFlowToClient } = useTasks();
   const { getVisibleClients } = useClients();
   const clients = getVisibleClients();
-  const [clientId, setClientId] = useState('');
+  const [clientId, setClientId] = useState(defaultClientId || '');
   const [flowId, setFlowId] = useState('');
 
   const handleAssign = () => {
