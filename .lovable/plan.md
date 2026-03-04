@@ -1,33 +1,20 @@
 
 
-## Plano: Corrigir dialogs de Gerar Demandas e Transferir Plataforma
+## Plano: Trocar fases da pipeline no dialog de geração de demandas
 
 ### Problema
-Os dialogs `GenerateDemandsDialog` e `TransferPlatformDialog` nunca aparecem porque estão renderizados no bloco `return` final do componente (linha 902-922), mas os botões que ativam o estado estão no bloco `return` do step 2.5 (linha 615-808). Como o step 2.5 faz um `return` antecipado, o código nunca chega à renderização dos dialogs.
+O seletor de fases no `GenerateDemandsDialog` está usando `useClientStatusesQuery` (fases de cliente: Onboarding, Pausado, etc.), mas o usuário quer ver as fases da pipeline de tarefas (Backlog, Em andamento, Aguard. cliente, Concluído) que vêm de `useTaskStatusesQuery`.
 
-### Solução
+### Mudanças
 
-**Arquivo: `src/pages/ProjectsPage.tsx`**
+**`src/components/GenerateDemandsDialog.tsx`**
+- Substituir `useClientStatusesQuery` por `useTaskStatusesQuery` no import e na query
+- Atualizar o `Select` e o `phaseLabel` para usar `taskStatuses` em vez de `clientStatuses`
+- Ajustar referências: `clientStatuses` → `taskStatuses`
 
-Mover os dois blocos de renderização condicional dos dialogs (`generateTarget` e `transferTarget`) para dentro do bloco `return` do step 2.5, logo antes do `</div>` final (linha ~807), envolvendo tudo em um fragment `<>...</>`:
+**`src/components/PhaseDemandConfigDialog.tsx`**
+- Mesma troca: usar `useTaskStatusesQuery` em vez de `useClientStatusesQuery` para que os templates sejam criados com as fases corretas da pipeline de tarefas
 
-```tsx
-// Antes do fechamento do return do step 2.5 (linha 808):
-return (
-  <>
-    <div className="p-6 animate-fade-in">
-      {/* ... conteúdo existente do step 2.5 ... */}
-    </div>
-
-    {generateTarget && (
-      <GenerateDemandsDialog ... />
-    )}
-    {transferTarget && (
-      <TransferPlatformDialog ... />
-    )}
-  </>
-);
-```
-
-Nenhuma outra mudança necessária. A renderização no bloco final (linha 902-922) pode ser mantida para cobrir o step 3, ou removida se não houver botões lá.
+### Resultado
+O seletor mostrará "Backlog", "Em andamento", "Aguard. cliente", "Concluído" (e qualquer status customizado da pipeline de tarefas), alinhando templates e geração de demandas com a pipeline operacional.
 
