@@ -17,15 +17,17 @@ interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   mode: FlowDialogMode;
+  defaultClientId?: string;
+  defaultClientName?: string;
 }
 
-export function FlowManagerDialog({ open, onOpenChange, mode }: Props) {
+export function FlowManagerDialog({ open, onOpenChange, mode, defaultClientId, defaultClientName }: Props) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
-        {mode === 'create' && <CreateFlowView onClose={() => onOpenChange(false)} />}
+        {mode === 'create' && <CreateFlowView onClose={() => onOpenChange(false)} defaultClientId={defaultClientId} />}
         {mode === 'edit' && <EditFlowView onClose={() => onOpenChange(false)} />}
-        {mode === 'assign' && <AssignFlowView onClose={() => onOpenChange(false)} />}
+        {mode === 'assign' && <AssignFlowView onClose={() => onOpenChange(false)} defaultClientId={defaultClientId} defaultClientName={defaultClientName} />}
       </DialogContent>
     </Dialog>
   );
