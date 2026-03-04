@@ -29,7 +29,7 @@ interface AddTaskDialogProps {
   defaultPlatformSlug?: string;
 }
 
-export function AddTaskDialog({ open, onOpenChange, defaultStatus = 'backlog' }: AddTaskDialogProps) {
+export function AddTaskDialog({ open, onOpenChange, defaultStatus = 'backlog', defaultClientId, defaultClientName, defaultPlatformSlug }: AddTaskDialogProps) {
   const { addTask } = useTasks();
   const { getVisibleClients } = useClients();
   const { data: appUsers = [] } = useAppUsersQuery();
@@ -40,7 +40,7 @@ export function AddTaskDialog({ open, onOpenChange, defaultStatus = 'backlog' }:
   const [showNewType, setShowNewType] = useState(false);
   const [newTypeLabel, setNewTypeLabel] = useState('');
 
-  const [clientId, setClientId] = useState('');
+  const [clientId, setClientId] = useState(defaultClientId ?? '');
   
   const [type, setType] = useState<TaskType>('anuncio');
   const [title, setTitle] = useState('');
@@ -51,7 +51,7 @@ export function AddTaskDialog({ open, onOpenChange, defaultStatus = 'backlog' }:
   const [comments, setComments] = useState('');
   const [subtaskInput, setSubtaskInput] = useState('');
   const [subtasks, setSubtasks] = useState<string[]>([]);
-  const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([]);
+  const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>(defaultPlatformSlug ? [defaultPlatformSlug] : []);
 
   const selectedClient = visibleClients.find((c) => c.id === clientId);
 
