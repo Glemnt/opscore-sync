@@ -489,6 +489,11 @@ export function ProjectsPage() {
                   {colClients.map((client) => {
                     const clientProjects = projects.filter((p) => p.clientId === client.id);
                     const activeCount = clientProjects.filter((p) => p.status === 'in_progress').length;
+                    const statusConf = clientStatusMap[client.status] ?? { label: client.status, className: 'bg-muted text-muted-foreground border-border' };
+                    const squad = squads.find((s) => s.id === client.squadId);
+                    const pendingTasks = allTasksData.filter((t) => t.clientId === client.id && t.status !== 'done').length;
+                    const analysis = mockAnalysisData[client.id];
+                    const nps = analysis?.satisfactionScore;
                     return (
                       <div
                         key={client.id}
