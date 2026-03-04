@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Workflow } from 'lucide-react';
 import { useClientPlatformsQuery } from '@/hooks/useClientPlatformsQuery';
-import { Plus, Search, Building2, Calendar, User, X, Users, Circle, ShoppingBag, Settings2, Trash2 } from 'lucide-react';
+import { Plus, Search, Building2, Calendar, User, X, Users, Circle, ShoppingBag, Settings2, Trash2, Phone, Mail, FileText } from 'lucide-react';
 import { mockAnalysisData } from '@/components/ClientAIAnalysis';
 import { getPlatformAttributeSummary } from '@/components/PlatformAttributesEditor';
 import { useSquads } from '@/contexts/SquadsContext';
@@ -350,6 +350,24 @@ function ClientCard({ client, statusMap, clientFlows, onClick }: { client: Clien
           <Calendar className="w-3 h-3 shrink-0" />
           {new Date(client.startDate + 'T00:00:00').toLocaleDateString('pt-BR')}
         </span>
+        {client.phone && (
+          <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground bg-muted/60 rounded-md px-2 py-1 font-medium">
+            <Phone className="w-3 h-3 shrink-0" />
+            {client.phone}
+          </span>
+        )}
+        {client.email && (
+          <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground bg-muted/60 rounded-md px-2 py-1 font-medium">
+            <Mail className="w-3 h-3 shrink-0" />
+            {client.email}
+          </span>
+        )}
+        {client.cnpj && (
+          <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground bg-muted/60 rounded-md px-2 py-1 font-medium">
+            <FileText className="w-3 h-3 shrink-0" />
+            {client.cnpj}
+          </span>
+        )}
       </div>
 
       {/* Metrics grid */}

@@ -380,7 +380,7 @@ export function ClientDetailModal({ client, open, onClose }: ClientDetailModalPr
                 {client.contractType === 'mrr' ? 'MRR' : `TCV ${client.contractDurationMonths}m`}
               </span>
               <button
-                onClick={() => { setEditMode(true); setEditData({ name: client.name, companyName: client.companyName, segment: client.segment, status: client.status, platforms: client.platforms ?? (client.platform ? [client.platform] : []), contractType: client.contractType, paymentDay: client.paymentDay, contractDurationMonths: client.contractDurationMonths, notes: client.notes, monthlyRevenue: client.monthlyRevenue, responsible: client.responsible, setupFee: client.setupFee }); }}
+                onClick={() => { setEditMode(true); setEditData({ name: client.name, companyName: client.companyName, segment: client.segment, status: client.status, platforms: client.platforms ?? (client.platform ? [client.platform] : []), contractType: client.contractType, paymentDay: client.paymentDay, contractDurationMonths: client.contractDurationMonths, notes: client.notes, monthlyRevenue: client.monthlyRevenue, responsible: client.responsible, setupFee: client.setupFee, phone: client.phone, cnpj: client.cnpj, email: client.email }); }}
                 className="p-1.5 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
                 title="Editar cliente"
               >
@@ -445,6 +445,18 @@ export function ClientDetailModal({ client, open, onClose }: ClientDetailModalPr
                 <div>
                   <Label className="text-xs">Setup Pago (R$)</Label>
                   <Input type="number" value={editData.setupFee ?? ''} onChange={e => setEditData(p => ({ ...p, setupFee: Number(e.target.value) }))} className="h-8 text-sm" />
+                </div>
+                <div>
+                  <Label className="text-xs">CNPJ</Label>
+                  <Input value={editData.cnpj ?? ''} onChange={e => setEditData(p => ({ ...p, cnpj: e.target.value }))} placeholder="00.000.000/0000-00" className="h-8 text-sm" />
+                </div>
+                <div>
+                  <Label className="text-xs">Telefone</Label>
+                  <Input value={editData.phone ?? ''} onChange={e => setEditData(p => ({ ...p, phone: e.target.value }))} placeholder="(11) 99999-9999" className="h-8 text-sm" />
+                </div>
+                <div>
+                  <Label className="text-xs">Email</Label>
+                  <Input type="email" value={editData.email ?? ''} onChange={e => setEditData(p => ({ ...p, email: e.target.value }))} placeholder="cliente@empresa.com" className="h-8 text-sm" />
                 </div>
                 <div>
                   <Label className="text-xs">Tipo de Contrato</Label>
