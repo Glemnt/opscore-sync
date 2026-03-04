@@ -174,7 +174,7 @@ export function GenerateDemandsDialog({ open, onOpenChange, phase, clientId, cli
                           <SelectTrigger className="h-8 text-xs">
                             <SelectValue placeholder="Selecionar..." />
                           </SelectTrigger>
-                          <SelectContent>
+                          <SelectContent className="z-[60]">
                             {squadMembers.map((u) => (
                               <SelectItem key={u.id} value={u.name}>{u.name}</SelectItem>
                             ))}
@@ -183,12 +183,29 @@ export function GenerateDemandsDialog({ open, onOpenChange, phase, clientId, cli
                       </div>
                       <div className="w-40">
                         <Label className="text-[10px] text-muted-foreground">Prazo</Label>
-                        <Input
-                          type="date"
-                          className="h-8 text-xs"
-                          value={row.deadline}
-                          onChange={(e) => updateRow(idx, { deadline: e.target.value })}
-                        />
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              className={cn(
+                                "h-8 w-full justify-start text-left text-xs font-normal",
+                                !row.deadline && "text-muted-foreground"
+                              )}
+                            >
+                              <CalendarIcon className="mr-1.5 h-3.5 w-3.5" />
+                              {row.deadline ? format(new Date(row.deadline + 'T12:00:00'), 'dd/MM/yyyy') : 'Selecionar...'}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="z-[60] w-auto p-0" align="start">
+                            <Calendar
+                              mode="single"
+                              selected={row.deadline ? new Date(row.deadline + 'T12:00:00') : undefined}
+                              onSelect={(date) => updateRow(idx, { deadline: date ? format(date, 'yyyy-MM-dd') : '' })}
+                              initialFocus
+                              className={cn("p-3 pointer-events-auto")}
+                            />
+                          </PopoverContent>
+                        </Popover>
                       </div>
                     </div>
                   )}
