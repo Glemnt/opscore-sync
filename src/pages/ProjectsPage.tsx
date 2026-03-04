@@ -57,6 +57,12 @@ export function ProjectsPage() {
   const clients = getVisibleClients();
   const { data: platformOptions = [] } = usePlatformsQuery();
   const { data: clientPlatformsData = [] } = useClientPlatformsQuery();
+  const updatePlatformMut = useUpdateClientPlatform();
+  const { data: platformPhaseStatuses = [] } = usePlatformPhaseStatusesQuery();
+  const addPlatPhaseMut = useAddPlatformPhaseStatus();
+  const deletePlatPhaseMut = useDeletePlatformPhaseStatus();
+  const updatePlatPhaseMut = useUpdatePlatformPhaseStatus();
+  const reorderPlatPhaseMut = useReorderPlatformPhaseStatuses();
   const [selectedSquad, setSelectedSquad] = useState<Squad | null>(null);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [selectedPlatform, setSelectedPlatform] = useState<string | null>(null);
