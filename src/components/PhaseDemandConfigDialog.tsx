@@ -20,6 +20,10 @@ export function PhaseDemandConfigDialog({ open, onOpenChange, initialPhase }: Pr
   const { data: taskStatuses = [] } = useTaskStatusesQuery();
   const { data: flows = [] } = useFlowsQuery();
   const [selectedPhase, setSelectedPhase] = useState(initialPhase || '');
+
+  useEffect(() => {
+    if (open && initialPhase) setSelectedPhase(initialPhase);
+  }, [open, initialPhase]);
   const [newTitle, setNewTitle] = useState('');
   const [newOwner, setNewOwner] = useState<'internal' | 'client'>('internal');
   const [newFlowId, setNewFlowId] = useState<string>('');
