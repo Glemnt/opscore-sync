@@ -213,15 +213,22 @@ function AssignFlowView({ onClose, defaultClientId, defaultClientName }: { onClo
         <DialogDescription>Vincule um fluxo existente a um cliente. As etapas serão criadas como demandas.</DialogDescription>
       </DialogHeader>
       <div className="space-y-4 mt-2">
-        <div className="space-y-1.5">
-          <Label>Cliente *</Label>
-          <Select value={clientId} onValueChange={setClientId}>
-            <SelectTrigger><SelectValue placeholder="Selecione o cliente" /></SelectTrigger>
-            <SelectContent>
-              {clients.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-            </SelectContent>
-          </Select>
-        </div>
+        {defaultClientId ? (
+          <div className="space-y-1.5">
+            <Label>Cliente</Label>
+            <div className="px-3 py-2 rounded-md bg-muted text-sm font-medium">{defaultClientName}</div>
+          </div>
+        ) : (
+          <div className="space-y-1.5">
+            <Label>Cliente *</Label>
+            <Select value={clientId} onValueChange={setClientId}>
+              <SelectTrigger><SelectValue placeholder="Selecione o cliente" /></SelectTrigger>
+              <SelectContent>
+                {clients.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
         <div className="space-y-1.5">
           <Label>Fluxo *</Label>
           <Select value={flowId} onValueChange={setFlowId}>
