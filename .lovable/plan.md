@@ -1,23 +1,33 @@
 
 
-## Plano: Melhorar legibilidade dos cards na pagina Squads
+## Plano: Corrigir dialogs de Gerar Demandas e Transferir Plataforma
 
 ### Problema
-As colunas Kanban na pagina Squads tem `w-72` (288px), o que comprime demais o conteudo dos cards. Na pagina Clientes, os cards estao em `grid grid-cols-3` com muito mais espaco, tornando as informacoes legiveis.
+Os dialogs `GenerateDemandsDialog` e `TransferPlatformDialog` nunca aparecem porque estão renderizados no bloco `return` final do componente (linha 902-922), mas os botões que ativam o estado estão no bloco `return` do step 2.5 (linha 615-808). Como o step 2.5 faz um `return` antecipado, o código nunca chega à renderização dos dialogs.
 
-### Mudancas em `src/pages/ProjectsPage.tsx`
+### Solução
 
-1. **Aumentar largura das colunas Kanban** de `w-72` para `w-80` (320px) — mais espaco para os badges e metricas.
+**Arquivo: `src/pages/ProjectsPage.tsx`**
 
-2. **Simplificar o card para o contexto Kanban** — o card na pagina Squads nao precisa mostrar Squad (ja esta agrupado por squad) nem todos os dados de contato. Ajustar para mostrar apenas:
-   - **Header**: Nome + Segmento + StatusBadge
-   - **Linha de contexto**: Plataformas + Saude (circulo colorido)
-   - **Linha de metadata**: Responsavel + Data de entrada
-   - **Grid de metricas**: Reduzir para 3 colunas (Pendentes, Mensalidade, Contrato) em vez de 5, para nao ficar apertado
+Mover os dois blocos de renderização condicional dos dialogs (`generateTarget` e `transferTarget`) para dentro do bloco `return` do step 2.5, logo antes do `</div>` final (linha ~807), envolvendo tudo em um fragment `<>...</>`:
 
-3. **Aumentar tamanho dos textos nos badges** de `text-[10px]` para `text-xs` (12px) para melhor legibilidade.
+```tsx
+// Antes do fechamento do return do step 2.5 (linha 808):
+return (
+  <>
+    <div className="p-6 animate-fade-in">
+      {/* ... conteúdo existente do step 2.5 ... */}
+    </div>
 
-4. **Remover dados de contato do card** (Phone, Email, CNPJ) — esses detalhes ficam no modal de detalhe, nao precisam estar no card do Kanban.
+    {generateTarget && (
+      <GenerateDemandsDialog ... />
+    )}
+    {transferTarget && (
+      <TransferPlatformDialog ... />
+    )}
+  </>
+);
+```
 
-Essas mudancas tornam o card mais limpo e legivel no contexto das colunas Kanban, sem perder as informacoes essenciais.
+Nenhuma outra mudança necessária. A renderização no bloco final (linha 902-922) pode ser mantida para cobrir o step 3, ou removida se não houver botões lá.
 
