@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
-import { Plus, Search, Calendar, ChevronDown, CheckCircle2, Circle, ArrowLeft, Users2, X, Pencil, Trash2, MessageSquare, ShoppingBag, LayoutGrid, Zap, ArrowRightLeft, Workflow, CreditCard } from 'lucide-react';
+import { Plus, Search, Calendar, ChevronDown, CheckCircle2, Circle, ArrowLeft, Users2, X, Pencil, Trash2, MessageSquare, ShoppingBag, LayoutGrid, Zap, ArrowRightLeft, Workflow, CreditCard, Building2, User, Phone, Mail, FileText } from 'lucide-react';
+import { mockAnalysisData } from '@/components/ClientAIAnalysis';
 import { usePlatformsQuery } from '@/hooks/usePlatformsQuery';
 import { TaskDetailModal } from '@/components/TaskDetailModal';
 import { useProjectsQuery } from '@/hooks/useProjectsQuery';
@@ -488,6 +489,11 @@ export function ProjectsPage() {
                   {colClients.map((client) => {
                     const clientProjects = projects.filter((p) => p.clientId === client.id);
                     const activeCount = clientProjects.filter((p) => p.status === 'in_progress').length;
+                    const statusConf = clientStatusMap[client.status] ?? { label: client.status, className: 'bg-muted text-muted-foreground border-border' };
+                    const squad = squads.find((s) => s.id === client.squadId);
+                    const pendingTasks = allTasksData.filter((t) => t.clientId === client.id && t.status !== 'done').length;
+                    const analysis = mockAnalysisData[client.id];
+                    const nps = analysis?.satisfactionScore;
                     return (
                       <div
                         key={client.id}
@@ -497,64 +503,112 @@ export function ProjectsPage() {
                           e.dataTransfer.effectAllowed = 'move';
                         }}
                         onClick={() => { setSelectedPlatform(null); setSelectedClient(client); }}
-                        className="w-full bg-card rounded-xl border border-border p-4 shadow-sm-custom hover:shadow-md-custom hover:-translate-y-0.5 transition-all text-left group cursor-grab active:cursor-grabbing">
-                        <h3 className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors mb-1">
-                          {client.name}
-                        </h3>
-                        <p className="text-xs text-muted-foreground mb-1">{client.segment}</p>
-                        <div className="flex items-center gap-2 mb-2 flex-wrap">
-                          {client.startDate && (
-                            <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground bg-muted rounded px-1.5 py-0.5">
-                              <Calendar className="w-3 h-3" />
-                              {format(new Date(client.startDate), 'dd/MM/yyyy')}
+                        className="w-full bg-card rounded-xl border border-border p-5 shadow-sm-custom hover:shadow-md-custom hover:-translate-y-0.5 transition-all text-left group cursor-grab active:cursor-grabbing">
+                        {/* Header */}
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-primary-light flex items-center justify-center">
+                              <Building2 className="w-5 h-5 text-primary" />
+                            </div>
+                            <div>
+                              <h3 className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors line-clamp-1">
+                                {client.name}
+                              </h3>
+                              <p className="text-xs text-muted-foreground">{client.segment}</p>
+                            </div>
+                          </div>
+                          <StatusBadge className={statusConf.className}>{statusConf.label}</StatusBadge>
+                        </div>
+
+                        {/* Context line: Squad + Platforms + Health */}
+                        <div className="flex flex-wrap items-center gap-1.5 mb-2">
+                          {squad && (
+                            <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground bg-muted/60 rounded-md px-2 py-1 font-medium">
+                              <Users2 className="w-3 h-3 shrink-0" />
+                              {squad.name}
                             </span>
                           )}
-                          {client.paymentDay > 0 && (
-                            <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground bg-muted rounded px-1.5 py-0.5">
-                              <CreditCard className="w-3 h-3" />
-                              Venc. dia {client.paymentDay}
+                          {client.platforms && client.platforms.length > 0 && client.platforms.map((slug) => {
+                            const plat = platformOptions.find((p) => p.slug === slug);
+                            return (
+                              <span key={slug} className="inline-flex items-center gap-1 text-[10px] text-muted-foreground bg-muted/60 rounded-md px-2 py-1 font-medium">
+                                <ShoppingBag className="w-3 h-3 shrink-0" />
+                                {plat?.name ?? slug}
+                              </span>
+                            );
+                          })}
+                          <div
+                            className={cn(
+                              'w-3.5 h-3.5 rounded-full border border-border shrink-0 ml-auto',
+                              { green: 'bg-success', yellow: 'bg-warning', red: 'bg-destructive', white: 'bg-border' }[client.healthColor ?? 'white']
+                            )}
+                            title={`Saúde: ${client.healthColor ?? 'não avaliado'}`}
+                          />
+                        </div>
+
+                        {/* Metadata line */}
+                        <div className="flex flex-wrap items-center gap-1.5 mb-3">
+                          {client.responsible && (
+                            <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground bg-muted/60 rounded-md px-2 py-1 font-medium">
+                              <User className="w-3 h-3 shrink-0" />
+                              {client.responsible}
+                            </span>
+                          )}
+                          <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground bg-muted/60 rounded-md px-2 py-1 font-medium">
+                            <Calendar className="w-3 h-3 shrink-0" />
+                            {new Date(client.startDate + 'T00:00:00').toLocaleDateString('pt-BR')}
+                          </span>
+                          {client.phone && (
+                            <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground bg-muted/60 rounded-md px-2 py-1 font-medium">
+                              <Phone className="w-3 h-3 shrink-0" />
+                              {client.phone}
+                            </span>
+                          )}
+                          {client.email && (
+                            <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground bg-muted/60 rounded-md px-2 py-1 font-medium">
+                              <Mail className="w-3 h-3 shrink-0" />
+                              {client.email}
+                            </span>
+                          )}
+                          {client.cnpj && (
+                            <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground bg-muted/60 rounded-md px-2 py-1 font-medium">
+                              <FileText className="w-3 h-3 shrink-0" />
+                              {client.cnpj}
                             </span>
                           )}
                         </div>
-                        {client.platforms && client.platforms.length > 0 && (
-                          <div className="space-y-1.5 mb-2">
-                            {client.platforms.map((slug) => {
-                              const plat = platformOptions.find(p => p.slug === slug);
-                              const cp = clientPlatformsData.find(cp => cp.clientId === client.id && cp.platformSlug === slug);
-                              const attrSummary = cp ? getPlatformAttributeSummary(slug, cp.platformAttributes) : [];
-                              const qMap: Record<string, string> = { iniciante: '🥉 Iniciante', estruturado: '🥈 Estruturado', competitivo: '🥇 Competitivo', escalando: '🚀 Escalando', dominante: '👑 Dominante' };
-                              const hMap: Record<string, { color: string; label: string }> = { green: { color: 'bg-green-500', label: 'Excelente' }, orange: { color: 'bg-orange-500', label: 'Mediano' }, red: { color: 'bg-red-500', label: 'Ruim' } };
-                              const health = cp?.healthColor ? hMap[cp.healthColor] : null;
-                              return (
-                                <div key={slug} className="bg-muted/40 rounded-lg p-2 border border-border/50">
-                                  <div className="flex items-center justify-between mb-1">
-                                    <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-foreground">
-                                      <ShoppingBag className="w-3 h-3 shrink-0 text-primary" />
-                                      {plat?.name ?? slug}
-                                    </span>
-                                    {health && (
-                                      <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground">
-                                        <span className={`w-2 h-2 rounded-full ${health.color}`} />
-                                        {health.label}
-                                      </span>
-                                    )}
-                                  </div>
-                                  {cp?.phase && (
-                                    <span className="inline-flex items-center text-[10px] font-medium text-primary bg-primary/10 rounded px-1.5 py-0.5 mb-1">
-                                      {phaseLabels[cp.phase] ?? cp.phase}
-                                    </span>
-                                  )}
-                                  {cp?.qualityLevel && (
-                                    <p className="text-[10px] font-medium text-foreground/80 mt-0.5">{qMap[cp.qualityLevel] ?? cp.qualityLevel}</p>
-                                  )}
-                                  {attrSummary.length > 0 && (
-                                    <p className="text-[10px] text-muted-foreground mt-0.5">{attrSummary.join(' · ')}</p>
-                                  )}
-                                </div>
-                              );
-                            })}
+
+                        {/* Metrics grid */}
+                        <div className="pt-3 border-t border-border">
+                          <div className="grid grid-cols-5 gap-1">
+                            <div className="text-center">
+                              <p className="text-sm font-bold text-foreground">{pendingTasks}</p>
+                              <p className="text-[10px] text-muted-foreground">Pendentes</p>
+                            </div>
+                            <div className="text-center">
+                              <p className="text-sm font-bold text-foreground">
+                                {client.monthlyRevenue ? `R$${(client.monthlyRevenue / 1000).toFixed(1)}k` : '—'}
+                              </p>
+                              <p className="text-[10px] text-muted-foreground">Mensalidade</p>
+                            </div>
+                            <div className="text-center">
+                              <p className="text-sm font-bold text-foreground">
+                                {client.setupFee ? `R$${(client.setupFee / 1000).toFixed(1)}k` : '—'}
+                              </p>
+                              <p className="text-[10px] text-muted-foreground">Setup</p>
+                            </div>
+                            <div className="text-center">
+                              <p className="text-sm font-bold text-foreground">
+                                {client.contractDurationMonths ? `${client.contractDurationMonths}m` : '—'}
+                              </p>
+                              <p className="text-[10px] text-muted-foreground">Contrato</p>
+                            </div>
+                            <div className="text-center">
+                              <p className="text-sm font-bold text-foreground">{nps !== undefined ? nps.toFixed(1) : '—'}</p>
+                              <p className="text-[10px] text-muted-foreground">NPS</p>
+                            </div>
                           </div>
-                        )}
+                        </div>
                       </div>
                     );
                   })}
