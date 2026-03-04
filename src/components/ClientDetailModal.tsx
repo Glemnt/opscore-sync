@@ -360,7 +360,8 @@ export function ClientDetailModal({ client, open, onClose }: ClientDetailModalPr
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto p-0">
+      <DialogContent className="max-w-2xl max-h-[85vh] overflow-visible p-0">
+        <div className="overflow-y-auto max-h-[85vh]">
         {/* Header */}
         <div className="p-6 pb-4 border-b border-border">
           <div className="flex items-start justify-between">
