@@ -902,6 +902,16 @@ export function ProjectsPage() {
                 <DropdownMenuItem onClick={() => { setFlowMode('assign'); setFlowDialogOpen(true); }}>
                   Atribuir Fluxo
                 </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setGenerateTarget({
+                  phase: currentPhase,
+                  clientId: selectedClient.id,
+                  clientName: selectedClient.name,
+                  platformSlug: selectedPlatform ?? '',
+                  squadId: selectedClient.squadId ?? null,
+                })}>
+                  <Zap className="w-4 h-4 mr-1" />
+                  Gerar Demandas da Fase
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
             <button
