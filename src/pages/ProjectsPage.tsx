@@ -427,52 +427,54 @@ export function ProjectsPage() {
         <div className="flex flex-wrap items-center gap-3 mb-3">
           <div className="relative flex-1 max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input
+            <input
+              type="text"
               placeholder="Buscar cliente..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-9"
+              className="w-full pl-9 pr-4 py-2 text-sm bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition"
             />
           </div>
-          <div className="flex items-center gap-2 ml-auto flex-wrap">
-            <Select value={squadResponsibleFilter} onValueChange={setSquadResponsibleFilter}>
-              <SelectTrigger className="w-[150px] h-9 text-xs">
-                <SelectValue placeholder="Responsável" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos Responsáveis</SelectItem>
-                {uniqueResponsibles.map(r => (
-                  <SelectItem key={r} value={r}>{r}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={squadHealthFilter} onValueChange={setSquadHealthFilter}>
-              <SelectTrigger className="w-[120px] h-9 text-xs">
-                <SelectValue placeholder="Saúde" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todas Saúdes</SelectItem>
-                <SelectItem value="green">🟢 Verde</SelectItem>
-                <SelectItem value="yellow">🟡 Amarelo</SelectItem>
-                <SelectItem value="red">🔴 Vermelho</SelectItem>
-                <SelectItem value="white">⚪ Branco</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={squadPlatformFilter} onValueChange={setSquadPlatformFilter}>
-              <SelectTrigger className="w-[140px] h-9 text-xs">
-                <SelectValue placeholder="Plataforma" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todas Plataformas</SelectItem>
-                {platformOptions.map(p => (
-                  <SelectItem key={p.slug} value={p.slug}>{p.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <div className="flex items-center gap-1.5">
-              <Input type="date" value={squadDateFrom} onChange={e => setSquadDateFrom(e.target.value)} className="h-9 text-xs w-[130px]" placeholder="De" />
-              <Input type="date" value={squadDateTo} onChange={e => setSquadDateTo(e.target.value)} className="h-9 text-xs w-[130px]" placeholder="Até" />
-            </div>
+
+          <select
+            value={squadResponsibleFilter}
+            onChange={(e) => setSquadResponsibleFilter(e.target.value)}
+            className="px-3 py-2 text-sm bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition text-foreground"
+          >
+            <option value="all">Responsável</option>
+            {uniqueResponsibles.map((r) => <option key={r} value={r}>{r}</option>)}
+          </select>
+
+          <select
+            value={squadHealthFilter}
+            onChange={(e) => setSquadHealthFilter(e.target.value)}
+            className="px-3 py-2 text-sm bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition text-foreground"
+          >
+            <option value="all">Saúde</option>
+            <option value="green">🟢 Saudável</option>
+            <option value="yellow">🟡 Atenção</option>
+            <option value="red">🔴 Crítico</option>
+            <option value="white">⚪ Não avaliado</option>
+          </select>
+
+          <select
+            value={squadPlatformFilter}
+            onChange={(e) => setSquadPlatformFilter(e.target.value)}
+            className="px-3 py-2 text-sm bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition text-foreground"
+          >
+            <option value="all">Plataforma</option>
+            {platformOptions.map((p) => <option key={p.slug} value={p.slug}>{p.name}</option>)}
+          </select>
+
+          <div className="flex items-center gap-2">
+            <input type="date" value={squadDateFrom} onChange={(e) => setSquadDateFrom(e.target.value)} className="px-3 py-2 text-sm bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition text-foreground" />
+            <span className="text-xs text-muted-foreground">até</span>
+            <input type="date" value={squadDateTo} onChange={(e) => setSquadDateTo(e.target.value)} className="px-3 py-2 text-sm bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition text-foreground" />
+            {(squadDateFrom || squadDateTo) && (
+              <button onClick={() => { setSquadDateFrom(''); setSquadDateTo(''); }} className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
+                <X className="w-4 h-4" />
+              </button>
+            )}
           </div>
         </div>
 
@@ -481,7 +483,7 @@ export function ProjectsPage() {
           <button
             onClick={() => setSquadStatusFilter('all')}
             className={cn(
-              'px-3 py-1.5 rounded-md text-xs font-medium transition-colors whitespace-nowrap',
+              'px-3 py-1.5 rounded-md text-xs font-medium transition-all',
               squadStatusFilter === 'all' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground hover:bg-muted'
             )}
           >
@@ -490,22 +492,30 @@ export function ProjectsPage() {
           {clientCols.map(col => {
             const count = squadClients.filter(c => c.status === col.status).length;
             return (
-              <button
-                key={col.id}
-                onClick={() => setSquadStatusFilter(col.status as string)}
-                className={cn(
-                  'px-3 py-1.5 rounded-md text-xs font-medium transition-colors whitespace-nowrap',
-                  squadStatusFilter === col.status ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground hover:bg-muted'
-                )}
-              >
-                {col.label} ({count})
-              </button>
+              <div key={col.id} className="relative group flex items-center">
+                <button
+                  onClick={() => setSquadStatusFilter(col.status as string)}
+                  className={cn(
+                    'px-3 py-1.5 rounded-md text-xs font-medium transition-all',
+                    squadStatusFilter === col.status ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                  )}
+                >
+                  {col.label} ({count})
+                </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); handleRemoveCol(col.id); }}
+                  className="ml-0.5 p-0.5 rounded text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                  title="Excluir status"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
             );
           })}
           <button
             onClick={handleAddCol}
-            className="px-2 py-1.5 text-muted-foreground hover:text-primary transition-colors"
-            title="Adicionar status"
+            className="px-2 py-1.5 rounded-md text-xs text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all"
+            title="Novo Status"
           >
             <Plus className="w-3.5 h-3.5" />
           </button>

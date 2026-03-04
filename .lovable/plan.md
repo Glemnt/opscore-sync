@@ -1,31 +1,33 @@
 
 
-## Plano: Igualar filtros da pagina Squads ao estilo da pagina Clientes
+## Plano: Corrigir dialogs de Gerar Demandas e Transferir Plataforma
 
-### Diferenca atual
+### Problema
+Os dialogs `GenerateDemandsDialog` e `TransferPlatformDialog` nunca aparecem porque estão renderizados no bloco `return` final do componente (linha 902-922), mas os botões que ativam o estado estão no bloco `return` do step 2.5 (linha 615-808). Como o step 2.5 faz um `return` antecipado, o código nunca chega à renderização dos dialogs.
 
-| Aspecto | ClientsPage | Squads (Step 2) |
-|---------|-------------|-----------------|
-| Dropdowns | `<select>` nativo com classes Tailwind | Radix `<Select>` com `SelectTrigger/Content` |
-| Datas | `<input type="date">` nativo | `<Input type="date">` component |
-| Saude labels | Saudavel/Atencao/Critico/Nao avaliado | Verde/Amarelo/Vermelho/Branco |
-| Botao limpar data | Presente com icone X | Ausente |
-| Pipeline tabs | Com botao de deletar status (X hover) | Sem botao de deletar nos tabs |
+### Solução
 
-### Mudancas em `src/pages/ProjectsPage.tsx` (linhas ~426-512)
+**Arquivo: `src/pages/ProjectsPage.tsx`**
 
-**1. Substituir Radix Selects por `<select>` nativos** (mesmo estilo da ClientsPage):
-- Responsavel: `<select>` com classe `px-3 py-2 text-sm bg-card border border-border rounded-lg...`
-- Saude: mesmas opcoes da ClientsPage (Saudavel/Atencao/Critico/Nao avaliado com emojis)
-- Plataforma: `<select>` nativo
-- Datas: `<input type="date">` nativo com botao X para limpar
+Mover os dois blocos de renderização condicional dos dialogs (`generateTarget` e `transferTarget`) para dentro do bloco `return` do step 2.5, logo antes do `</div>` final (linha ~807), envolvendo tudo em um fragment `<>...</>`:
 
-**2. Atualizar labels de saude** para corresponder a ClientsPage:
-- "Verde" → "Saudavel", "Amarelo" → "Atencao", "Vermelho" → "Critico", "Branco" → "Nao avaliado"
+```tsx
+// Antes do fechamento do return do step 2.5 (linha 808):
+return (
+  <>
+    <div className="p-6 animate-fade-in">
+      {/* ... conteúdo existente do step 2.5 ... */}
+    </div>
 
-**3. Adicionar botao X para limpar datas** (como na ClientsPage)
+    {generateTarget && (
+      <GenerateDemandsDialog ... />
+    )}
+    {transferTarget && (
+      <TransferPlatformDialog ... />
+    )}
+  </>
+);
+```
 
-**4. Adicionar botao de deletar status nos pipeline tabs** (hover com X, como na ClientsPage)
-
-Nenhuma migracao necessaria.
+Nenhuma outra mudança necessária. A renderização no bloco final (linha 902-922) pode ser mantida para cobrir o step 3, ou removida se não houver botões lá.
 
