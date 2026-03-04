@@ -8,6 +8,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { usePhaseDemandsQuery } from '@/hooks/usePhaseDemandsQuery';
 import { useAddTask } from '@/hooks/useTasksQuery';
 import { useAppUsersQuery } from '@/hooks/useAppUsersQuery';
+import { useTaskStatusesQuery } from '@/hooks/useTaskStatusesQuery';
 import { useSquads } from '@/contexts/SquadsContext';
 import { toast } from 'sonner';
 import { Zap, Settings } from 'lucide-react';
@@ -32,12 +33,6 @@ interface Props {
   squadId?: string | null;
 }
 
-const phaseLabels: Record<string, string> = {
-  onboarding: 'Onboarding',
-  implementacao: 'Implementação',
-  performance: 'Performance',
-  escala: 'Escala',
-};
 
 export function GenerateDemandsDialog({ open, onOpenChange, phase, clientId, clientName, platformSlug, squadId }: Props) {
   const { data: templates = [] } = usePhaseDemandsQuery();
