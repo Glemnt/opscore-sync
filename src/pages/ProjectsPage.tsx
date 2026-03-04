@@ -711,8 +711,6 @@ export function ProjectsPage() {
             ) : null;
           })()}
         </div>
-          </div>
-        </div>
 
         {/* Kanban by phase — editable */}
         {(() => {
