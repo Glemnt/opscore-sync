@@ -153,11 +153,8 @@ function PlatformOperationalPanel({ client, platformOptions, squads, appUsers, t
                         className="w-full h-8 px-2 text-xs bg-background border border-input rounded-md text-foreground"
                       >
                         <option value="">—</option>
-                        <option value="iniciante">🥉 Iniciante</option>
-                        <option value="estruturado">🥈 Estruturado</option>
-                        <option value="competitivo">🥇 Competitivo</option>
-                        <option value="escalando">🚀 Escalando</option>
-                        <option value="dominante">👑 Dominante</option>
+                        <option value="seller">Seller</option>
+                        <option value="lojista">Lojista</option>
                       </select>
                     </div>
                     <div>
