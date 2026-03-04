@@ -10,7 +10,7 @@ import { ptBR } from 'date-fns/locale';
 import { Label } from '@/components/ui/label';
 import { StatusBadge } from '@/components/ui/shared';
 import { taskStatusConfig, taskTypeConfig } from '@/lib/config';
-import { Client, Task, ClientStatus, ContractType, Platform, Squad } from '@/types';
+import { Client, Task, TaskStatus, ClientStatus, ContractType, Platform, Squad } from '@/types';
 import { usePlatformsQuery, PlatformRow } from '@/hooks/usePlatformsQuery';
 import { useTaskTypesMap } from '@/hooks/useTaskTypesQuery';
 import { useClientStatusesQuery, useClientStatusesMap } from '@/hooks/useClientStatusesQuery';
