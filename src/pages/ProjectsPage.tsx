@@ -388,10 +388,27 @@ export function ProjectsPage() {
       inativo: 'Inativo',
     };
 
-    const filteredSquadClients = squadClients.filter((c) =>
-      c.name.toLowerCase().includes(search.toLowerCase()) ||
-      c.segment.toLowerCase().includes(search.toLowerCase())
-    );
+    const [statusFilter, setStatusFilter] = useState('all');
+    const [responsibleFilter, setResponsibleFilter] = useState('all');
+    const [healthFilter, setHealthFilter] = useState('all');
+    const [platformFilter, setPlatformFilter] = useState('all');
+    const [dateFrom, setDateFrom] = useState('');
+    const [dateTo, setDateTo] = useState('');
+
+    const uniqueResponsibles = [...new Set(squadClients.map(c => c.responsible).filter(Boolean))];
+
+    const filteredSquadClients = squadClients.filter((c) => {
+      const matchSearch = c.name.toLowerCase().includes(search.toLowerCase()) || c.segment.toLowerCase().includes(search.toLowerCase());
+      const matchStatus = statusFilter === 'all' || c.status === statusFilter;
+      const matchResponsible = responsibleFilter === 'all' || c.responsible === responsibleFilter;
+      const matchHealth = healthFilter === 'all' || c.healthColor === healthFilter;
+      const matchPlatform = platformFilter === 'all' || (c.platforms?.includes(platformFilter) ?? false);
+      const matchDateFrom = !dateFrom || c.startDate >= dateFrom;
+      const matchDateTo = !dateTo || c.startDate <= dateTo;
+      return matchSearch && matchStatus && matchResponsible && matchHealth && matchPlatform && matchDateFrom && matchDateTo;
+    });
+
+    const visibleCols = statusFilter === 'all' ? clientCols : clientCols.filter(col => col.status === statusFilter);
 
     return (
       <div className="p-6 animate-fade-in h-full flex flex-col">
@@ -407,17 +424,95 @@ export function ProjectsPage() {
             </button>
           } />
 
-        <div className="relative mb-4">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input
-            placeholder="Buscar cliente por nome ou segmento..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-9 max-w-sm"
-          />
+        {/* Row 1: Search + filter dropdowns */}
+        <div className="flex flex-wrap items-center gap-3 mb-3">
+          <div className="relative flex-1 max-w-sm">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              placeholder="Buscar cliente..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+          <div className="flex items-center gap-2 ml-auto flex-wrap">
+            <Select value={responsibleFilter} onValueChange={setResponsibleFilter}>
+              <SelectTrigger className="w-[150px] h-9 text-xs">
+                <SelectValue placeholder="Responsável" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos Responsáveis</SelectItem>
+                {uniqueResponsibles.map(r => (
+                  <SelectItem key={r} value={r}>{r}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={healthFilter} onValueChange={setHealthFilter}>
+              <SelectTrigger className="w-[120px] h-9 text-xs">
+                <SelectValue placeholder="Saúde" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas Saúdes</SelectItem>
+                <SelectItem value="green">🟢 Verde</SelectItem>
+                <SelectItem value="yellow">🟡 Amarelo</SelectItem>
+                <SelectItem value="red">🔴 Vermelho</SelectItem>
+                <SelectItem value="white">⚪ Branco</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={platformFilter} onValueChange={setPlatformFilter}>
+              <SelectTrigger className="w-[140px] h-9 text-xs">
+                <SelectValue placeholder="Plataforma" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas Plataformas</SelectItem>
+                {platformOptions.map(p => (
+                  <SelectItem key={p.slug} value={p.slug}>{p.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <div className="flex items-center gap-1.5">
+              <Input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="h-9 text-xs w-[130px]" placeholder="De" />
+              <Input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="h-9 text-xs w-[130px]" placeholder="Até" />
+            </div>
+          </div>
         </div>
 
-        <div className="flex gap-4 h-[calc(100vh-190px)] overflow-x-auto pb-4">
+        {/* Row 2: Status pipeline tabs */}
+        <div className="flex items-center gap-1.5 mb-4 bg-card border border-border p-1 rounded-lg overflow-x-auto">
+          <button
+            onClick={() => setStatusFilter('all')}
+            className={cn(
+              'px-3 py-1.5 rounded-md text-xs font-medium transition-colors whitespace-nowrap',
+              statusFilter === 'all' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+            )}
+          >
+            Todos ({squadClients.length})
+          </button>
+          {clientCols.map(col => {
+            const count = squadClients.filter(c => c.status === col.status).length;
+            return (
+              <button
+                key={col.id}
+                onClick={() => setStatusFilter(col.status as string)}
+                className={cn(
+                  'px-3 py-1.5 rounded-md text-xs font-medium transition-colors whitespace-nowrap',
+                  statusFilter === col.status ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                )}
+              >
+                {col.label} ({count})
+              </button>
+            );
+          })}
+          <button
+            onClick={handleAddCol}
+            className="px-2 py-1.5 text-muted-foreground hover:text-primary transition-colors"
+            title="Adicionar status"
+          >
+            <Plus className="w-3.5 h-3.5" />
+          </button>
+        </div>
+
+        <div className="flex gap-4 h-[calc(100vh-260px)] overflow-x-auto pb-4">
           {clientCols.map((col) => {
             const colClients = filteredSquadClients.filter((c) => c.status === col.status);
             const conf = clientStatusMap[col.status as string];
