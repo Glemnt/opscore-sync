@@ -48,6 +48,8 @@ export function ClientsPage() {
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [healthFilter, setHealthFilter] = useState<'all' | 'green' | 'yellow' | 'red' | 'white'>('all');
+  const [responsibleFilter, setResponsibleFilter] = useState<string>('all');
+  const [platformFilter, setPlatformFilter] = useState<string>('all');
   const [addStatusOpen, setAddStatusOpen] = useState(false);
   const [newStatusLabel, setNewStatusLabel] = useState('');
   const [newStatusColor, setNewStatusColor] = useState(COLOR_OPTIONS[0].value);
@@ -63,6 +65,9 @@ export function ClientsPage() {
     ...clientStatuses.map(s => ({ label: s.label, value: s.key })),
   ];
 
+  const { data: platforms = [] } = usePlatformsQuery();
+  const uniqueResponsibles = [...new Set(clients.map(c => c.responsible).filter(Boolean))];
+
   const filtered = clients.filter((c) => {
     const matchSearch = c.name.toLowerCase().includes(search.toLowerCase()) || c.segment.toLowerCase().includes(search.toLowerCase());
     const matchStatus = statusFilter === 'all' || c.status === statusFilter;
@@ -70,7 +75,9 @@ export function ClientsPage() {
     const matchDateFrom = !dateFrom || c.startDate >= dateFrom;
     const matchDateTo = !dateTo || c.startDate <= dateTo;
     const matchHealth = healthFilter === 'all' || (c.healthColor ?? 'white') === healthFilter;
-    return matchSearch && matchStatus && matchSquad && matchDateFrom && matchDateTo && matchHealth;
+    const matchResponsible = responsibleFilter === 'all' || c.responsible === responsibleFilter;
+    const matchPlatform = platformFilter === 'all' || (c.platforms?.includes(platformFilter) ?? false);
+    return matchSearch && matchStatus && matchSquad && matchDateFrom && matchDateTo && matchHealth && matchResponsible && matchPlatform;
   });
 
   const hasDateFilter = dateFrom || dateTo;
@@ -100,9 +107,9 @@ export function ClientsPage() {
         }
       />
 
-      {/* Filters */}
-      <div className="flex flex-wrap items-center gap-3 mb-5">
-        <div className="relative flex-1 max-w-xs">
+      {/* Filters Row 1: Search + Dropdowns */}
+      <div className="flex flex-wrap items-center gap-3 mb-3">
+        <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <input
             type="text"
@@ -114,11 +121,20 @@ export function ClientsPage() {
         </div>
 
         <select
+          value={responsibleFilter}
+          onChange={(e) => setResponsibleFilter(e.target.value)}
+          className="px-3 py-2 text-sm bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition text-foreground"
+        >
+          <option value="all">Responsável</option>
+          {uniqueResponsibles.map((r) => <option key={r} value={r}>{r}</option>)}
+        </select>
+
+        <select
           value={squadFilter}
           onChange={(e) => setSquadFilter(e.target.value)}
           className="px-3 py-2 text-sm bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition text-foreground"
         >
-          <option value="all">Todos os Squads</option>
+          <option value="all">Squad</option>
           {squads.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
         </select>
 
@@ -127,11 +143,20 @@ export function ClientsPage() {
           onChange={(e) => setHealthFilter(e.target.value as any)}
           className="px-3 py-2 text-sm bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition text-foreground"
         >
-          <option value="all">Todas as Saúdes</option>
+          <option value="all">Saúde</option>
           <option value="green">🟢 Saudável</option>
           <option value="yellow">🟡 Atenção</option>
           <option value="red">🔴 Crítico</option>
           <option value="white">⚪ Não avaliado</option>
+        </select>
+
+        <select
+          value={platformFilter}
+          onChange={(e) => setPlatformFilter(e.target.value)}
+          className="px-3 py-2 text-sm bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition text-foreground"
+        >
+          <option value="all">Plataforma</option>
+          {platforms.map((p) => <option key={p.id} value={p.slug}>{p.name}</option>)}
         </select>
 
         <div className="flex items-center gap-2">
@@ -144,38 +169,39 @@ export function ClientsPage() {
             </button>
           )}
         </div>
+      </div>
 
-        <div className="flex items-center gap-1.5 bg-card border border-border rounded-lg p-1">
-          {statusFilters.map((f) => (
-            <div key={f.value} className="relative group flex items-center">
-              <button
-                onClick={() => setStatusFilter(f.value)}
-                className={cn(
-                  'px-3 py-1.5 rounded-md text-xs font-medium transition-all',
-                  statusFilter === f.value ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground hover:bg-muted'
-                )}
-              >
-                {f.label}
-              </button>
-              {f.value !== 'all' && (
-                <button
-                  onClick={(e) => { e.stopPropagation(); setDeletingStatusKey(f.value); }}
-                  className="ml-0.5 p-0.5 rounded text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
-                  title="Excluir status"
-                >
-                  <X className="w-3 h-3" />
-                </button>
+      {/* Filters Row 2: Pipeline Status Tabs */}
+      <div className="flex items-center gap-1.5 bg-card border border-border rounded-lg p-1 mb-5">
+        {statusFilters.map((f) => (
+          <div key={f.value} className="relative group flex items-center">
+            <button
+              onClick={() => setStatusFilter(f.value)}
+              className={cn(
+                'px-3 py-1.5 rounded-md text-xs font-medium transition-all',
+                statusFilter === f.value ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground hover:bg-muted'
               )}
-            </div>
-          ))}
-          <button
-            onClick={() => setAddStatusOpen(true)}
-            className="px-2 py-1.5 rounded-md text-xs text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all"
-            title="Novo Status"
-          >
-            <Plus className="w-3.5 h-3.5" />
-          </button>
-        </div>
+            >
+              {f.label}
+            </button>
+            {f.value !== 'all' && (
+              <button
+                onClick={(e) => { e.stopPropagation(); setDeletingStatusKey(f.value); }}
+                className="ml-0.5 p-0.5 rounded text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                title="Excluir status"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            )}
+          </div>
+        ))}
+        <button
+          onClick={() => setAddStatusOpen(true)}
+          className="px-2 py-1.5 rounded-md text-xs text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all"
+          title="Novo Status"
+        >
+          <Plus className="w-3.5 h-3.5" />
+        </button>
       </div>
 
       {/* Grid */}

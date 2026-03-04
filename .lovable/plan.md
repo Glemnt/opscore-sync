@@ -1,31 +1,33 @@
 
 
-## Plano: Reorganizar filtros da pagina Clientes
+## Plano: Corrigir dialogs de Gerar Demandas e Transferir Plataforma
 
-### Layout proposto
+### Problema
+Os dialogs `GenerateDemandsDialog` e `TransferPlatformDialog` nunca aparecem porque estão renderizados no bloco `return` final do componente (linha 902-922), mas os botões que ativam o estado estão no bloco `return` do step 2.5 (linha 615-808). Como o step 2.5 faz um `return` antecipado, o código nunca chega à renderização dos dialogs.
 
-```text
-Linha 1: [Barra de Busca]  [Responsavel ▼] [Squad ▼] [Saude ▼] [Data ▼] [Plataforma ▼]
-Linha 2: [Todos] [Ativo] [Onboarding] [Inativo] [+ custom statuses...] [+]
+### Solução
+
+**Arquivo: `src/pages/ProjectsPage.tsx`**
+
+Mover os dois blocos de renderização condicional dos dialogs (`generateTarget` e `transferTarget`) para dentro do bloco `return` do step 2.5, logo antes do `</div>` final (linha ~807), envolvendo tudo em um fragment `<>...</>`:
+
+```tsx
+// Antes do fechamento do return do step 2.5 (linha 808):
+return (
+  <>
+    <div className="p-6 animate-fade-in">
+      {/* ... conteúdo existente do step 2.5 ... */}
+    </div>
+
+    {generateTarget && (
+      <GenerateDemandsDialog ... />
+    )}
+    {transferTarget && (
+      <TransferPlatformDialog ... />
+    )}
+  </>
+);
 ```
 
-### Mudancas em `src/pages/ClientsPage.tsx`
-
-**1. Adicionar estado para filtro de responsavel e plataforma:**
-- `responsibleFilter` (string, default `'all'`)
-- `platformFilter` (string, default `'all'`)
-
-**2. Extrair listas unicas para os selects:**
-- Responsaveis: `[...new Set(clients.map(c => c.responsible).filter(Boolean))]`
-- Plataformas: usar `usePlatformsQuery()` (ja importado)
-
-**3. Atualizar logica de filtragem:**
-- Adicionar `matchResponsible` e `matchPlatform` ao filtro existente
-- `matchPlatform`: verifica se `client.platforms?.includes(platformFilter)`
-
-**4. Reorganizar o JSX dos filtros em 2 linhas:**
-- **Linha 1**: Busca (flex-1 max-w-sm) + selects de Responsavel, Squad, Saude, Plataforma + date range — tudo em `flex items-center gap-3`
-- **Linha 2**: Pipeline tabs (Todos + statuses do banco) com botao de adicionar status — em `flex items-center gap-1.5` com fundo `bg-card border`
-
-Nenhuma migracao de banco necessaria.
+Nenhuma outra mudança necessária. A renderização no bloco final (linha 902-922) pode ser mantida para cobrir o step 3, ou removida se não houver botões lá.
 
