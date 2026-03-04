@@ -22,7 +22,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useAppUsersQuery } from '@/hooks/useAppUsersQuery';
 import { useClientStatusesQuery, useClientStatusesMap, useAddClientStatus, useDeleteClientStatus, useUpdateClientStatus, useReorderClientStatuses } from '@/hooks/useClientStatusesQuery';
 import { usePlatformPhaseStatusesQuery, useAddPlatformPhaseStatus, useDeletePlatformPhaseStatus, useUpdatePlatformPhaseStatus, useReorderPlatformPhaseStatuses } from '@/hooks/usePlatformPhaseStatusesQuery';
-import { useUpdateClientPlatform } from '@/hooks/useClientPlatformsQuery';
+import { useUpdateClientPlatform, useAddClientPlatform } from '@/hooks/useClientPlatformsQuery';
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from '@/components/ui/alert-dialog';
 import { useClientPlatformsQuery } from '@/hooks/useClientPlatformsQuery';
 import { getPlatformAttributeSummary, PLATFORM_ATTRIBUTE_DEFINITIONS } from '@/components/PlatformAttributesEditor';
@@ -58,6 +58,9 @@ export function ProjectsPage() {
   const { data: platformOptions = [] } = usePlatformsQuery();
   const { data: clientPlatformsData = [] } = useClientPlatformsQuery();
   const updatePlatformMut = useUpdateClientPlatform();
+  const addClientPlatformMut = useAddClientPlatform();
+  const [addPlatformDialogOpen, setAddPlatformDialogOpen] = useState(false);
+  const [newPlatformSlug, setNewPlatformSlug] = useState('');
   const { data: platformPhaseStatuses = [] } = usePlatformPhaseStatusesQuery();
   const addPlatPhaseMut = useAddPlatformPhaseStatus();
   const deletePlatPhaseMut = useDeletePlatformPhaseStatus();
@@ -679,22 +682,34 @@ export function ProjectsPage() {
             </button>
           }
         />
-        {/* Ver Todos button */}
-        <div
-          onClick={() => setSelectedPlatform('all')}
-          className="bg-card rounded-xl border border-border p-5 shadow-sm-custom hover:shadow-md-custom hover:-translate-y-0.5 transition-all cursor-pointer group inline-flex items-center gap-3 mt-2 mb-4"
-        >
-          <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-            <LayoutGrid className="w-5 h-5 text-primary" />
-          </div>
-          <div>
-            <h3 className="text-sm font-bold text-foreground group-hover:text-primary transition-colors">Todas</h3>
-            <div className="flex items-center gap-3 text-xs text-muted-foreground">
-              <span>{clientProjects.length} projetos</span>
-              <span>•</span>
-              <span>{clientTasks.length} demandas</span>
+        {/* Ver Todos button + Adicionar Plataforma */}
+        <div className="flex items-center gap-3 mt-2 mb-4">
+          <div
+            onClick={() => setSelectedPlatform('all')}
+            className="bg-card rounded-xl border border-border p-5 shadow-sm-custom hover:shadow-md-custom hover:-translate-y-0.5 transition-all cursor-pointer group inline-flex items-center gap-3"
+          >
+            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+              <LayoutGrid className="w-5 h-5 text-primary" />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-foreground group-hover:text-primary transition-colors">Todas</h3>
+              <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                <span>{clientProjects.length} projetos</span>
+                <span>•</span>
+                <span>{clientTasks.length} demandas</span>
+              </div>
             </div>
           </div>
+          {(() => {
+            const currentSlugs = selectedClient.platforms ?? [];
+            const available = platformOptions.filter(p => !currentSlugs.includes(p.slug));
+            return available.length > 0 ? (
+              <Button variant="outline" onClick={() => { setNewPlatformSlug(''); setAddPlatformDialogOpen(true); }} className="gap-2">
+                <Plus className="w-4 h-4" />
+                Adicionar Plataforma
+              </Button>
+            ) : null;
+          })()}
         </div>
 
         {/* Kanban by phase — editable */}
@@ -1017,6 +1032,51 @@ export function ProjectsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Add Platform Dialog */}
+      <Dialog open={addPlatformDialogOpen} onOpenChange={setAddPlatformDialogOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Adicionar Plataforma</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <Label>Plataforma</Label>
+            <Select value={newPlatformSlug} onValueChange={setNewPlatformSlug}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione uma plataforma" />
+              </SelectTrigger>
+              <SelectContent>
+                {platformOptions
+                  .filter(p => !(selectedClient.platforms ?? []).includes(p.slug))
+                  .map(p => (
+                    <SelectItem key={p.id} value={p.slug}>{p.name}</SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAddPlatformDialogOpen(false)}>Cancelar</Button>
+            <Button
+              disabled={!newPlatformSlug || addClientPlatformMut.isPending}
+              onClick={() => {
+                const firstPhase = platformPhaseStatuses.length > 0 ? platformPhaseStatuses[0].key : 'onboarding';
+                addClientPlatformMut.mutate({
+                  clientId: selectedClient.id,
+                  platformSlug: newPlatformSlug,
+                  phase: firstPhase,
+                  squadId: selectedClient.squadId,
+                });
+                const currentPlatforms = selectedClient.platforms ?? [];
+                updateClientField(selectedClient.id, 'platforms', [...currentPlatforms, newPlatformSlug], 'Plataformas');
+                setSelectedClient({ ...selectedClient, platforms: [...currentPlatforms, newPlatformSlug] });
+                setAddPlatformDialogOpen(false);
+              }}
+            >
+              {addClientPlatformMut.isPending ? 'Adicionando...' : 'Adicionar'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {generateTarget && (
         <GenerateDemandsDialog
