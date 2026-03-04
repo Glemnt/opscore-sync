@@ -784,15 +784,6 @@ export function ProjectsPage() {
                                 >
                                   <ArrowRightLeft className="w-3.5 h-3.5" />
                                 </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-6 w-6 text-primary"
-                                  title="Gerar Demandas"
-                                  onClick={(e) => { e.stopPropagation(); setGenerateTarget({ phase: cp?.phase ?? 'onboarding', clientId: selectedClient.id, clientName: selectedClient.name, platformSlug: slug, squadId: cp?.squadId ?? null }); }}
-                                >
-                                  <Zap className="w-3.5 h-3.5" />
-                                </Button>
                               </div>
                             </div>
                           </div>
@@ -898,6 +889,9 @@ export function ProjectsPage() {
         open={addDemandOpen}
         onOpenChange={setAddDemandOpen}
         defaultStatus="backlog"
+        defaultClientId={selectedClient.id}
+        defaultClientName={selectedClient.name}
+        defaultPlatformSlug={selectedPlatform && selectedPlatform !== 'all' ? selectedPlatform : undefined}
       />
 
 
@@ -914,7 +908,7 @@ export function ProjectsPage() {
           </div>
 
           {view === 'kanban' ?
-          <KanbanView filtered={filtered} clientId={selectedClient.id} clientName={selectedClient.name} squadMembers={selectedSquad.members} /> :
+          <KanbanView filtered={filtered} clientId={selectedClient.id} clientName={selectedClient.name} squadMembers={selectedSquad.members} platformSlug={selectedPlatform && selectedPlatform !== 'all' ? selectedPlatform : undefined} /> :
           <ListView filtered={filtered} />
           }
         </div>
@@ -947,7 +941,7 @@ export function ProjectsPage() {
 
 }
 
-function KanbanView({ filtered, clientId, clientName, squadMembers }: {filtered: Project[]; clientId: string; clientName: string; squadMembers: string[];}) {
+function KanbanView({ filtered, clientId, clientName, squadMembers, platformSlug }: {filtered: Project[]; clientId: string; clientName: string; squadMembers: string[]; platformSlug?: string;}) {
   const { tasks: allTasks, addTask, updateTask, deleteTask } = useTasks();
   const { currentUser } = useAuth();
   const { squads } = useSquads();
@@ -1115,6 +1109,9 @@ function KanbanView({ filtered, clientId, clientName, squadMembers }: {filtered:
         open={demandDialog.open}
         onOpenChange={(open) => setDemandDialog((prev) => ({ ...prev, open }))}
         defaultStatus={demandDialog.status}
+        defaultClientId={clientId}
+        defaultClientName={clientName}
+        defaultPlatformSlug={platformSlug}
       />
 
       <TaskDetailModal

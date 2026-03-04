@@ -1,24 +1,33 @@
 
 
-## Plano: Remover botão Gerar Demandas do card + Auto-preencher cliente no AddTaskDialog
+## Plano: Corrigir dialogs de Gerar Demandas e Transferir Plataforma
 
-### Mudanças
+### Problema
+Os dialogs `GenerateDemandsDialog` e `TransferPlatformDialog` nunca aparecem porque estão renderizados no bloco `return` final do componente (linha 902-922), mas os botões que ativam o estado estão no bloco `return` do step 2.5 (linha 615-808). Como o step 2.5 faz um `return` antecipado, o código nunca chega à renderização dos dialogs.
 
-**1. `src/pages/ProjectsPage.tsx`**
+### Solução
 
-- **Remover o botão ⚡ "Gerar Demandas"** do footer do card de plataforma (linhas 787-795). Manter apenas o botão de transferência.
-- **Passar `clientId`, `clientName` e `platformSlug` como props** para o `AddTaskDialog` usado no step 3 (linha 1114-1118), já que nesse contexto o cliente e plataforma são conhecidos (`selectedClient` e `selectedPlatform`).
+**Arquivo: `src/pages/ProjectsPage.tsx`**
 
-**2. `src/components/AddTaskDialog.tsx`**
+Mover os dois blocos de renderização condicional dos dialogs (`generateTarget` e `transferTarget`) para dentro do bloco `return` do step 2.5, logo antes do `</div>` final (linha ~807), envolvendo tudo em um fragment `<>...</>`:
 
-- Adicionar props opcionais: `defaultClientId?: string`, `defaultClientName?: string`, `defaultPlatformSlug?: string`
-- Quando `defaultClientId` for fornecido:
-  - Inicializar `clientId` com esse valor
-  - **Esconder o seletor de Cliente** (linhas 168-179) -- exibir apenas o nome do cliente como texto estático
-  - Auto-gerar o título com o cliente pré-selecionado
-- Quando `defaultPlatformSlug` for fornecido:
-  - Inicializar `selectedPlatforms` com `[defaultPlatformSlug]`
-  - Esconder o seletor de plataformas (linhas 267-289) -- exibir apenas a plataforma como badge estática
+```tsx
+// Antes do fechamento do return do step 2.5 (linha 808):
+return (
+  <>
+    <div className="p-6 animate-fade-in">
+      {/* ... conteúdo existente do step 2.5 ... */}
+    </div>
 
-Nenhuma mudança de banco de dados.
+    {generateTarget && (
+      <GenerateDemandsDialog ... />
+    )}
+    {transferTarget && (
+      <TransferPlatformDialog ... />
+    )}
+  </>
+);
+```
+
+Nenhuma outra mudança necessária. A renderização no bloco final (linha 902-922) pode ser mantida para cobrir o step 3, ou removida se não houver botões lá.
 
