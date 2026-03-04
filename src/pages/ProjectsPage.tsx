@@ -404,7 +404,7 @@ export function ProjectsPage() {
               <div
                 key={col.id}
                 className={cn(
-                  'flex-shrink-0 w-72 group/col relative flex flex-col h-full',
+                  'flex-shrink-0 w-80 group/col relative flex flex-col h-full',
                   draggingClientColId === col.id && 'opacity-50'
                 )}
                 onDragOver={(e) => {
@@ -520,18 +520,12 @@ export function ProjectsPage() {
                           <StatusBadge className={statusConf.className}>{statusConf.label}</StatusBadge>
                         </div>
 
-                        {/* Context line: Squad + Platforms + Health */}
+                        {/* Context line: Platforms + Health */}
                         <div className="flex flex-wrap items-center gap-1.5 mb-2">
-                          {squad && (
-                            <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground bg-muted/60 rounded-md px-2 py-1 font-medium">
-                              <Users2 className="w-3 h-3 shrink-0" />
-                              {squad.name}
-                            </span>
-                          )}
                           {client.platforms && client.platforms.length > 0 && client.platforms.map((slug) => {
                             const plat = platformOptions.find((p) => p.slug === slug);
                             return (
-                              <span key={slug} className="inline-flex items-center gap-1 text-[10px] text-muted-foreground bg-muted/60 rounded-md px-2 py-1 font-medium">
+                              <span key={slug} className="inline-flex items-center gap-1 text-xs text-muted-foreground bg-muted/60 rounded-md px-2 py-1 font-medium">
                                 <ShoppingBag className="w-3 h-3 shrink-0" />
                                 {plat?.name ?? slug}
                               </span>
@@ -549,63 +543,35 @@ export function ProjectsPage() {
                         {/* Metadata line */}
                         <div className="flex flex-wrap items-center gap-1.5 mb-3">
                           {client.responsible && (
-                            <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground bg-muted/60 rounded-md px-2 py-1 font-medium">
+                            <span className="inline-flex items-center gap-1 text-xs text-muted-foreground bg-muted/60 rounded-md px-2 py-1 font-medium">
                               <User className="w-3 h-3 shrink-0" />
                               {client.responsible}
                             </span>
                           )}
-                          <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground bg-muted/60 rounded-md px-2 py-1 font-medium">
+                          <span className="inline-flex items-center gap-1 text-xs text-muted-foreground bg-muted/60 rounded-md px-2 py-1 font-medium">
                             <Calendar className="w-3 h-3 shrink-0" />
                             {new Date(client.startDate + 'T00:00:00').toLocaleDateString('pt-BR')}
                           </span>
-                          {client.phone && (
-                            <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground bg-muted/60 rounded-md px-2 py-1 font-medium">
-                              <Phone className="w-3 h-3 shrink-0" />
-                              {client.phone}
-                            </span>
-                          )}
-                          {client.email && (
-                            <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground bg-muted/60 rounded-md px-2 py-1 font-medium">
-                              <Mail className="w-3 h-3 shrink-0" />
-                              {client.email}
-                            </span>
-                          )}
-                          {client.cnpj && (
-                            <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground bg-muted/60 rounded-md px-2 py-1 font-medium">
-                              <FileText className="w-3 h-3 shrink-0" />
-                              {client.cnpj}
-                            </span>
-                          )}
                         </div>
 
                         {/* Metrics grid */}
                         <div className="pt-3 border-t border-border">
-                          <div className="grid grid-cols-5 gap-1">
+                          <div className="grid grid-cols-3 gap-2">
                             <div className="text-center">
                               <p className="text-sm font-bold text-foreground">{pendingTasks}</p>
-                              <p className="text-[10px] text-muted-foreground">Pendentes</p>
+                              <p className="text-xs text-muted-foreground">Pendentes</p>
                             </div>
                             <div className="text-center">
                               <p className="text-sm font-bold text-foreground">
                                 {client.monthlyRevenue ? `R$${(client.monthlyRevenue / 1000).toFixed(1)}k` : '—'}
                               </p>
-                              <p className="text-[10px] text-muted-foreground">Mensalidade</p>
-                            </div>
-                            <div className="text-center">
-                              <p className="text-sm font-bold text-foreground">
-                                {client.setupFee ? `R$${(client.setupFee / 1000).toFixed(1)}k` : '—'}
-                              </p>
-                              <p className="text-[10px] text-muted-foreground">Setup</p>
+                              <p className="text-xs text-muted-foreground">Mensalidade</p>
                             </div>
                             <div className="text-center">
                               <p className="text-sm font-bold text-foreground">
                                 {client.contractDurationMonths ? `${client.contractDurationMonths}m` : '—'}
                               </p>
-                              <p className="text-[10px] text-muted-foreground">Contrato</p>
-                            </div>
-                            <div className="text-center">
-                              <p className="text-sm font-bold text-foreground">{nps !== undefined ? nps.toFixed(1) : '—'}</p>
-                              <p className="text-[10px] text-muted-foreground">NPS</p>
+                              <p className="text-xs text-muted-foreground">Contrato</p>
                             </div>
                           </div>
                         </div>
@@ -617,7 +583,7 @@ export function ProjectsPage() {
             );
           })}
           {/* Add new column button */}
-          <div className="flex-shrink-0 w-72">
+          <div className="flex-shrink-0 w-80">
             <button
               onClick={handleAddCol}
               className="w-full py-3 border-2 border-dashed border-border rounded-xl text-sm text-muted-foreground hover:border-primary/40 hover:text-primary transition-colors flex items-center justify-center gap-2"
