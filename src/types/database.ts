@@ -118,6 +118,7 @@ export function mapDbTask(
     comments: row.comments,
     createdAt: row.created_at,
     platforms: (row as any).platform ?? undefined,
+    flowId: (row as any).flow_id ?? undefined,
     subtasks: subtasks.map(mapDbSubtask),
     chatNotes: chatNotes.map(mapDbChatNote),
   };

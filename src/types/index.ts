@@ -96,6 +96,7 @@ export interface Task {
   comments: string;
   createdAt: string;
   platforms?: string[];
+  flowId?: string;
   subtasks?: SubTask[];
   chatNotes?: ChatNote[];
 }

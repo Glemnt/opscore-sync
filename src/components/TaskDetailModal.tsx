@@ -307,7 +307,7 @@ export function TaskDetailModal({ task, open, onOpenChange }: TaskDetailModalPro
               <p className="text-xs text-muted-foreground italic">Nenhum fluxo cadastrado.</p>
             ) : (
               <Select
-                value=""
+                value={task.flowId ?? ""}
                 onValueChange={async (flowId) => {
                   const flow = flows.find(f => f.id === flowId);
                   if (!flow || !task) return;
@@ -324,6 +324,8 @@ export function TaskDetailModal({ task, open, onOpenChange }: TaskDetailModalPro
                     toast.error('Erro ao aplicar fluxo');
                     return;
                   }
+                  // Update flow_id on the task
+                  updateTask(task.id, { flowId } as any);
                   queryClient.invalidateQueries({ queryKey: ['tasks'] });
                   toast.success(`Fluxo "${flow.name}" aplicado com ${flow.steps.length} etapas`);
                 }}
