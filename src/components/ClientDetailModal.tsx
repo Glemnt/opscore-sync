@@ -739,7 +739,7 @@ export function ClientDetailModal({ client, open, onClose }: ClientDetailModalPr
 }
 
 function TimelineItem({ task, isLast }: { task: Task; isLast: boolean }) {
-  const statusConf = taskStatusConfig[task.status];
+  const statusConf = taskStatusConfig[task.status as TaskStatus] ?? { label: task.status, className: 'bg-muted text-muted-foreground' };
   const typesMap = useTaskTypesMap();
   const typeConf = taskTypeConfig[task.type] ?? typesMap[task.type] ?? { label: task.type, color: 'bg-muted text-muted-foreground' };
   const isDone = task.status === 'done';
