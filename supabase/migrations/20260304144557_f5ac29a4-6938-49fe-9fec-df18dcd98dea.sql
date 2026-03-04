@@ -1,0 +1,1 @@
+DELETE FROM public.phase_demand_templates WHERE phase IN ('backlog', 'in_progress', 'waiting_client', 'done');

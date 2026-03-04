@@ -1,25 +1,33 @@
 
 
-## Plano: Usar fases da pipeline (client_statuses) nos templates de demandas
+## Plano: Corrigir dialogs de Gerar Demandas e Transferir Plataforma
 
-### Problema raiz
-Os dois dialogs (`PhaseDemandConfigDialog` e `GenerateDemandsDialog`) usam `useTaskStatusesQuery` (statuses de tarefas: backlog, in_progress, etc.) para listar as fases disponíveis. Porém, o `phase` passado ao `GenerateDemandsDialog` vem da `client_platforms.phase`, que usa chaves de `client_statuses` (onboarding, implementacao, escala, performance). Isso causa o desalinhamento -- os templates são criados para "backlog" mas o dialog busca por "implementacao".
+### Problema
+Os dialogs `GenerateDemandsDialog` e `TransferPlatformDialog` nunca aparecem porque estão renderizados no bloco `return` final do componente (linha 902-922), mas os botões que ativam o estado estão no bloco `return` do step 2.5 (linha 615-808). Como o step 2.5 faz um `return` antecipado, o código nunca chega à renderização dos dialogs.
 
-### Mudanças
+### Solução
 
-**1. `src/components/PhaseDemandConfigDialog.tsx`**
-- Substituir `useTaskStatusesQuery` por `useClientStatusesQuery` no seletor de fases
-- Isso faz com que ao criar templates, as fases disponíveis sejam as da pipeline de clientes (onboarding, implementacao, escala, performance, etc.)
+**Arquivo: `src/pages/ProjectsPage.tsx`**
 
-**2. `src/components/GenerateDemandsDialog.tsx`**
-- Substituir `useTaskStatusesQuery` por `useClientStatusesQuery` para resolver o label da fase
-- O `phaseLabel` passará a buscar na tabela correta, exibindo o nome correto da fase
+Mover os dois blocos de renderização condicional dos dialogs (`generateTarget` e `transferTarget`) para dentro do bloco `return` do step 2.5, logo antes do `</div>` final (linha ~807), envolvendo tudo em um fragment `<>...</>`:
 
-**3. Migração de dados (opcional)**
-- Os 11 templates inseridos anteriormente com fases "backlog/in_progress/waiting_client/done" ficarão órfãos. Deletar esses registros antigos via SQL para limpar a tabela.
+```tsx
+// Antes do fechamento do return do step 2.5 (linha 808):
+return (
+  <>
+    <div className="p-6 animate-fade-in">
+      {/* ... conteúdo existente do step 2.5 ... */}
+    </div>
 
-### Resultado
-- Ao configurar templates, o usuário verá as fases da pipeline (onboarding, implementacao, escala, performance)
-- Ao gerar demandas de uma plataforma, os templates correspondentes à fase atual serão exibidos corretamente
-- Todos os templates criados aparecerão na geração
+    {generateTarget && (
+      <GenerateDemandsDialog ... />
+    )}
+    {transferTarget && (
+      <TransferPlatformDialog ... />
+    )}
+  </>
+);
+```
+
+Nenhuma outra mudança necessária. A renderização no bloco final (linha 902-922) pode ser mantida para cobrir o step 3, ou removida se não houver botões lá.
 

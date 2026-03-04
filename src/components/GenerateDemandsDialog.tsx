@@ -5,7 +5,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { usePhaseDemandsQuery } from '@/hooks/usePhaseDemandsQuery';
 import { useFlowsQuery } from '@/hooks/useFlowsQuery';
 import { useAddTask } from '@/hooks/useTasksQuery';
-import { useTaskStatusesQuery } from '@/hooks/useTaskStatusesQuery';
+import { useClientStatusesQuery } from '@/hooks/useClientStatusesQuery';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Zap, Settings, Workflow } from 'lucide-react';
@@ -32,15 +32,15 @@ interface Props {
 export function GenerateDemandsDialog({ open, onOpenChange, phase, clientId, clientName, platformSlug }: Props) {
   const { data: templates = [] } = usePhaseDemandsQuery();
   const { data: flows = [] } = useFlowsQuery();
-  const { data: taskStatuses = [] } = useTaskStatusesQuery();
+  const { data: clientStatuses = [] } = useClientStatusesQuery();
   const addTask = useAddTask();
   const [configOpen, setConfigOpen] = useState(false);
   const [rows, setRows] = useState<DemandRow[]>([]);
 
   const phaseLabel = useMemo(() => {
-    const found = taskStatuses.find(s => s.key === phase);
+    const found = clientStatuses.find(s => s.key === phase);
     return found?.label ?? phase;
-  }, [taskStatuses, phase]);
+  }, [clientStatuses, phase]);
 
   const phaseTemplates = useMemo(
     () => templates.filter((t) => t.phase === phase),
