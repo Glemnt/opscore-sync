@@ -1,19 +1,33 @@
 
 
-## Plano: Mostrar duração do contrato (6/12 meses) no card do cliente
+## Plano: Corrigir dialogs de Gerar Demandas e Transferir Plataforma
 
 ### Problema
-Atualmente, o campo `contractDurationMonths` só é preenchido quando o tipo de contrato é TCV. Para contratos MRR, o valor fica `undefined` e o card mostra "—". O usuário quer que a duração do contrato (6 ou 12 meses) seja sempre configurável, independente do tipo de contrato.
+Os dialogs `GenerateDemandsDialog` e `TransferPlatformDialog` nunca aparecem porque estão renderizados no bloco `return` final do componente (linha 902-922), mas os botões que ativam o estado estão no bloco `return` do step 2.5 (linha 615-808). Como o step 2.5 faz um `return` antecipado, o código nunca chega à renderização dos dialogs.
 
-### Mudanças
+### Solução
 
-**1. Formulário de criação (`src/components/AddClientDialog.tsx`)**:
-- Remover a condição que esconde o campo "Duração do Contrato" apenas para TCV
-- Tornar o campo sempre visível, com opções de 6 e 12 meses (remover 3 meses se não faz sentido)
-- No `handleSubmit`, sempre incluir `contractDurationMonths: Number(contractDuration)` em vez de condicionar ao tipo TCV
+**Arquivo: `src/pages/ProjectsPage.tsx`**
 
-**2. Modal de detalhe (`src/components/ClientDetailModal.tsx`)**:
-- Garantir que o campo de duração do contrato também seja editável na visualização do cliente
+Mover os dois blocos de renderização condicional dos dialogs (`generateTarget` e `transferTarget`) para dentro do bloco `return` do step 2.5, logo antes do `</div>` final (linha ~807), envolvendo tudo em um fragment `<>...</>`:
 
-O card (`ClientsPage.tsx`) já exibe corretamente com `{client.contractDurationMonths ? \`${client.contractDurationMonths}m\` : '—'}`, então não precisa de alteração no card.
+```tsx
+// Antes do fechamento do return do step 2.5 (linha 808):
+return (
+  <>
+    <div className="p-6 animate-fade-in">
+      {/* ... conteúdo existente do step 2.5 ... */}
+    </div>
+
+    {generateTarget && (
+      <GenerateDemandsDialog ... />
+    )}
+    {transferTarget && (
+      <TransferPlatformDialog ... />
+    )}
+  </>
+);
+```
+
+Nenhuma outra mudança necessária. A renderização no bloco final (linha 902-922) pode ser mantida para cobrir o step 3, ou removida se não houver botões lá.
 
