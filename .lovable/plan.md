@@ -1,33 +1,22 @@
 
 
-## Plano: Corrigir dialogs de Gerar Demandas e Transferir Plataforma
+## Plano: Corrigir bug visual do calendário no modal do cliente
 
 ### Problema
-Os dialogs `GenerateDemandsDialog` e `TransferPlatformDialog` nunca aparecem porque estão renderizados no bloco `return` final do componente (linha 902-922), mas os botões que ativam o estado estão no bloco `return` do step 2.5 (linha 615-808). Como o step 2.5 faz um `return` antecipado, o código nunca chega à renderização dos dialogs.
+O `DialogContent` no `ClientDetailModal` usa `overflow-y-auto` (linha 363), o que faz com que o popover do calendário (usado no campo "Entrada") e outros elementos flutuantes sejam cortados visualmente quando o modal precisa de scroll. O `overflow-y-auto` cria um novo contexto de empilhamento que impede elementos com portal de renderizarem corretamente em relação ao scroll container.
 
 ### Solução
 
-**Arquivo: `src/pages/ProjectsPage.tsx`**
+**Arquivo: `src/components/ClientDetailModal.tsx`**
 
-Mover os dois blocos de renderização condicional dos dialogs (`generateTarget` e `transferTarget`) para dentro do bloco `return` do step 2.5, logo antes do `</div>` final (linha ~807), envolvendo tudo em um fragment `<>...</>`:
+1. No `PopoverContent` do campo `startDate` (linha 304), adicionar `sideOffset` adequado e garantir que o popover use `position: "popper"` com `avoidCollisions`
+2. Alternativamente, trocar a abordagem: em vez de `Popover` dentro do dialog scrollável, usar `overflow-visible` no container pai e controlar o scroll de forma diferente, ou mover o calendário para fora do fluxo de scroll
 
-```tsx
-// Antes do fechamento do return do step 2.5 (linha 808):
-return (
-  <>
-    <div className="p-6 animate-fade-in">
-      {/* ... conteúdo existente do step 2.5 ... */}
-    </div>
+A correção mais limpa é ajustar o `PopoverContent` para ter `side="bottom"` e `avoidCollisions={true}`, e adicionar `style={{ zIndex: 9999 }}` para garantir que fique acima do dialog overlay. Também vou verificar se o `overflow-y-auto` na `DialogContent` precisa de `overflow-x-visible` ou se o melhor caminho é envolver o conteúdo scrollável num div interno, deixando o `DialogContent` sem overflow clip.
 
-    {generateTarget && (
-      <GenerateDemandsDialog ... />
-    )}
-    {transferTarget && (
-      <TransferPlatformDialog ... />
-    )}
-  </>
-);
-```
+**Mudança concreta:**
+- Linha 363: mover o `overflow-y-auto` para um `<div>` wrapper interno em vez de no `DialogContent` raiz, evitando que o container com z-50 do dialog clippe os portais
+- Garantir que o `PopoverContent` do calendário tenha `z-[9999]` (já tem) e `pointer-events-auto` no Calendar (já tem)
 
-Nenhuma outra mudança necessária. A renderização no bloco final (linha 902-922) pode ser mantida para cobrir o step 3, ou removida se não houver botões lá.
+Isso resolve o clipping do calendário sem afetar o scroll do modal.
 
