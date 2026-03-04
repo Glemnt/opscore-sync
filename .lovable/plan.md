@@ -1,33 +1,36 @@
 
 
-## Plano: Corrigir dialogs de Gerar Demandas e Transferir Plataforma
+## Plano: Sincronizar plataformas do cliente com client_platforms automaticamente
 
 ### Problema
-Os dialogs `GenerateDemandsDialog` e `TransferPlatformDialog` nunca aparecem porque estão renderizados no bloco `return` final do componente (linha 902-922), mas os botões que ativam o estado estão no bloco `return` do step 2.5 (linha 615-808). Como o step 2.5 faz um `return` antecipado, o código nunca chega à renderização dos dialogs.
+Quando um cliente e criado ou editado na pagina Clientes e plataformas sao selecionadas, os registros em `client_platforms` nao sao criados automaticamente. O usuario precisa ir manualmente na pagina Squads para adicionar plataformas.
 
-### Solução
+### Solucao
 
-**Arquivo: `src/pages/ProjectsPage.tsx`**
+Sincronizar automaticamente: ao salvar plataformas no cliente, criar/remover registros correspondentes em `client_platforms`.
 
-Mover os dois blocos de renderização condicional dos dialogs (`generateTarget` e `transferTarget`) para dentro do bloco `return` do step 2.5, logo antes do `</div>` final (linha ~807), envolvendo tudo em um fragment `<>...</>`:
+### Mudancas
 
-```tsx
-// Antes do fechamento do return do step 2.5 (linha 808):
-return (
-  <>
-    <div className="p-6 animate-fade-in">
-      {/* ... conteúdo existente do step 2.5 ... */}
-    </div>
+**1. `src/components/AddClientDialog.tsx`**
+- Importar `useAddClientPlatform` de `useClientPlatformsQuery`
+- Apos `addClient(newClient)`, iterar sobre `platforms` selecionadas e chamar `addClientPlatformMut.mutate()` para cada uma, criando o registro com fase padrao 'onboarding' e o squadId do cliente
 
-    {generateTarget && (
-      <GenerateDemandsDialog ... />
-    )}
-    {transferTarget && (
-      <TransferPlatformDialog ... />
-    )}
-  </>
-);
+**2. `src/components/ClientDetailModal.tsx`** (botao Salvar da edicao, linha 497)
+- Importar `useDeleteClientPlatform` de `useClientPlatformsQuery`
+- Ao salvar edicao, comparar `editData.platforms` com as plataformas atuais do cliente
+- Plataformas novas (adicionadas): criar registro em `client_platforms` via `addClientPlatformMut`
+- Plataformas removidas: deletar registro correspondente em `client_platforms` via `deleteClientPlatformMut`
+- Usar os dados de `useClientPlatformsQuery` ja importados para encontrar os IDs dos registros a remover
+
+### Logica de sincronizacao (ambos os arquivos)
+
+```text
+plataformas_anteriores = client.platforms ?? []
+plataformas_novas = editData.platforms ?? []
+
+adicionadas = novas - anteriores  → criar client_platform
+removidas = anteriores - novas    → deletar client_platform
 ```
 
-Nenhuma outra mudança necessária. A renderização no bloco final (linha 902-922) pode ser mantida para cobrir o step 3, ou removida se não houver botões lá.
+Nenhuma migracao de banco necessaria — usa tabelas e hooks existentes.
 
