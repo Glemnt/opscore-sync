@@ -77,6 +77,16 @@ export function ProjectsPage() {
   const [generateTarget, setGenerateTarget] = useState<{ phase: string; clientId: string; clientName: string; platformSlug: string; squadId: string | null } | null>(null);
   const [transferTarget, setTransferTarget] = useState<{ platformId: string; squadId: string | null; responsible: string } | null>(null);
   const [flowDialogOpen, setFlowDialogOpen] = useState(false);
+
+  // Platform kanban editing state
+  const [platAddColOpen, setPlatAddColOpen] = useState(false);
+  const [platNewColLabel, setPlatNewColLabel] = useState('');
+  const [platDeleteColConfirm, setPlatDeleteColConfirm] = useState<{ key: string; label: string } | null>(null);
+  const [platEditingColKey, setPlatEditingColKey] = useState<string | null>(null);
+  const [platDragOverCol, setPlatDragOverCol] = useState<string | null>(null);
+  const [draggingPlatColKey, setDraggingPlatColKey] = useState<string | null>(null);
+  const [platColDropTarget, setPlatColDropTarget] = useState<string | null>(null);
+  const [draggingPlatCardSlug, setDraggingPlatCardSlug] = useState<string | null>(null);
   const [flowMode, setFlowMode] = useState<FlowDialogMode>('create');
 
   // Squad management state
