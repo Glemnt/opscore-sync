@@ -1,38 +1,33 @@
 
 
-## Plano: Simplificar geração de demandas e adicionar fluxo aos templates
+## Plano: Corrigir dialogs de Gerar Demandas e Transferir Plataforma
 
-### Problema atual
-1. O dialog de geração mostra campos de responsável e prazo que o usuário não quer nesse momento
-2. Apenas 1 template aparece (possível bug de sincronização de estado)
-3. Não há como associar um fluxo (workflow) a um template de demanda
+### Problema
+Os dialogs `GenerateDemandsDialog` e `TransferPlatformDialog` nunca aparecem porque estão renderizados no bloco `return` final do componente (linha 902-922), mas os botões que ativam o estado estão no bloco `return` do step 2.5 (linha 615-808). Como o step 2.5 faz um `return` antecipado, o código nunca chega à renderização dos dialogs.
 
-### Mudanças
+### Solução
 
-**1. Migração de banco: adicionar coluna `flow_id` na tabela `phase_demand_templates`**
-- Nova coluna `flow_id uuid nullable`, com foreign key para `flows(id)` com `ON DELETE SET NULL`
-- Permite vincular um fluxo a cada template de demanda
+**Arquivo: `src/pages/ProjectsPage.tsx`**
 
-**2. `src/hooks/usePhaseDemandsQuery.ts`**
-- Incluir `flow_id` no mapeamento da interface `PhaseDemandTemplate`
-- Aceitar `flowId` no `useAddPhaseDemand` e enviar como `flow_id`
+Mover os dois blocos de renderização condicional dos dialogs (`generateTarget` e `transferTarget`) para dentro do bloco `return` do step 2.5, logo antes do `</div>` final (linha ~807), envolvendo tudo em um fragment `<>...</>`:
 
-**3. `src/components/PhaseDemandConfigDialog.tsx`**
-- Adicionar selector de fluxo (opcional) ao formulário de criação de template
-- Importar `useFlowsQuery` para listar os fluxos disponíveis
-- Exibir nome do fluxo associado nos templates listados
+```tsx
+// Antes do fechamento do return do step 2.5 (linha 808):
+return (
+  <>
+    <div className="p-6 animate-fade-in">
+      {/* ... conteúdo existente do step 2.5 ... */}
+    </div>
 
-**4. `src/components/GenerateDemandsDialog.tsx`**
-- Remover campos de responsável e prazo de cada linha
-- Remover imports desnecessários (`Popover`, `Calendar`, `CalendarIcon`, `useAppUsersQuery`, etc.)
-- Simplificar `DemandRow` (remover `responsible` e `deadline`)
-- Remover validação `allHaveFields` — habilitar botão apenas com seleção
-- Corrigir bug de sincronização: usar `useEffect` em vez de comparação manual de `prevIds` dentro do render (causa de mostrar apenas 1 template)
-- Na criação das tarefas, definir `responsible: ''` e `deadline: new Date().toISOString()` como valores padrão
-- Se o template tiver `flowId`, criar subtarefas automaticamente a partir das etapas do fluxo associado
+    {generateTarget && (
+      <GenerateDemandsDialog ... />
+    )}
+    {transferTarget && (
+      <TransferPlatformDialog ... />
+    )}
+  </>
+);
+```
 
-### Resultado
-- Dialog de geração fica limpo: apenas checkbox + título + badge (Cliente/Interna) + nome do fluxo
-- Templates configurados com fluxo geram demandas com subtarefas automaticamente
-- Todos os templates da fase aparecem corretamente
+Nenhuma outra mudança necessária. A renderização no bloco final (linha 902-922) pode ser mantida para cobrir o step 3, ou removida se não houver botões lá.
 

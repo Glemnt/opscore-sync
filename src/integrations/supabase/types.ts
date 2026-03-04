@@ -369,6 +369,7 @@ export type Database = {
         Row: {
           created_at: string
           demand_owner: string
+          flow_id: string | null
           id: string
           phase: string
           sort_order: number
@@ -377,6 +378,7 @@ export type Database = {
         Insert: {
           created_at?: string
           demand_owner?: string
+          flow_id?: string | null
           id?: string
           phase: string
           sort_order?: number
@@ -385,12 +387,21 @@ export type Database = {
         Update: {
           created_at?: string
           demand_owner?: string
+          flow_id?: string | null
           id?: string
           phase?: string
           sort_order?: number
           title?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "phase_demand_templates_flow_id_fkey"
+            columns: ["flow_id"]
+            isOneToOne: false
+            referencedRelation: "flows"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       platforms: {
         Row: {
