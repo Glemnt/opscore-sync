@@ -22,7 +22,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useAppUsersQuery } from '@/hooks/useAppUsersQuery';
 import { useClientStatusesQuery, useClientStatusesMap, useAddClientStatus, useDeleteClientStatus, useUpdateClientStatus, useReorderClientStatuses } from '@/hooks/useClientStatusesQuery';
 import { usePlatformPhaseStatusesQuery, useAddPlatformPhaseStatus, useDeletePlatformPhaseStatus, useUpdatePlatformPhaseStatus, useReorderPlatformPhaseStatuses } from '@/hooks/usePlatformPhaseStatusesQuery';
-import { useUpdateClientPlatform } from '@/hooks/useClientPlatformsQuery';
+import { useUpdateClientPlatform, useAddClientPlatform } from '@/hooks/useClientPlatformsQuery';
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from '@/components/ui/alert-dialog';
 import { useClientPlatformsQuery } from '@/hooks/useClientPlatformsQuery';
 import { getPlatformAttributeSummary, PLATFORM_ATTRIBUTE_DEFINITIONS } from '@/components/PlatformAttributesEditor';
@@ -58,6 +58,9 @@ export function ProjectsPage() {
   const { data: platformOptions = [] } = usePlatformsQuery();
   const { data: clientPlatformsData = [] } = useClientPlatformsQuery();
   const updatePlatformMut = useUpdateClientPlatform();
+  const addClientPlatformMut = useAddClientPlatform();
+  const [addPlatformDialogOpen, setAddPlatformDialogOpen] = useState(false);
+  const [newPlatformSlug, setNewPlatformSlug] = useState('');
   const { data: platformPhaseStatuses = [] } = usePlatformPhaseStatusesQuery();
   const addPlatPhaseMut = useAddPlatformPhaseStatus();
   const deletePlatPhaseMut = useDeletePlatformPhaseStatus();
