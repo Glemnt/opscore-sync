@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Plus, Search, Calendar, ChevronDown, CheckCircle2, Circle, ArrowLeft, Users2, X, Pencil, Trash2, MessageSquare, ShoppingBag, LayoutGrid, Zap, ArrowRightLeft, Workflow, CreditCard, Building2, User, Phone, Mail, FileText } from 'lucide-react';
+import { Plus, Search, Calendar, CalendarDays, ChevronDown, CheckCircle2, Circle, ArrowLeft, Users2, X, Pencil, Trash2, MessageSquare, ShoppingBag, LayoutGrid, Zap, ArrowRightLeft, Workflow, CreditCard, Building2, User, Phone, Mail, FileText, UserCircle, Briefcase, ListChecks } from 'lucide-react';
 import { mockAnalysisData } from '@/components/ClientAIAnalysis';
 import { usePlatformsQuery } from '@/hooks/usePlatformsQuery';
 import { TaskDetailModal } from '@/components/TaskDetailModal';
@@ -866,72 +866,74 @@ export function ProjectsPage() {
                               draggingPlatCardSlug === slug && 'opacity-50'
                             )}
                           >
-                            <div className="flex items-center gap-2.5 mb-2">
-                              <div className="w-8 h-8 rounded-lg bg-accent/60 flex items-center justify-center">
+                            {/* ── Header ── */}
+                            <div className="flex items-center gap-2.5 mb-2.5">
+                              <div className="w-8 h-8 rounded-lg bg-accent/60 flex items-center justify-center shrink-0">
                                 <ShoppingBag className="w-4 h-4 text-accent-foreground" />
                               </div>
-                              <h3 className="text-sm font-bold text-foreground group-hover:text-primary transition-colors">{plat?.name ?? slug}</h3>
-                            </div>
-
-                            {/* Quality Level & Health */}
-                            {(cp?.qualityLevel || cp?.healthColor) && (
-                              <div className="flex items-center justify-between mb-2.5 px-1">
+                              <div className="flex-1 min-w-0">
+                                <h3 className="text-sm font-bold text-foreground group-hover:text-primary transition-colors truncate">{plat?.name ?? slug}</h3>
+                              </div>
+                              <div className="flex items-center gap-1.5 shrink-0">
                                 {cp?.qualityLevel && (() => {
-                                  const qMap: Record<string, string> = { seller: '🛒 Seller', lojista: '🏪 Lojista' };
-                                  return <span className="text-[11px] font-semibold text-foreground">{qMap[cp.qualityLevel] ?? cp.qualityLevel}</span>;
+                                  const qMap: Record<string, { emoji: string; label: string }> = { seller: { emoji: '🛒', label: 'Seller' }, lojista: { emoji: '🏪', label: 'Lojista' } };
+                                  const q = qMap[cp.qualityLevel];
+                                  return <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-accent text-[10px] font-semibold text-accent-foreground">{q ? `${q.emoji} ${q.label}` : cp.qualityLevel}</span>;
                                 })()}
                                 {cp?.healthColor && (() => {
-                                  const hMap: Record<string, { color: string; label: string }> = { green: { color: 'bg-green-500', label: 'Excelente' }, orange: { color: 'bg-orange-500', label: 'Mediano' }, red: { color: 'bg-red-500', label: 'Ruim' } };
-                                  const h = hMap[cp.healthColor];
-                                  return h ? (
-                                    <span className="inline-flex items-center gap-1.5 text-[10px] text-muted-foreground">
-                                      <span className={`w-2.5 h-2.5 rounded-full ${h.color}`} />
-                                      {h.label}
-                                    </span>
-                                  ) : null;
+                                  const hMap: Record<string, string> = { green: 'bg-green-500', orange: 'bg-orange-500', red: 'bg-red-500' };
+                                  return <span className={cn('w-2.5 h-2.5 rounded-full shrink-0', hMap[cp.healthColor] ?? 'bg-muted')} title={cp.healthColor} />;
                                 })()}
-                              </div>
-                            )}
-
-                            <div className="space-y-1 mb-2.5">
-                              <div className="flex items-center text-xs">
-                                <span className="text-muted-foreground w-24 shrink-0">Squad:</span>
-                                <span className="font-medium text-foreground">{displaySquad?.name ?? '—'}</span>
-                              </div>
-                              <div className="flex items-center text-xs">
-                                <span className="text-muted-foreground w-24 shrink-0">Responsável:</span>
-                                <span className="font-medium text-foreground">{cp?.responsible || '—'}</span>
-                              </div>
-                              <div className="flex items-center text-xs">
-                                <span className="text-muted-foreground w-24 shrink-0">Contrato:</span>
-                                <span className="font-medium text-foreground">{cp?.platformAttributes?.tempo_contrato ? `${cp.platformAttributes.tempo_contrato} meses` : '—'}</span>
                               </div>
                             </div>
 
-                            {fieldDefs.length > 0 && (
-                              <div className="space-y-1 mb-2.5 pt-2 border-t border-border/50">
-                                {fieldDefs.map((field) => (
-                                  <div key={field.key} className="flex items-center text-xs">
-                                    <span className="text-muted-foreground w-24 shrink-0">{field.label}:</span>
-                                    <span className="font-medium text-foreground">{getAttrDisplay(field)}</span>
-                                  </div>
-                                ))}
+                            {/* ── Context: Squad / Responsável / Contrato ── */}
+                            <div className="grid grid-cols-2 gap-x-2 gap-y-1.5 mb-2.5 text-xs">
+                              <div className="flex items-center gap-1.5 text-muted-foreground min-w-0">
+                                <Users2 className="w-3.5 h-3.5 shrink-0" />
+                                <span className="truncate font-medium text-foreground">{displaySquad?.name ?? '—'}</span>
                               </div>
-                            )}
+                              <div className="flex items-center gap-1.5 text-muted-foreground min-w-0">
+                                <UserCircle className="w-3.5 h-3.5 shrink-0" />
+                                <span className="truncate font-medium text-foreground">{cp?.responsible || '—'}</span>
+                              </div>
+                              {cp?.platformAttributes?.tempo_contrato && (
+                                <div className="flex items-center gap-1.5 text-muted-foreground col-span-2 min-w-0">
+                                  <CalendarDays className="w-3.5 h-3.5 shrink-0" />
+                                  <span className="font-medium text-foreground">{cp.platformAttributes.tempo_contrato} meses</span>
+                                </div>
+                              )}
+                            </div>
 
+                            {/* ── Operational Attributes as badges ── */}
+                            {(() => {
+                              const summaryBadges = getPlatformAttributeSummary(slug, attrs);
+                              return summaryBadges.length > 0 ? (
+                                <div className="flex flex-wrap gap-1 mb-2.5 pt-2 border-t border-border/50">
+                                  {summaryBadges.map((badge, i) => (
+                                    <span key={i} className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-secondary text-[10px] font-medium text-secondary-foreground border border-border/50">
+                                      {badge}
+                                    </span>
+                                  ))}
+                                </div>
+                              ) : null;
+                            })()}
+
+                            {/* ── Footer ── */}
                             <div className="flex items-center justify-between text-xs text-muted-foreground pt-2 border-t border-border/50">
-                              <span>{platProjects.length} proj • {platTasks.length} dem</span>
-                              <div className="flex items-center gap-1">
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-6 w-6"
-                                  title="Transferir Plataforma"
-                                  onClick={(e) => { e.stopPropagation(); setTransferTarget({ platformId: cp?.id ?? '', squadId: cp?.squadId ?? null, responsible: cp?.responsible ?? '' }); }}
-                                >
-                                  <ArrowRightLeft className="w-3.5 h-3.5" />
-                                </Button>
+                              <div className="flex items-center gap-2">
+                                <span className="inline-flex items-center gap-1"><Briefcase className="w-3 h-3" />{platProjects.length}</span>
+                                <span className="inline-flex items-center gap-1"><ListChecks className="w-3 h-3" />{platTasks.length}</span>
                               </div>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-6 w-6"
+                                title="Transferir Plataforma"
+                                onClick={(e) => { e.stopPropagation(); setTransferTarget({ platformId: cp?.id ?? '', squadId: cp?.squadId ?? null, responsible: cp?.responsible ?? '' }); }}
+                              >
+                                <ArrowRightLeft className="w-3.5 h-3.5" />
+                              </Button>
                             </div>
                           </div>
                         );
