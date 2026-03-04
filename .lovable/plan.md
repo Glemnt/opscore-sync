@@ -1,32 +1,19 @@
 
 
-## Plano: Inserir templates de demandas padrão para cada status da pipeline
+## Plano: Corrigir seleção de responsável e prazo no dialog de geração de demandas
 
-### O que será feito
+### Problema
+O `Select` de responsável e o `Input` de prazo (date) dentro do `GenerateDemandsDialog` podem não estar funcionando corretamente porque:
+1. O `SelectContent` (portal Radix) compete em z-index com o `DialogContent` (ambos `z-50`), fazendo o dropdown abrir atrás do dialog
+2. O input de data nativo pode ter problemas de interação dentro do dialog
 
-Inserir registros na tabela `phase_demand_templates` com demandas padrão para cada um dos 4 status da pipeline existentes: **Backlog**, **Em Andamento**, **Concluído** e **Aguard. Cliente**.
+### Mudanças
 
-### Templates a serem inseridos
+**1. `src/components/GenerateDemandsDialog.tsx`**
+- Adicionar `className="z-[60]"` ao `SelectContent` do responsável para garantir que o dropdown apareça acima do dialog
+- Substituir o `Input type="date"` por um **DatePicker com Popover + Calendar** (padrão Shadcn), adicionando `pointer-events-auto` ao Calendar e `z-[60]` ao `PopoverContent` para funcionar dentro do dialog
+- Importar `Popover`, `PopoverTrigger`, `PopoverContent`, `Calendar`, `format` e `CalendarIcon`
 
-| Fase | Demanda | Tipo |
-|---|---|---|
-| **backlog** | Briefing inicial com o cliente | Cliente |
-| **backlog** | Definir escopo e objetivos | Interna |
-| **backlog** | Levantamento de acessos necessários | Interna |
-| **in_progress** | Configuração da plataforma | Interna |
-| **in_progress** | Criação de campanhas iniciais | Interna |
-| **in_progress** | Revisão e aprovação do cliente | Cliente |
-| **waiting_client** | Envio de materiais pendentes | Cliente |
-| **waiting_client** | Aprovação de criativos | Cliente |
-| **waiting_client** | Validação de acessos | Cliente |
-| **done** | Relatório de entrega | Interna |
-| **done** | Reunião de encerramento | Cliente |
-
-### Execução
-
-Uma única migração SQL com `INSERT INTO phase_demand_templates` contendo os 11 registros acima, com `sort_order` sequencial dentro de cada fase. Os 2 registros de teste existentes serão mantidos.
-
-### Arquivos afetados
-
-Nenhum arquivo de código alterado -- apenas uma migração de banco de dados.
+### Resultado
+O dropdown de responsável abrirá corretamente sobre o dialog, e o seletor de data será um calendário visual interativo em vez do date picker nativo do browser.
 
