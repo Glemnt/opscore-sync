@@ -732,6 +732,7 @@ export function ClientDetailModal({ client, open, onClose }: ClientDetailModalPr
             <p className="text-xs text-muted-foreground mt-2">Nenhuma alteração registrada.</p>
           )}
         </div>
+        </div>
       </DialogContent>
     </Dialog>
   );
