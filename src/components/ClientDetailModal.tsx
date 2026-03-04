@@ -23,7 +23,7 @@ import { useAppUsersQuery } from '@/hooks/useAppUsersQuery';
 import { ClientAIAnalysis } from '@/components/ClientAIAnalysis';
 import { useClientFlowsQuery, useAddClientFlow, useRemoveClientFlow } from '@/hooks/useClientFlowsQuery';
 import { useFlowsQuery } from '@/hooks/useFlowsQuery';
-import { useClientPlatformsQuery, useAddClientPlatform, useUpdateClientPlatform } from '@/hooks/useClientPlatformsQuery';
+import { useClientPlatformsQuery, useAddClientPlatform, useUpdateClientPlatform, useDeleteClientPlatform } from '@/hooks/useClientPlatformsQuery';
 import type { ClientPlatform } from '@/hooks/useClientPlatformsQuery';
 import { PlatformAttributesEditor } from '@/components/PlatformAttributesEditor';
 import {
