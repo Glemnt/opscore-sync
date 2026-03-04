@@ -9,7 +9,6 @@ import { useFlowsQuery } from '@/hooks/useFlowsQuery';
 import { useAddTask } from '@/hooks/useTasksQuery';
 import { useTaskStatusesQuery } from '@/hooks/useTaskStatusesQuery';
 import { useAppUsersQuery } from '@/hooks/useAppUsersQuery';
-import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Zap, Settings, Workflow } from 'lucide-react';
 import { PhaseDemandConfigDialog } from './PhaseDemandConfigDialog';
@@ -19,6 +18,7 @@ interface DemandRow {
   title: string;
   demandOwner: string;
   flowId: string | null;
+  flowName: string;
   selected: boolean;
   responsible: string;
   deadline: string;
@@ -60,29 +60,40 @@ export function GenerateDemandsDialog({ open, onOpenChange, phase, clientId, cli
 
   const todayStr = new Date().toISOString().split('T')[0];
 
+  // Expand templates: 1 row per flow step
   useEffect(() => {
-    setRows(
-      phaseTemplates.map((t) => ({
-        templateId: t.id,
-        title: t.title,
-        demandOwner: t.demandOwner,
-        flowId: t.flowId,
-        selected: true,
-        responsible: '',
-        deadline: todayStr,
-      }))
-    );
-  }, [phaseTemplates]);
-
-  const getFlowName = (flowId: string | null) => {
-    if (!flowId) return null;
-    return flows.find((f) => f.id === flowId)?.name ?? null;
-  };
-
-  const getFlowSteps = (flowId: string | null) => {
-    if (!flowId) return [];
-    return flows.find((f) => f.id === flowId)?.steps ?? [];
-  };
+    const expanded: DemandRow[] = [];
+    for (const t of phaseTemplates) {
+      const flow = flows.find((f) => f.id === t.flowId);
+      if (flow && flow.steps.length > 0) {
+        for (const step of flow.steps) {
+          expanded.push({
+            templateId: t.id,
+            title: step,
+            demandOwner: t.demandOwner,
+            flowId: flow.id,
+            flowName: flow.name,
+            selected: true,
+            responsible: '',
+            deadline: todayStr,
+          });
+        }
+      } else {
+        // Fallback: template without valid flow (shouldn't happen with new config)
+        expanded.push({
+          templateId: t.id,
+          title: t.title,
+          demandOwner: t.demandOwner,
+          flowId: t.flowId,
+          flowName: '',
+          selected: true,
+          responsible: '',
+          deadline: todayStr,
+        });
+      }
+    }
+    setRows(expanded);
+  }, [phaseTemplates, flows]);
 
   const updateRow = (idx: number, patch: Partial<DemandRow>) => {
     setRows((prev) => prev.map((r, i) => (i === idx ? { ...r, ...patch } : r)));
@@ -97,9 +108,8 @@ export function GenerateDemandsDialog({ open, onOpenChange, phase, clientId, cli
     setCreating(true);
     try {
       for (const row of toCreate) {
-        const taskId = crypto.randomUUID();
         await addTask.mutateAsync({
-          id: taskId,
+          id: crypto.randomUUID(),
           title: row.title,
           clientId,
           clientName,
@@ -109,22 +119,11 @@ export function GenerateDemandsDialog({ open, onOpenChange, phase, clientId, cli
           deadline: row.deadline,
           status: selectedPhase,
           priority: 'medium',
-          comments: `Gerada automaticamente - Fase: ${phaseLabel}`,
+          comments: `Gerada automaticamente - Fase: ${phaseLabel}${row.flowName ? ` | Fluxo: ${row.flowName}` : ''}`,
           createdAt: new Date().toISOString(),
           platforms: [platformSlug],
           flowId: row.flowId ?? undefined,
         });
-
-        // Create subtasks from flow steps
-        const steps = getFlowSteps(row.flowId);
-        if (steps.length > 0) {
-          const subtasks = steps.map((label) => ({
-            task_id: taskId,
-            label,
-            done: false,
-          }));
-          await supabase.from('subtasks').insert(subtasks);
-        }
       }
       toast.success(`${toCreate.length} demandas criadas com sucesso!`);
       onOpenChange(false);
@@ -134,6 +133,21 @@ export function GenerateDemandsDialog({ open, onOpenChange, phase, clientId, cli
       setCreating(false);
     }
   };
+
+  // Group rows by flow for visual grouping
+  const groupedRows = useMemo(() => {
+    const groups: { flowName: string; flowId: string | null; indices: number[] }[] = [];
+    let currentGroup: typeof groups[0] | null = null;
+    rows.forEach((row, idx) => {
+      if (!currentGroup || currentGroup.flowId !== row.flowId || currentGroup.flowName !== row.flowName) {
+        currentGroup = { flowName: row.flowName, flowId: row.flowId, indices: [idx] };
+        groups.push(currentGroup);
+      } else {
+        currentGroup.indices.push(idx);
+      }
+    });
+    return groups;
+  }, [rows]);
 
   return (
     <>
@@ -171,7 +185,7 @@ export function GenerateDemandsDialog({ open, onOpenChange, phase, clientId, cli
               </Button>
             </div>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-3">
               <div className="flex items-center justify-between mb-2">
                 <p className="text-xs text-muted-foreground">{selectedCount} de {rows.length} selecionadas</p>
                 <Button variant="ghost" size="sm" onClick={() => setConfigOpen(true)}>
@@ -180,49 +194,53 @@ export function GenerateDemandsDialog({ open, onOpenChange, phase, clientId, cli
                 </Button>
               </div>
 
-              {rows.map((row, idx) => {
-                const flowName = getFlowName(row.flowId);
-                return (
-                  <div key={row.templateId} className={`rounded-lg border p-3 transition-colors space-y-2 ${row.selected ? 'bg-card border-border' : 'bg-muted/30 border-transparent opacity-60'}`}>
-                    <div className="flex items-center gap-2">
-                      <Checkbox
-                        checked={row.selected}
-                        onCheckedChange={(v) => updateRow(idx, { selected: !!v })}
-                      />
-                      <span className="text-sm font-medium flex-1">{row.title}</span>
-                      <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${row.demandOwner === 'client' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300' : 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300'}`}>
-                        {row.demandOwner === 'client' ? 'Cliente' : 'Interna'}
-                      </span>
-                      {flowName && (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded font-medium bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300 flex items-center gap-0.5">
-                          <Workflow className="w-3 h-3" />
-                          {flowName}
-                        </span>
-                      )}
+              {groupedRows.map((group) => (
+                <div key={`${group.flowId}-${group.indices[0]}`} className="space-y-1">
+                  {group.flowName && (
+                    <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground px-1">
+                      <Workflow className="w-3.5 h-3.5" />
+                      {group.flowName}
                     </div>
-                    {row.selected && (
-                      <div className="flex items-center gap-2 pl-6">
-                        <Select value={row.responsible} onValueChange={(v) => updateRow(idx, { responsible: v })}>
-                          <SelectTrigger className="h-8 text-xs flex-1">
-                            <SelectValue placeholder="Responsável" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {appUsers.map((u) => (
-                              <SelectItem key={u.id} value={u.name}>{u.name}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <Input
-                          type="date"
-                          value={row.deadline}
-                          onChange={(e) => updateRow(idx, { deadline: e.target.value })}
-                          className="h-8 text-xs w-36"
-                        />
+                  )}
+                  {group.indices.map((idx) => {
+                    const row = rows[idx];
+                    return (
+                      <div key={idx} className={`rounded-lg border p-3 transition-colors space-y-2 ${row.selected ? 'bg-card border-border' : 'bg-muted/30 border-transparent opacity-60'}`}>
+                        <div className="flex items-center gap-2">
+                          <Checkbox
+                            checked={row.selected}
+                            onCheckedChange={(v) => updateRow(idx, { selected: !!v })}
+                          />
+                          <span className="text-sm font-medium flex-1">{row.title}</span>
+                          <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${row.demandOwner === 'client' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300' : 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300'}`}>
+                            {row.demandOwner === 'client' ? 'Cliente' : 'Interna'}
+                          </span>
+                        </div>
+                        {row.selected && (
+                          <div className="flex items-center gap-2 pl-6">
+                            <Select value={row.responsible} onValueChange={(v) => updateRow(idx, { responsible: v })}>
+                              <SelectTrigger className="h-8 text-xs flex-1">
+                                <SelectValue placeholder="Responsável" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {appUsers.map((u) => (
+                                  <SelectItem key={u.id} value={u.name}>{u.name}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <Input
+                              type="date"
+                              value={row.deadline}
+                              onChange={(e) => updateRow(idx, { deadline: e.target.value })}
+                              className="h-8 text-xs w-36"
+                            />
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
-                );
-              })}
+                    );
+                  })}
+                </div>
+              ))}
             </div>
           )}
 
