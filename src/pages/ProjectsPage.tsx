@@ -67,6 +67,8 @@ export function ProjectsPage() {
   // Generate demands & transfer platform state
   const [generateTarget, setGenerateTarget] = useState<{ phase: string; clientId: string; clientName: string; platformSlug: string; squadId: string | null } | null>(null);
   const [transferTarget, setTransferTarget] = useState<{ platformId: string; squadId: string | null; responsible: string } | null>(null);
+  const [flowDialogOpen, setFlowDialogOpen] = useState(false);
+  const [flowMode, setFlowMode] = useState<FlowDialogMode>('create');
 
   // Squad management state
   const [squadDialogOpen, setSquadDialogOpen] = useState(false);
