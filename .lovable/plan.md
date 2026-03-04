@@ -1,33 +1,34 @@
 
 
-## Plano: Corrigir dialogs de Gerar Demandas e Transferir Plataforma
+## Plano: Converter Envios do Mercado Livre de select para toggles
 
-### Problema
-Os dialogs `GenerateDemandsDialog` e `TransferPlatformDialog` nunca aparecem porque estão renderizados no bloco `return` final do componente (linha 902-922), mas os botões que ativam o estado estão no bloco `return` do step 2.5 (linha 615-808). Como o step 2.5 faz um `return` antecipado, o código nunca chega à renderização dos dialogs.
+### Mudança
 
-### Solução
+**`src/components/PlatformAttributesEditor.tsx`**:
 
-**Arquivo: `src/pages/ProjectsPage.tsx`**
+1. Substituir o campo `envios` (tipo `select`) por 3 campos independentes do tipo `toggle`:
+   - `envios_full` → "Full"
+   - `envios_flex` → "Flex"
+   - `envios_turbo` → "Turbo"
 
-Mover os dois blocos de renderização condicional dos dialogs (`generateTarget` e `transferTarget`) para dentro do bloco `return` do step 2.5, logo antes do `</div>` final (linha ~807), envolvendo tudo em um fragment `<>...</>`:
+2. Atualizar `getPlatformAttributeSummary` para ler os 3 campos booleanos em vez do antigo valor string.
 
-```tsx
-// Antes do fechamento do return do step 2.5 (linha 808):
-return (
-  <>
-    <div className="p-6 animate-fade-in">
-      {/* ... conteúdo existente do step 2.5 ... */}
-    </div>
+```typescript
+// Antes (1 select)
+{ key: 'envios', label: 'Envios', type: 'select', options: [...] }
 
-    {generateTarget && (
-      <GenerateDemandsDialog ... />
-    )}
-    {transferTarget && (
-      <TransferPlatformDialog ... />
-    )}
-  </>
-);
+// Depois (3 toggles)
+{ key: 'envios_full',  label: 'Full',  type: 'toggle' },
+{ key: 'envios_flex',  label: 'Flex',  type: 'toggle' },
+{ key: 'envios_turbo', label: 'Turbo', type: 'toggle' },
 ```
 
-Nenhuma outra mudança necessária. A renderização no bloco final (linha 902-922) pode ser mantida para cobrir o step 3, ou removida se não houver botões lá.
+Summary helper atualizado:
+```typescript
+if (attrs.envios_full) parts.push('Full');
+if (attrs.envios_flex) parts.push('Flex');
+if (attrs.envios_turbo) parts.push('Turbo');
+```
+
+Nenhuma migração de banco necessária — os atributos são armazenados em JSONB, então as novas chaves funcionam automaticamente.
 
