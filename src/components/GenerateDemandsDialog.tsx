@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { usePhaseDemandsQuery } from '@/hooks/usePhaseDemandsQuery';
 import { useFlowsQuery } from '@/hooks/useFlowsQuery';
 import { useAddTask } from '@/hooks/useTasksQuery';
@@ -36,15 +37,21 @@ export function GenerateDemandsDialog({ open, onOpenChange, phase, clientId, cli
   const addTask = useAddTask();
   const [configOpen, setConfigOpen] = useState(false);
   const [rows, setRows] = useState<DemandRow[]>([]);
+  const [selectedPhase, setSelectedPhase] = useState(phase);
+
+  // Reset selectedPhase when dialog opens with a new phase prop
+  useEffect(() => {
+    if (open) setSelectedPhase(phase);
+  }, [open, phase]);
 
   const phaseLabel = useMemo(() => {
-    const found = clientStatuses.find(s => s.key === phase);
-    return found?.label ?? phase;
-  }, [clientStatuses, phase]);
+    const found = clientStatuses.find(s => s.key === selectedPhase);
+    return found?.label ?? selectedPhase;
+  }, [clientStatuses, selectedPhase]);
 
   const phaseTemplates = useMemo(
-    () => templates.filter((t) => t.phase === phase),
-    [templates, phase]
+    () => templates.filter((t) => t.phase === selectedPhase),
+    [templates, selectedPhase]
   );
 
   // Sync rows when templates change — useEffect instead of render-time setState
@@ -93,7 +100,7 @@ export function GenerateDemandsDialog({ open, onOpenChange, phase, clientId, cli
           type: row.demandOwner === 'client' ? 'reuniao' : 'setup',
           estimatedTime: 0,
           deadline: new Date().toISOString().split('T')[0],
-          status: phase,
+          status: selectedPhase,
           priority: 'medium',
           comments: `Gerada automaticamente - Fase: ${phaseLabel}`,
           createdAt: new Date().toISOString(),
@@ -127,9 +134,23 @@ export function GenerateDemandsDialog({ open, onOpenChange, phase, clientId, cli
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Zap className="w-5 h-5 text-primary" />
-              Gerar Demandas — {phaseLabel}
+              Gerar Demandas
             </DialogTitle>
           </DialogHeader>
+
+          <div className="space-y-1">
+            <label className="text-sm font-medium">Fase da pipeline</label>
+            <Select value={selectedPhase} onValueChange={setSelectedPhase}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione a fase" />
+              </SelectTrigger>
+              <SelectContent>
+                {clientStatuses.map((s) => (
+                  <SelectItem key={s.key} value={s.key}>{s.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
           {phaseTemplates.length === 0 ? (
             <div className="text-center py-8 space-y-3">

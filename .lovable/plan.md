@@ -1,19 +1,33 @@
 
 
-## Plano: Adicionar seletor de fase no dialog de geração de demandas
+## Plano: Corrigir dialogs de Gerar Demandas e Transferir Plataforma
 
 ### Problema
-O dialog recebe a `phase` como prop fixa (vinda da plataforma atual) e filtra os templates apenas para essa fase. O usuário fica preso na fase atual da plataforma (ex: "Pausado") e não consegue escolher outra fase para gerar demandas.
+Os dialogs `GenerateDemandsDialog` e `TransferPlatformDialog` nunca aparecem porque estão renderizados no bloco `return` final do componente (linha 902-922), mas os botões que ativam o estado estão no bloco `return` do step 2.5 (linha 615-808). Como o step 2.5 faz um `return` antecipado, o código nunca chega à renderização dos dialogs.
 
-### Mudanças
+### Solução
 
-**`src/components/GenerateDemandsDialog.tsx`**
-- Adicionar um estado local `selectedPhase` inicializado com a prop `phase`
-- Adicionar um `Select` no topo do dialog para escolher a fase desejada, usando `useClientStatusesQuery` para listar as opções da pipeline
-- Alterar a filtragem de templates e o título para usar `selectedPhase` em vez da prop `phase`
-- Ao criar as tarefas, usar `selectedPhase` como status da tarefa
-- Importar `Select`, `SelectContent`, `SelectItem`, `SelectTrigger`, `SelectValue`
+**Arquivo: `src/pages/ProjectsPage.tsx`**
 
-### Resultado
-O usuário poderá trocar a fase no dialog antes de gerar as demandas, vendo os templates correspondentes a qualquer fase da pipeline, sem ficar limitado à fase atual da plataforma.
+Mover os dois blocos de renderização condicional dos dialogs (`generateTarget` e `transferTarget`) para dentro do bloco `return` do step 2.5, logo antes do `</div>` final (linha ~807), envolvendo tudo em um fragment `<>...</>`:
+
+```tsx
+// Antes do fechamento do return do step 2.5 (linha 808):
+return (
+  <>
+    <div className="p-6 animate-fade-in">
+      {/* ... conteúdo existente do step 2.5 ... */}
+    </div>
+
+    {generateTarget && (
+      <GenerateDemandsDialog ... />
+    )}
+    {transferTarget && (
+      <TransferPlatformDialog ... />
+    )}
+  </>
+);
+```
+
+Nenhuma outra mudança necessária. A renderização no bloco final (linha 902-922) pode ser mantida para cobrir o step 3, ou removida se não houver botões lá.
 
