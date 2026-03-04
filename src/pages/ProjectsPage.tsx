@@ -26,6 +26,8 @@ import { getPlatformAttributeSummary, PLATFORM_ATTRIBUTE_DEFINITIONS } from '@/c
 import { format } from 'date-fns';
 import { GenerateDemandsDialog } from '@/components/GenerateDemandsDialog';
 import { TransferPlatformDialog } from '@/components/TransferPlatformDialog';
+import { FlowManagerDialog, FlowDialogMode } from '@/components/FlowManagerDialog';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 type KanbanColumn = { id: string; label: string; status: ClientStatus | string };
 type ProjectKanbanColumn = { id: string; label: string; status: ProjectStatus | string };
