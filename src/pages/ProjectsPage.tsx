@@ -70,6 +70,12 @@ export function ProjectsPage() {
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [selectedPlatform, setSelectedPlatform] = useState<string | null>(null);
   const [search, setSearch] = useState('');
+  const [squadStatusFilter, setSquadStatusFilter] = useState('all');
+  const [squadResponsibleFilter, setSquadResponsibleFilter] = useState('all');
+  const [squadHealthFilter, setSquadHealthFilter] = useState('all');
+  const [squadPlatformFilter, setSquadPlatformFilter] = useState('all');
+  const [squadDateFrom, setSquadDateFrom] = useState('');
+  const [squadDateTo, setSquadDateTo] = useState('');
   const [view, setView] = useState<'kanban' | 'list'>('kanban');
   const [addDemandOpen, setAddDemandOpen] = useState(false);
   const [addColDialogOpen, setAddColDialogOpen] = useState(false);
