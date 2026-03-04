@@ -1,17 +1,20 @@
 import { useState, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
 import { usePhaseDemandsQuery } from '@/hooks/usePhaseDemandsQuery';
 import { useAddTask } from '@/hooks/useTasksQuery';
 import { useAppUsersQuery } from '@/hooks/useAppUsersQuery';
 import { useTaskStatusesQuery } from '@/hooks/useTaskStatusesQuery';
 import { useSquads } from '@/contexts/SquadsContext';
 import { toast } from 'sonner';
-import { Zap, Settings } from 'lucide-react';
+import { Zap, Settings, CalendarIcon } from 'lucide-react';
+import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
 import { PhaseDemandConfigDialog } from './PhaseDemandConfigDialog';
 
 interface DemandRow {
@@ -171,7 +174,7 @@ export function GenerateDemandsDialog({ open, onOpenChange, phase, clientId, cli
                           <SelectTrigger className="h-8 text-xs">
                             <SelectValue placeholder="Selecionar..." />
                           </SelectTrigger>
-                          <SelectContent>
+                          <SelectContent className="z-[60]">
                             {squadMembers.map((u) => (
                               <SelectItem key={u.id} value={u.name}>{u.name}</SelectItem>
                             ))}
@@ -180,12 +183,29 @@ export function GenerateDemandsDialog({ open, onOpenChange, phase, clientId, cli
                       </div>
                       <div className="w-40">
                         <Label className="text-[10px] text-muted-foreground">Prazo</Label>
-                        <Input
-                          type="date"
-                          className="h-8 text-xs"
-                          value={row.deadline}
-                          onChange={(e) => updateRow(idx, { deadline: e.target.value })}
-                        />
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              className={cn(
+                                "h-8 w-full justify-start text-left text-xs font-normal",
+                                !row.deadline && "text-muted-foreground"
+                              )}
+                            >
+                              <CalendarIcon className="mr-1.5 h-3.5 w-3.5" />
+                              {row.deadline ? format(new Date(row.deadline + 'T12:00:00'), 'dd/MM/yyyy') : 'Selecionar...'}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="z-[60] w-auto p-0" align="start">
+                            <Calendar
+                              mode="single"
+                              selected={row.deadline ? new Date(row.deadline + 'T12:00:00') : undefined}
+                              onSelect={(date) => updateRow(idx, { deadline: date ? format(date, 'yyyy-MM-dd') : '' })}
+                              initialFocus
+                              className={cn("p-3 pointer-events-auto")}
+                            />
+                          </PopoverContent>
+                        </Popover>
                       </div>
                     </div>
                   )}

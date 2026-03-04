@@ -1,19 +1,33 @@
 
 
-## Plano: Corrigir seleção de responsável e prazo no dialog de geração de demandas
+## Plano: Corrigir dialogs de Gerar Demandas e Transferir Plataforma
 
 ### Problema
-O `Select` de responsável e o `Input` de prazo (date) dentro do `GenerateDemandsDialog` podem não estar funcionando corretamente porque:
-1. O `SelectContent` (portal Radix) compete em z-index com o `DialogContent` (ambos `z-50`), fazendo o dropdown abrir atrás do dialog
-2. O input de data nativo pode ter problemas de interação dentro do dialog
+Os dialogs `GenerateDemandsDialog` e `TransferPlatformDialog` nunca aparecem porque estão renderizados no bloco `return` final do componente (linha 902-922), mas os botões que ativam o estado estão no bloco `return` do step 2.5 (linha 615-808). Como o step 2.5 faz um `return` antecipado, o código nunca chega à renderização dos dialogs.
 
-### Mudanças
+### Solução
 
-**1. `src/components/GenerateDemandsDialog.tsx`**
-- Adicionar `className="z-[60]"` ao `SelectContent` do responsável para garantir que o dropdown apareça acima do dialog
-- Substituir o `Input type="date"` por um **DatePicker com Popover + Calendar** (padrão Shadcn), adicionando `pointer-events-auto` ao Calendar e `z-[60]` ao `PopoverContent` para funcionar dentro do dialog
-- Importar `Popover`, `PopoverTrigger`, `PopoverContent`, `Calendar`, `format` e `CalendarIcon`
+**Arquivo: `src/pages/ProjectsPage.tsx`**
 
-### Resultado
-O dropdown de responsável abrirá corretamente sobre o dialog, e o seletor de data será um calendário visual interativo em vez do date picker nativo do browser.
+Mover os dois blocos de renderização condicional dos dialogs (`generateTarget` e `transferTarget`) para dentro do bloco `return` do step 2.5, logo antes do `</div>` final (linha ~807), envolvendo tudo em um fragment `<>...</>`:
+
+```tsx
+// Antes do fechamento do return do step 2.5 (linha 808):
+return (
+  <>
+    <div className="p-6 animate-fade-in">
+      {/* ... conteúdo existente do step 2.5 ... */}
+    </div>
+
+    {generateTarget && (
+      <GenerateDemandsDialog ... />
+    )}
+    {transferTarget && (
+      <TransferPlatformDialog ... />
+    )}
+  </>
+);
+```
+
+Nenhuma outra mudança necessária. A renderização no bloco final (linha 902-922) pode ser mantida para cobrir o step 3, ou removida se não houver botões lá.
 
