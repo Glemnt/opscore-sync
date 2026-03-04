@@ -296,6 +296,7 @@ function ClientCard({ client, statusMap, clientFlows, onClick }: { client: Clien
       onClick={onClick}
       className="bg-card rounded-xl border border-border p-5 shadow-sm-custom hover:shadow-md-custom transition-all hover:-translate-y-0.5 cursor-pointer group"
     >
+      {/* Header */}
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-primary-light flex items-center justify-center">
@@ -311,60 +312,34 @@ function ClientCard({ client, statusMap, clientFlows, onClick }: { client: Clien
         <StatusBadge className={statusConf.className}>{statusConf.label}</StatusBadge>
       </div>
 
-      {squad && (
-        <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground bg-muted/60 rounded-md px-2 py-1 mb-3 inline-flex font-medium">
-          <Users className="w-3 h-3 shrink-0" />
-          {squad.name}
-        </div>
-      )}
-
-      {client.platforms && client.platforms.length > 0 && (
-        <div className="flex flex-wrap gap-1.5 mb-3">
-          {client.platforms.map((slug) => {
-            const plat = platforms.find((p) => p.slug === slug);
-            const cp = clientCPs.find(c => c.platformSlug === slug);
-            const attrSummary = cp ? getPlatformAttributeSummary(slug, cp.platformAttributes) : [];
-            return (
-              <span key={slug} className="inline-flex items-center gap-1 text-[10px] text-muted-foreground bg-muted/60 rounded-md px-2 py-1 font-medium">
-                <ShoppingBag className="w-3 h-3 shrink-0" />
-                {plat?.name ?? slug}
-                {attrSummary.length > 0 && (
-                  <span className="text-foreground/70 ml-0.5">· {attrSummary.join(' · ')}</span>
-                )}
-              </span>
-            );
-          })}
-        </div>
-      )}
-
-      {clientFlows.length > 0 && (
-        <div className="flex flex-wrap gap-1.5 mb-3">
-          {clientFlows.map((cf) => (
-            <span key={cf.flowId} className="inline-flex items-center gap-1 text-[10px] text-primary bg-primary/10 rounded-md px-2 py-1 font-medium">
-              <Workflow className="w-3 h-3 shrink-0" />
-              {cf.flowName}
-            </span>
-          ))}
-        </div>
-      )}
-
-
-      {pendingTasks.length > 0 && (
-        <div className="space-y-1.5 mb-3">
-          {pendingTasks.slice(0, 4).map((task) => (
-            <div key={task.id} className="flex items-center gap-2 text-xs text-muted-foreground">
-              <Circle className="w-3 h-3 text-warning shrink-0" />
-              <span className="truncate">{task.title}</span>
-            </div>
-          ))}
-          {pendingTasks.length > 4 && (
-            <p className="text-[10px] text-muted-foreground pl-5">+{pendingTasks.length - 4} mais</p>
-          )}
-        </div>
-      )}
-
-      {/* Responsible & Entry Date badges */}
+      {/* Context line: Squad + Platforms + Health */}
       <div className="flex flex-wrap items-center gap-1.5 mb-2">
+        {squad && (
+          <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground bg-muted/60 rounded-md px-2 py-1 font-medium">
+            <Users className="w-3 h-3 shrink-0" />
+            {squad.name}
+          </span>
+        )}
+        {client.platforms && client.platforms.length > 0 && client.platforms.map((slug) => {
+          const plat = platforms.find((p) => p.slug === slug);
+          return (
+            <span key={slug} className="inline-flex items-center gap-1 text-[10px] text-muted-foreground bg-muted/60 rounded-md px-2 py-1 font-medium">
+              <ShoppingBag className="w-3 h-3 shrink-0" />
+              {plat?.name ?? slug}
+            </span>
+          );
+        })}
+        <div
+          className={cn(
+            'w-3.5 h-3.5 rounded-full border border-border shrink-0 ml-auto',
+            healthColorMap[client.healthColor ?? 'white']
+          )}
+          title={`Saúde: ${client.healthColor ?? 'não avaliado'}`}
+        />
+      </div>
+
+      {/* Metadata line: Responsible + Entry Date */}
+      <div className="flex flex-wrap items-center gap-1.5 mb-3">
         {client.responsible && (
           <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground bg-muted/60 rounded-md px-2 py-1 font-medium">
             <User className="w-3 h-3 shrink-0" />
@@ -377,43 +352,34 @@ function ClientCard({ client, statusMap, clientFlows, onClick }: { client: Clien
         </span>
       </div>
 
+      {/* Metrics grid */}
       <div className="pt-3 border-t border-border">
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-5 gap-1">
           <div className="text-center">
-            <p className="text-base font-bold text-foreground">{pendingTasks.length}</p>
+            <p className="text-sm font-bold text-foreground">{pendingTasks.length}</p>
             <p className="text-[10px] text-muted-foreground">Pendentes</p>
           </div>
           <div className="text-center">
-            <p className="text-base font-bold text-foreground">
+            <p className="text-sm font-bold text-foreground">
               {client.monthlyRevenue ? `R$${(client.monthlyRevenue / 1000).toFixed(1)}k` : '—'}
             </p>
             <p className="text-[10px] text-muted-foreground">Mensalidade</p>
           </div>
           <div className="text-center">
-            <p className="text-base font-bold text-foreground">
+            <p className="text-sm font-bold text-foreground">
               {client.setupFee ? `R$${(client.setupFee / 1000).toFixed(1)}k` : '—'}
             </p>
             <p className="text-[10px] text-muted-foreground">Setup</p>
           </div>
           <div className="text-center">
-            <p className="text-base font-bold text-foreground">
+            <p className="text-sm font-bold text-foreground">
               {client.contractDurationMonths ? `${client.contractDurationMonths}m` : '—'}
             </p>
             <p className="text-[10px] text-muted-foreground">Contrato</p>
           </div>
           <div className="text-center">
-            <p className="text-base font-bold text-foreground">{nps !== undefined ? nps.toFixed(1) : '—'}</p>
+            <p className="text-sm font-bold text-foreground">{nps !== undefined ? nps.toFixed(1) : '—'}</p>
             <p className="text-[10px] text-muted-foreground">NPS</p>
-          </div>
-          <div className="text-center flex flex-col items-center">
-            <div
-              className={cn(
-                'w-4 h-4 rounded-full border border-border',
-                healthColorMap[client.healthColor ?? 'white']
-              )}
-              title={`Saúde: ${client.healthColor ?? 'não avaliado'}`}
-            />
-            <p className="text-[10px] text-muted-foreground mt-1">Saúde</p>
           </div>
         </div>
       </div>

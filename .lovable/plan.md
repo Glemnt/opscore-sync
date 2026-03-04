@@ -1,39 +1,33 @@
 
 
-## Plano: Reorganizar layout do ClientCard
+## Plano: Corrigir dialogs de Gerar Demandas e Transferir Plataforma
 
-### Estrutura atual
-O card tem muitas seções empilhadas verticalmente: header, squad badge, plataformas, fluxos, lista de demandas pendentes (timeline), badges de responsável/data, e uma grade 3x2 de métricas. Fica denso e difícil de ler.
+### Problema
+Os dialogs `GenerateDemandsDialog` e `TransferPlatformDialog` nunca aparecem porque estão renderizados no bloco `return` final do componente (linha 902-922), mas os botões que ativam o estado estão no bloco `return` do step 2.5 (linha 615-808). Como o step 2.5 faz um `return` antecipado, o código nunca chega à renderização dos dialogs.
 
-### Novo layout proposto
+### Solução
 
-**Remover:** lista de demandas pendentes (linhas 352-363) e badges de fluxos (linhas 340-348).
+**Arquivo: `src/pages/ProjectsPage.tsx`**
 
-**Reorganizar em 3 zonas claras:**
+Mover os dois blocos de renderização condicional dos dialogs (`generateTarget` e `transferTarget`) para dentro do bloco `return` do step 2.5, logo antes do `</div>` final (linha ~807), envolvendo tudo em um fragment `<>...</>`:
 
-```text
-┌──────────────────────────────────────┐
-│ [icon] Nome do Cliente    [status]   │  <- Header (mantém)
-│         Segmento                     │
-│                                      │
-│ 👥 Squad  ·  🛒 Plataforma(s)  ·  ● │  <- Linha de contexto (squad +
-│                                 saúde│     plataformas + saúde inline)
-│                                      │
-│ 👤 Responsável  ·  📅 01/03/2026    │  <- Linha de metadados
-│                                      │
-├──────────────────────────────────────┤
-│  Pendentes  Mensalidade  Setup       │  <- Grade 2x3 de métricas
-│     3        R$5.0k      R$2.0k      │     (compacta, separada por
-│  Contrato     NPS                    │      border-t)
-│    12m        8.5                    │
-└──────────────────────────────────────┘
+```tsx
+// Antes do fechamento do return do step 2.5 (linha 808):
+return (
+  <>
+    <div className="p-6 animate-fade-in">
+      {/* ... conteúdo existente do step 2.5 ... */}
+    </div>
+
+    {generateTarget && (
+      <GenerateDemandsDialog ... />
+    )}
+    {transferTarget && (
+      <TransferPlatformDialog ... />
+    )}
+  </>
+);
 ```
 
-### Mudanças no `ClientCard` (único arquivo: `ClientsPage.tsx`)
-
-1. **Remover** o bloco de demandas pendentes (linhas 352-363) e o bloco de fluxos (linhas 340-348)
-2. **Fundir** squad + plataformas + saúde numa única linha horizontal de badges compactos
-3. **Mover** responsável e data de entrada para uma segunda linha de badges logo abaixo
-4. **Simplificar** a grade de métricas para 5 itens: Pendentes, Mensalidade, Setup, Contrato, NPS (remover Saúde da grade, pois já está na linha de contexto como bolinha colorida)
-5. Ajustar grid para `grid-cols-5` na linha de métricas para distribuir melhor, ou manter `grid-cols-3` com 2 linhas (5 itens + 1 vazio) -- usarei `grid-cols-5` para uma linha única mais limpa
+Nenhuma outra mudança necessária. A renderização no bloco final (linha 902-922) pode ser mantida para cobrir o step 3, ou removida se não houver botões lá.
 
