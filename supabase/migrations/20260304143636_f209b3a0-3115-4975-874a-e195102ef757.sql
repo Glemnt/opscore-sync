@@ -1,0 +1,1 @@
+ALTER TABLE public.phase_demand_templates ADD COLUMN flow_id uuid REFERENCES public.flows(id) ON DELETE SET NULL;
