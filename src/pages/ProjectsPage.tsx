@@ -435,7 +435,7 @@ export function ProjectsPage() {
             />
           </div>
           <div className="flex items-center gap-2 ml-auto flex-wrap">
-            <Select value={responsibleFilter} onValueChange={setResponsibleFilter}>
+            <Select value={squadResponsibleFilter} onValueChange={setSquadResponsibleFilter}>
               <SelectTrigger className="w-[150px] h-9 text-xs">
                 <SelectValue placeholder="Responsável" />
               </SelectTrigger>
@@ -446,7 +446,7 @@ export function ProjectsPage() {
                 ))}
               </SelectContent>
             </Select>
-            <Select value={healthFilter} onValueChange={setHealthFilter}>
+            <Select value={squadHealthFilter} onValueChange={setSquadHealthFilter}>
               <SelectTrigger className="w-[120px] h-9 text-xs">
                 <SelectValue placeholder="Saúde" />
               </SelectTrigger>
@@ -458,7 +458,7 @@ export function ProjectsPage() {
                 <SelectItem value="white">⚪ Branco</SelectItem>
               </SelectContent>
             </Select>
-            <Select value={platformFilter} onValueChange={setPlatformFilter}>
+            <Select value={squadPlatformFilter} onValueChange={setSquadPlatformFilter}>
               <SelectTrigger className="w-[140px] h-9 text-xs">
                 <SelectValue placeholder="Plataforma" />
               </SelectTrigger>
@@ -470,8 +470,8 @@ export function ProjectsPage() {
               </SelectContent>
             </Select>
             <div className="flex items-center gap-1.5">
-              <Input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="h-9 text-xs w-[130px]" placeholder="De" />
-              <Input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="h-9 text-xs w-[130px]" placeholder="Até" />
+              <Input type="date" value={squadDateFrom} onChange={e => setSquadDateFrom(e.target.value)} className="h-9 text-xs w-[130px]" placeholder="De" />
+              <Input type="date" value={squadDateTo} onChange={e => setSquadDateTo(e.target.value)} className="h-9 text-xs w-[130px]" placeholder="Até" />
             </div>
           </div>
         </div>
@@ -479,10 +479,10 @@ export function ProjectsPage() {
         {/* Row 2: Status pipeline tabs */}
         <div className="flex items-center gap-1.5 mb-4 bg-card border border-border p-1 rounded-lg overflow-x-auto">
           <button
-            onClick={() => setStatusFilter('all')}
+            onClick={() => setSquadStatusFilter('all')}
             className={cn(
               'px-3 py-1.5 rounded-md text-xs font-medium transition-colors whitespace-nowrap',
-              statusFilter === 'all' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+              squadStatusFilter === 'all' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground hover:bg-muted'
             )}
           >
             Todos ({squadClients.length})
@@ -492,10 +492,10 @@ export function ProjectsPage() {
             return (
               <button
                 key={col.id}
-                onClick={() => setStatusFilter(col.status as string)}
+                onClick={() => setSquadStatusFilter(col.status as string)}
                 className={cn(
                   'px-3 py-1.5 rounded-md text-xs font-medium transition-colors whitespace-nowrap',
-                  statusFilter === col.status ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                  squadStatusFilter === col.status ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground hover:bg-muted'
                 )}
               >
                 {col.label} ({count})
@@ -512,7 +512,7 @@ export function ProjectsPage() {
         </div>
 
         <div className="flex gap-4 h-[calc(100vh-260px)] overflow-x-auto pb-4">
-          {clientCols.map((col) => {
+          {visibleCols.map((col) => {
             const colClients = filteredSquadClients.filter((c) => c.status === col.status);
             const conf = clientStatusMap[col.status as string];
             return (
