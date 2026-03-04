@@ -37,15 +37,21 @@ export function GenerateDemandsDialog({ open, onOpenChange, phase, clientId, cli
   const addTask = useAddTask();
   const [configOpen, setConfigOpen] = useState(false);
   const [rows, setRows] = useState<DemandRow[]>([]);
+  const [selectedPhase, setSelectedPhase] = useState(phase);
+
+  // Reset selectedPhase when dialog opens with a new phase prop
+  useEffect(() => {
+    if (open) setSelectedPhase(phase);
+  }, [open, phase]);
 
   const phaseLabel = useMemo(() => {
-    const found = clientStatuses.find(s => s.key === phase);
-    return found?.label ?? phase;
-  }, [clientStatuses, phase]);
+    const found = clientStatuses.find(s => s.key === selectedPhase);
+    return found?.label ?? selectedPhase;
+  }, [clientStatuses, selectedPhase]);
 
   const phaseTemplates = useMemo(
-    () => templates.filter((t) => t.phase === phase),
-    [templates, phase]
+    () => templates.filter((t) => t.phase === selectedPhase),
+    [templates, selectedPhase]
   );
 
   // Sync rows when templates change — useEffect instead of render-time setState
