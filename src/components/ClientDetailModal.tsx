@@ -217,6 +217,9 @@ export function ClientDetailModal({ client, open, onClose }: ClientDetailModalPr
   const { data: allFlows = [] } = useFlowsQuery();
   const addClientFlow = useAddClientFlow();
   const removeClientFlow = useRemoveClientFlow();
+  const { data: allClientPlatforms = [] } = useClientPlatformsQuery();
+  const addClientPlatformMut = useAddClientPlatform();
+  const deleteClientPlatformMut = useDeleteClientPlatform();
   const [showFlowSelect, setShowFlowSelect] = useState(false);
   const [editingField, setEditingField] = useState<string | null>(null);
   const [editValue, setEditValue] = useState('');
