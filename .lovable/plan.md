@@ -1,26 +1,33 @@
 
 
-## Plano: Atualizar card do cliente na ProjectsPage
+## Plano: Corrigir dialogs de Gerar Demandas e Transferir Plataforma
 
-### Situacao atual
-O card ja exibe plataformas, fase, saude e qualidade. Faltam a **data de entrada** e a **data de vencimento da fatura**.
+### Problema
+Os dialogs `GenerateDemandsDialog` e `TransferPlatformDialog` nunca aparecem porque estão renderizados no bloco `return` final do componente (linha 902-922), mas os botões que ativam o estado estão no bloco `return` do step 2.5 (linha 615-808). Como o step 2.5 faz um `return` antecipado, o código nunca chega à renderização dos dialogs.
 
-### Mudancas
+### Solução
 
-**`src/pages/ProjectsPage.tsx`** — No card do cliente (linhas 492-549):
+**Arquivo: `src/pages/ProjectsPage.tsx`**
 
-1. **Adicionar data de entrada** (`client.startDate`) — Badge com icone de calendario mostrando a data formatada em pt-BR, posicionado apos o segmento.
+Mover os dois blocos de renderização condicional dos dialogs (`generateTarget` e `transferTarget`) para dentro do bloco `return` do step 2.5, logo antes do `</div>` final (linha ~807), envolvendo tudo em um fragment `<>...</>`:
 
-2. **Adicionar data de vencimento da fatura** (`client.paymentDay`) — Badge mostrando "Venc. dia X" (onde X e o `paymentDay` do cliente), ao lado da data de entrada.
+```tsx
+// Antes do fechamento do return do step 2.5 (linha 808):
+return (
+  <>
+    <div className="p-6 animate-fade-in">
+      {/* ... conteúdo existente do step 2.5 ... */}
+    </div>
 
-3. **Manter** plataforma, fase, saude/qualidade como ja estao.
+    {generateTarget && (
+      <GenerateDemandsDialog ... />
+    )}
+    {transferTarget && (
+      <TransferPlatformDialog ... />
+    )}
+  </>
+);
+```
 
-4. **Remover** a linha de contagem de projetos (opcional, ja que o usuario definiu exatamente o que quer no card).
-
-Layout final do card:
-- Nome + Segmento
-- Data de entrada + Vencimento da fatura (numa linha)
-- Mini-cards de plataforma (com fase, saude, qualidade — como ja esta)
-
-Nenhuma mudanca de banco de dados necessaria — todos os campos ja existem.
+Nenhuma outra mudança necessária. A renderização no bloco final (linha 902-922) pode ser mantida para cobrir o step 3, ou removida se não houver botões lá.
 

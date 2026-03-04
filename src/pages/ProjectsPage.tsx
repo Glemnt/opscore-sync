@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Plus, Search, Calendar, ChevronDown, CheckCircle2, Circle, ArrowLeft, Users2, X, Pencil, Trash2, MessageSquare, ShoppingBag, LayoutGrid, Zap, ArrowRightLeft, Workflow } from 'lucide-react';
+import { Plus, Search, Calendar, ChevronDown, CheckCircle2, Circle, ArrowLeft, Users2, X, Pencil, Trash2, MessageSquare, ShoppingBag, LayoutGrid, Zap, ArrowRightLeft, Workflow, CreditCard } from 'lucide-react';
 import { usePlatformsQuery } from '@/hooks/usePlatformsQuery';
 import { TaskDetailModal } from '@/components/TaskDetailModal';
 import { useProjectsQuery } from '@/hooks/useProjectsQuery';
@@ -501,7 +501,21 @@ export function ProjectsPage() {
                         <h3 className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors mb-1">
                           {client.name}
                         </h3>
-                        <p className="text-xs text-muted-foreground mb-2">{client.segment}</p>
+                        <p className="text-xs text-muted-foreground mb-1">{client.segment}</p>
+                        <div className="flex items-center gap-2 mb-2 flex-wrap">
+                          {client.startDate && (
+                            <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground bg-muted rounded px-1.5 py-0.5">
+                              <Calendar className="w-3 h-3" />
+                              {format(new Date(client.startDate), 'dd/MM/yyyy')}
+                            </span>
+                          )}
+                          {client.paymentDay > 0 && (
+                            <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground bg-muted rounded px-1.5 py-0.5">
+                              <CreditCard className="w-3 h-3" />
+                              Venc. dia {client.paymentDay}
+                            </span>
+                          )}
+                        </div>
                         {client.platforms && client.platforms.length > 0 && (
                           <div className="space-y-1.5 mb-2">
                             {client.platforms.map((slug) => {
@@ -541,11 +555,6 @@ export function ProjectsPage() {
                             })}
                           </div>
                         )}
-                        <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                          <span>{clientProjects.length} projetos</span>
-                          <span>•</span>
-                          <span className="text-primary font-medium">{activeCount} ativos</span>
-                        </div>
                       </div>
                     );
                   })}
