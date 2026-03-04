@@ -412,6 +412,33 @@ export type Database = {
           },
         ]
       }
+      platform_phase_statuses: {
+        Row: {
+          class_name: string
+          created_at: string | null
+          id: string
+          key: string
+          label: string
+          sort_order: number
+        }
+        Insert: {
+          class_name?: string
+          created_at?: string | null
+          id?: string
+          key: string
+          label: string
+          sort_order?: number
+        }
+        Update: {
+          class_name?: string
+          created_at?: string | null
+          id?: string
+          key?: string
+          label?: string
+          sort_order?: number
+        }
+        Relationships: []
+      }
       platforms: {
         Row: {
           created_at: string

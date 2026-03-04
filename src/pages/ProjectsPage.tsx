@@ -21,6 +21,8 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAppUsersQuery } from '@/hooks/useAppUsersQuery';
 import { useClientStatusesQuery, useClientStatusesMap, useAddClientStatus, useDeleteClientStatus, useUpdateClientStatus, useReorderClientStatuses } from '@/hooks/useClientStatusesQuery';
+import { usePlatformPhaseStatusesQuery, useAddPlatformPhaseStatus, useDeletePlatformPhaseStatus, useUpdatePlatformPhaseStatus, useReorderPlatformPhaseStatuses } from '@/hooks/usePlatformPhaseStatusesQuery';
+import { useUpdateClientPlatform } from '@/hooks/useClientPlatformsQuery';
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from '@/components/ui/alert-dialog';
 import { useClientPlatformsQuery } from '@/hooks/useClientPlatformsQuery';
 import { getPlatformAttributeSummary, PLATFORM_ATTRIBUTE_DEFINITIONS } from '@/components/PlatformAttributesEditor';
@@ -55,6 +57,12 @@ export function ProjectsPage() {
   const clients = getVisibleClients();
   const { data: platformOptions = [] } = usePlatformsQuery();
   const { data: clientPlatformsData = [] } = useClientPlatformsQuery();
+  const updatePlatformMut = useUpdateClientPlatform();
+  const { data: platformPhaseStatuses = [] } = usePlatformPhaseStatusesQuery();
+  const addPlatPhaseMut = useAddPlatformPhaseStatus();
+  const deletePlatPhaseMut = useDeletePlatformPhaseStatus();
+  const updatePlatPhaseMut = useUpdatePlatformPhaseStatus();
+  const reorderPlatPhaseMut = useReorderPlatformPhaseStatuses();
   const [selectedSquad, setSelectedSquad] = useState<Squad | null>(null);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [selectedPlatform, setSelectedPlatform] = useState<string | null>(null);
@@ -69,6 +77,16 @@ export function ProjectsPage() {
   const [generateTarget, setGenerateTarget] = useState<{ phase: string; clientId: string; clientName: string; platformSlug: string; squadId: string | null } | null>(null);
   const [transferTarget, setTransferTarget] = useState<{ platformId: string; squadId: string | null; responsible: string } | null>(null);
   const [flowDialogOpen, setFlowDialogOpen] = useState(false);
+
+  // Platform kanban editing state
+  const [platAddColOpen, setPlatAddColOpen] = useState(false);
+  const [platNewColLabel, setPlatNewColLabel] = useState('');
+  const [platDeleteColConfirm, setPlatDeleteColConfirm] = useState<{ key: string; label: string } | null>(null);
+  const [platEditingColKey, setPlatEditingColKey] = useState<string | null>(null);
+  const [platDragOverCol, setPlatDragOverCol] = useState<string | null>(null);
+  const [draggingPlatColKey, setDraggingPlatColKey] = useState<string | null>(null);
+  const [platColDropTarget, setPlatColDropTarget] = useState<string | null>(null);
+  const [draggingPlatCardSlug, setDraggingPlatCardSlug] = useState<string | null>(null);
   const [flowMode, setFlowMode] = useState<FlowDialogMode>('create');
 
   // Squad management state
@@ -679,7 +697,7 @@ export function ProjectsPage() {
           </div>
         </div>
 
-        {/* Kanban by phase */}
+        {/* Kanban by phase — editable */}
         {(() => {
           const platformsByPhase: Record<string, string[]> = {};
           for (const slug of selectedClient.platforms!) {
@@ -689,24 +707,109 @@ export function ProjectsPage() {
             platformsByPhase[phase].push(slug);
           }
 
-          const columns = clientStatuses.length > 0
-            ? clientStatuses
+          const columns = platformPhaseStatuses.length > 0
+            ? platformPhaseStatuses
             : [{ key: 'onboarding', label: 'Onboarding' }, { key: 'implementacao', label: 'Implementação' }, { key: 'escala', label: 'Escala' }, { key: 'performance', label: 'Performance' }];
+
+          const handlePlatColDragStart = (e: React.DragEvent, key: string) => {
+            e.dataTransfer.setData('plat-column-key', key);
+            e.dataTransfer.effectAllowed = 'move';
+            setDraggingPlatColKey(key);
+          };
+          const handlePlatColDragEnd = () => { setDraggingPlatColKey(null); setPlatColDropTarget(null); };
+          const handlePlatColDrop = (e: React.DragEvent, targetKey: string) => {
+            e.preventDefault();
+            const sourceKey = e.dataTransfer.getData('plat-column-key');
+            if (!sourceKey || sourceKey === targetKey) { handlePlatColDragEnd(); return; }
+            const keys = columns.map(c => c.key);
+            const si = keys.indexOf(sourceKey);
+            const ti = keys.indexOf(targetKey);
+            if (si === -1 || ti === -1) return;
+            const newKeys = [...keys];
+            newKeys.splice(si, 1);
+            newKeys.splice(ti, 0, sourceKey);
+            reorderPlatPhaseMut.mutate(newKeys.map((k, i) => ({ key: k, sort_order: i })));
+            handlePlatColDragEnd();
+          };
+
+          const handlePlatCardDrop = (e: React.DragEvent, targetPhase: string) => {
+            e.preventDefault();
+            setPlatDragOverCol(null);
+            const slug = e.dataTransfer.getData('plat-card-slug');
+            if (!slug) return;
+            const cp = clientPlatformsData.find(c => c.clientId === selectedClient.id && c.platformSlug === slug);
+            if (cp && cp.phase !== targetPhase) {
+              updatePlatformMut.mutate({ id: cp.id, updates: { phase: targetPhase } });
+            }
+          };
 
           return (
             <div className="flex gap-4 overflow-x-auto pb-4">
               {columns.map((col) => {
-                const colKey = 'key' in col ? col.key : col.key;
+                const colKey = col.key;
                 const colLabel = col.label;
                 const slugsInCol = platformsByPhase[colKey] ?? [];
 
                 return (
-                  <div key={colKey} className="min-w-[240px] w-[260px] shrink-0">
-                    <div className="flex items-center justify-between mb-3 px-1">
-                      <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{colLabel}</h4>
+                  <div
+                    key={colKey}
+                    className={cn(
+                      'min-w-[240px] w-[260px] shrink-0 group/col relative flex flex-col',
+                      draggingPlatColKey === colKey && 'opacity-50'
+                    )}
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      if (draggingPlatColKey && draggingPlatColKey !== colKey) {
+                        setPlatColDropTarget(colKey);
+                      } else if (!draggingPlatColKey) {
+                        setPlatDragOverCol(colKey);
+                      }
+                    }}
+                    onDragLeave={() => { setPlatDragOverCol(null); setPlatColDropTarget(null); }}
+                    onDrop={(e) => {
+                      if (draggingPlatColKey) {
+                        handlePlatColDrop(e, colKey);
+                      } else {
+                        handlePlatCardDrop(e, colKey);
+                      }
+                    }}
+                  >
+                    {platColDropTarget === colKey && draggingPlatColKey && (
+                      <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary rounded-full z-10" />
+                    )}
+                    <div
+                      draggable
+                      onDragStart={(e) => handlePlatColDragStart(e, colKey)}
+                      onDragEnd={handlePlatColDragEnd}
+                      className="flex items-center gap-2 mb-3 px-1 cursor-grab active:cursor-grabbing"
+                    >
+                      {platEditingColKey === colKey ? (
+                        <EditableColInput
+                          value={colLabel}
+                          onSave={(v) => { updatePlatPhaseMut.mutate({ key: colKey, label: v }); setPlatEditingColKey(null); }}
+                          onCancel={() => setPlatEditingColKey(null)}
+                        />
+                      ) : (
+                        <button onClick={() => setPlatEditingColKey(colKey)} className="cursor-text">
+                          <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{colLabel}</span>
+                        </button>
+                      )}
                       <span className="text-xs text-muted-foreground bg-muted rounded-full px-2 py-0.5">{slugsInCol.length}</span>
+                      <button
+                        onClick={() => setPlatDeleteColConfirm({ key: colKey, label: colLabel })}
+                        className="ml-auto opacity-0 group-hover/col:opacity-100 transition-opacity p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
+                        title="Remover coluna"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
                     </div>
-                    <div className="space-y-3 min-h-[80px] bg-muted/30 rounded-lg p-2">
+                    <div className={cn(
+                      'space-y-3 min-h-[80px] bg-muted/30 rounded-lg p-2 flex-1',
+                      platDragOverCol === colKey && !draggingPlatColKey && 'bg-primary/5 ring-2 ring-primary/20'
+                    )}
+                    onDragOver={(e) => { e.preventDefault(); if (!draggingPlatColKey) setPlatDragOverCol(colKey); }}
+                    onDrop={(e) => { if (!draggingPlatColKey) handlePlatCardDrop(e, colKey); }}
+                    >
                       {slugsInCol.length === 0 && (
                         <p className="text-xs text-muted-foreground text-center py-6 italic">Nenhuma plataforma</p>
                       )}
@@ -749,8 +852,19 @@ export function ProjectsPage() {
                         return (
                           <div
                             key={slug}
+                            draggable
+                            onDragStart={(e) => {
+                              e.dataTransfer.setData('plat-card-slug', slug);
+                              e.dataTransfer.effectAllowed = 'move';
+                              setDraggingPlatCardSlug(slug);
+                            }}
+                            onDragEnd={() => setDraggingPlatCardSlug(null)}
                             onClick={() => setSelectedPlatform(slug)}
-                            className={`bg-card rounded-xl border border-border p-4 shadow-sm-custom hover:shadow-md-custom hover:-translate-y-0.5 transition-all cursor-pointer group ${getReputationBorder()}`}
+                            className={cn(
+                              'bg-card rounded-xl border border-border p-4 shadow-sm-custom hover:shadow-md-custom hover:-translate-y-0.5 transition-all cursor-grab active:cursor-grabbing group',
+                              getReputationBorder(),
+                              draggingPlatCardSlug === slug && 'opacity-50'
+                            )}
                           >
                             <div className="flex items-center gap-2.5 mb-2">
                               <div className="w-8 h-8 rounded-lg bg-accent/60 flex items-center justify-center">
@@ -763,7 +877,7 @@ export function ProjectsPage() {
                             {(cp?.qualityLevel || cp?.healthColor) && (
                               <div className="flex items-center justify-between mb-2.5 px-1">
                                 {cp?.qualityLevel && (() => {
-                                  const qMap: Record<string, string> = { iniciante: '🥉 Iniciante', estruturado: '🥈 Estruturado', competitivo: '🥇 Competitivo', escalando: '🚀 Escalando', dominante: '👑 Dominante' };
+                                  const qMap: Record<string, string> = { seller: '🛒 Seller', lojista: '🏪 Lojista' };
                                   return <span className="text-[11px] font-semibold text-foreground">{qMap[cp.qualityLevel] ?? cp.qualityLevel}</span>;
                                 })()}
                                 {cp?.healthColor && (() => {
@@ -826,10 +940,81 @@ export function ProjectsPage() {
                   </div>
                 );
               })}
+              {/* Add new column button */}
+              <div className="min-w-[240px] w-[260px] shrink-0">
+                <button
+                  onClick={() => { setPlatNewColLabel(''); setPlatAddColOpen(true); }}
+                  className="w-full py-3 border-2 border-dashed border-border rounded-xl text-sm text-muted-foreground hover:border-primary/40 hover:text-primary transition-colors flex items-center justify-center gap-2"
+                >
+                  <Plus className="w-4 h-4" />
+                  Nova Coluna
+                </button>
+              </div>
             </div>
           );
         })()}
       </div>
+
+      {/* Platform Phase Add Column Dialog */}
+      <Dialog open={platAddColOpen} onOpenChange={setPlatAddColOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Nova Coluna de Fase</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <Label>Nome da coluna</Label>
+            <Input
+              value={platNewColLabel}
+              onChange={(e) => setPlatNewColLabel(e.target.value)}
+              placeholder="Ex: Maturação"
+              onKeyDown={(e) => e.key === 'Enter' && (() => {
+                const label = platNewColLabel.trim();
+                if (!label) return;
+                const key = label.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+                addPlatPhaseMut.mutate({ key, label, class_name: 'bg-muted text-muted-foreground border-border' });
+                setPlatAddColOpen(false);
+              })()}
+              autoFocus
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPlatAddColOpen(false)}>Cancelar</Button>
+            <Button
+              onClick={() => {
+                const label = platNewColLabel.trim();
+                if (!label) return;
+                const key = label.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+                addPlatPhaseMut.mutate({ key, label, class_name: 'bg-muted text-muted-foreground border-border' });
+                setPlatAddColOpen(false);
+              }}
+              disabled={!platNewColLabel.trim() || addPlatPhaseMut.isPending}
+            >
+              {addPlatPhaseMut.isPending ? 'Criando...' : 'Criar'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Platform Phase Delete Column Confirmation */}
+      <AlertDialog open={!!platDeleteColConfirm} onOpenChange={(open) => !open && setPlatDeleteColConfirm(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir coluna "{platDeleteColConfirm?.label}"?</AlertDialogTitle>
+            <AlertDialogDescription>
+              As plataformas nesta coluna não serão excluídas, mas ficarão sem fase definida.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => { if (platDeleteColConfirm) { deletePlatPhaseMut.mutate(platDeleteColConfirm.key); setPlatDeleteColConfirm(null); } }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {generateTarget && (
         <GenerateDemandsDialog
