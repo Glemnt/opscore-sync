@@ -222,7 +222,6 @@ export function ClientDetailModal({ client, open, onClose }: ClientDetailModalPr
   const deleteClientPlatformMut = useDeleteClientPlatform();
   const [showFlowSelect, setShowFlowSelect] = useState(false);
   const [noteMessage, setNoteMessage] = useState('');
-  const [noteMessage, setNoteMessage] = useState('');
   const [showLogs, setShowLogs] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [editData, setEditData] = useState<Partial<Client>>({});
