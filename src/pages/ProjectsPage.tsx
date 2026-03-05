@@ -923,7 +923,7 @@ export function ProjectsPage() {
                         platDragOverCol === colKey && !draggingPlatColKey && 'bg-primary/5 ring-2 ring-primary/20'
                       )}
                       onDragOver={(e) => {e.preventDefault();if (!draggingPlatColKey) setPlatDragOverCol(colKey);}}
-                      onDrop={(e) => {if (!draggingPlatColKey) handlePlatCardDrop(e, colKey);}}>
+                      onDrop={(e) => {e.stopPropagation();if (!draggingPlatColKey) handlePlatCardDrop(e, colKey);}}>
                         
                       {slugsInCol.length === 0 &&
                         <p className="text-xs text-muted-foreground text-center py-6 italic">Nenhuma plataforma</p>
