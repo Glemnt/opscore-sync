@@ -98,6 +98,7 @@ export function ProjectsPage() {
   const [draggingPlatColKey, setDraggingPlatColKey] = useState<string | null>(null);
   const [platColDropTarget, setPlatColDropTarget] = useState<string | null>(null);
   const [draggingPlatCardSlug, setDraggingPlatCardSlug] = useState<string | null>(null);
+  const wasDraggingPlatRef = useRef(false);
   const [flowMode, setFlowMode] = useState<FlowDialogMode>('create');
 
   // Squad management state
@@ -969,12 +970,16 @@ export function ProjectsPage() {
                               key={slug}
                               draggable
                               onDragStart={(e) => {
+                                e.stopPropagation();
                                 e.dataTransfer.setData('plat-card-slug', slug);
                                 e.dataTransfer.effectAllowed = 'move';
                                 setDraggingPlatCardSlug(slug);
                               }}
-                              onDragEnd={() => setDraggingPlatCardSlug(null)}
-                              onClick={() => setSelectedPlatform(slug)}
+                              onDragEnd={() => { setDraggingPlatCardSlug(null); wasDraggingPlatRef.current = true; }}
+                              onClick={() => {
+                                if (wasDraggingPlatRef.current) { wasDraggingPlatRef.current = false; return; }
+                                setSelectedPlatform(slug);
+                              }}
                               className={cn(
                                 'bg-card rounded-xl border border-border p-4 shadow-sm-custom hover:shadow-md-custom hover:-translate-y-0.5 transition-all cursor-grab active:cursor-grabbing group',
                                 getReputationBorder(),
