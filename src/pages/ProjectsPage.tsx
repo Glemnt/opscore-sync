@@ -1514,20 +1514,49 @@ function KanbanView({ filtered, clientId, clientName, squadMembers, platformSlug
           return (
             <div
               key={col.id}
-              className="flex-shrink-0 w-72 group/col"
+              className="flex-shrink-0 w-72 group/col flex flex-col"
               onDragOver={(e) => {e.preventDefault();setDragOverCol(col.id);}}
               onDragLeave={() => setDragOverCol(null)}
               onDrop={(e) => handleDrop(col.status, e)}>
               
-              <div className="flex items-center gap-2 mb-3">
+              <div
+                className={cn("flex items-center gap-2 mb-3 cursor-grab active:cursor-grabbing select-none", draggingKanbanColId === col.id && 'opacity-50')}
+                draggable
+                onDragStart={(e) => {
+                  e.dataTransfer.setData('application/col-id', col.id);
+                  e.dataTransfer.effectAllowed = 'move';
+                  setDraggingKanbanColId(col.id);
+                }}
+                onDragEnd={() => setDraggingKanbanColId(null)}
+                onDragOver={(e) => {
+                  if (!draggingKanbanColId || draggingKanbanColId === col.id) return;
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setKanbanColDropTarget(col.id);
+                }}
+                onDrop={(e) => {
+                  if (!draggingKanbanColId || draggingKanbanColId === col.id) return;
+                  e.preventDefault();
+                  e.stopPropagation();
+                  const fromIdx = cols.findIndex(c => c.id === draggingKanbanColId);
+                  const toIdx = cols.findIndex(c => c.id === col.id);
+                  if (fromIdx !== -1 && toIdx !== -1) {
+                    const updated = [...cols];
+                    const [moved] = updated.splice(fromIdx, 1);
+                    updated.splice(toIdx, 0, moved);
+                    setCols(updated);
+                  }
+                  setDraggingKanbanColId(null);
+                  setKanbanColDropTarget(null);
+                }}
+              >
+                {kanbanColDropTarget === col.id && <div className="w-1 h-6 bg-primary rounded-full" />}
                 {conf && <div className={cn('w-2 h-2 rounded-full', conf.dot)} />}
                 {editingColId === col.id ?
                 <EditableColInput
                   value={col.label}
                   onSave={(v) => handleRenameCol(col.id, v)}
                   onCancel={() => setEditingColId(null)} /> :
-
-
                 <button onClick={() => setEditingColId(col.id)} className="cursor-text">
                     <h3 className="text-sm font-semibold text-foreground">{col.label}</h3>
                   </button>
@@ -1539,14 +1568,17 @@ function KanbanView({ filtered, clientId, clientName, squadMembers, platformSlug
                   onClick={() => handleRemoveCol(col.id)}
                   className="ml-auto opacity-0 group-hover/col:opacity-100 transition-opacity p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
                   title="Remover coluna">
-                  
                   <X className="w-3.5 h-3.5" />
                 </button>
               </div>
               <div className={cn(
-                'space-y-3 min-h-[60px] rounded-xl transition-colors p-1',
+                'space-y-3 min-h-[60px] rounded-xl transition-colors p-1 flex-1 flex flex-col gap-3',
                 dragOverCol === col.id && 'bg-primary/5 ring-2 ring-primary/20'
-              )}>
+              )}
+                onDragOver={(e) => { e.preventDefault(); setDragOverCol(col.id); }}
+                onDragLeave={() => setDragOverCol(null)}
+                onDrop={(e) => { e.stopPropagation(); handleDrop(col.status, e); }}
+              >
                 {colTasks.map((task) => {
                   const canDel = (() => {
                     if (!currentUser) return false;
