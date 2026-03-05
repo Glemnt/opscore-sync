@@ -1,33 +1,45 @@
 
 
-## Plano: Corrigir dialogs de Gerar Demandas e Transferir Plataforma
+## Plano: Validar e corrigir drag-and-drop em todos os Kanbans
 
-### Problema
-Os dialogs `GenerateDemandsDialog` e `TransferPlatformDialog` nunca aparecem porque estão renderizados no bloco `return` final do componente (linha 902-922), mas os botões que ativam o estado estão no bloco `return` do step 2.5 (linha 615-808). Como o step 2.5 faz um `return` antecipado, o código nunca chega à renderização dos dialogs.
+### Kanbans identificados
 
-### Solução
+| Kanban | Local | Cards drag | Colunas drag | Status |
+|--------|-------|------------|--------------|--------|
+| Clientes (Squad) | ProjectsPage L527 | ✅ OK | ✅ OK | Funcionando |
+| Plataformas | ProjectsPage L862 | ✅ OK (fix recente) | ✅ OK | Funcionando |
+| Demandas (TasksPage) | TasksPage L260 | ✅ OK | ✅ OK | Funcionando |
+| **Demandas (KanbanView dentro de plataforma)** | ProjectsPage L1507 | ⚠️ Parcial | ❌ Ausente | **Problemas** |
 
-**Arquivo: `src/pages/ProjectsPage.tsx`**
+### Problemas encontrados no KanbanView (ProjectsPage, L1507)
 
-Mover os dois blocos de renderização condicional dos dialogs (`generateTarget` e `transferTarget`) para dentro do bloco `return` do step 2.5, logo antes do `</div>` final (linha ~807), envolvendo tudo em um fragment `<>...</>`:
+**1. Container interno sem handlers de drop (L1546)**
+A div interna que contém os cards NÃO tem `onDragOver` nem `onDrop`. Os outros Kanbans duplicam esses handlers na div interna para garantir que o drop funcione em áreas vazias e quando há overflow. Isso causa falhas de drop inconsistentes.
 
+**2. Sem drag-and-drop de colunas**
+O header das colunas (L1522) não é `draggable` e não há handlers de reordenação de colunas. Todos os outros Kanbans suportam arrastar colunas para reordená-las.
+
+**3. Sem `onDragLeave` no container interno**
+Falta limpar o estado `dragOverCol` ao sair da área de drop.
+
+### Mudanças em `src/pages/ProjectsPage.tsx`
+
+**1. Adicionar `onDragOver` e `onDrop` na div interna de cards (L1546):**
 ```tsx
-// Antes do fechamento do return do step 2.5 (linha 808):
-return (
-  <>
-    <div className="p-6 animate-fade-in">
-      {/* ... conteúdo existente do step 2.5 ... */}
-    </div>
-
-    {generateTarget && (
-      <GenerateDemandsDialog ... />
-    )}
-    {transferTarget && (
-      <TransferPlatformDialog ... />
-    )}
-  </>
-);
+<div className={cn(...)}
+  onDragOver={(e) => { e.preventDefault(); setDragOverCol(col.id); }}
+  onDrop={(e) => { handleDrop(col.status, e); }}
+>
 ```
 
-Nenhuma outra mudança necessária. A renderização no bloco final (linha 902-922) pode ser mantida para cobrir o step 3, ou removida se não houver botões lá.
+**2. Adicionar estado e handlers para reordenação de colunas no KanbanView:**
+- `draggingKanbanColId` e `kanbanColDropTarget` como estados locais
+- Handler `onDragStart` no header da coluna (torná-lo `draggable`)
+- Handlers `onDragOver`/`onDrop` para reordenar `cols` via `setCols`
+- Visual indicator (barra lateral) quando arrastando coluna sobre outra
+
+**3. Garantir estrutura flex correta para drop zones ocuparem toda a altura:**
+- Adicionar `flex flex-col` na div da coluna e `flex-1` na div interna de cards
+
+Mudanças concentradas no componente `KanbanView` (~30 linhas). Sem migração de banco.
 
