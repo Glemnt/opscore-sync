@@ -286,77 +286,12 @@ export function ClientDetailModal({ client, open, onClose }: ClientDetailModalPr
     setNoteMessage('');
   };
 
-  const EditableField = ({ field, label, value, type = 'text' }: { field: string; label: string; value: string; type?: string }) => {
-    const isEditing = editingField === field;
-    return (
-      <div className="bg-muted/50 rounded-lg p-3">
-        <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">{label}</p>
-        {isEditing ? (
-          <div className="flex items-center gap-1.5">
-            {field === 'startDate' ? (
-              <Popover open={true} onOpenChange={(open) => { if (!open) cancelEdit(); }}>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" className="flex-1 h-7 text-sm justify-start font-normal">
-                    <CalendarIcon className="mr-2 h-3.5 w-3.5" />
-                    {editValue ? format(parseISO(editValue), "dd 'de' MMM yyyy", { locale: ptBR }) : 'Selecione...'}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0 z-[9999]" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={editValue ? parseISO(editValue) : undefined}
-                    onSelect={(date) => {
-                      if (date) {
-                        const formatted = format(date, 'yyyy-MM-dd');
-                        setEditValue(formatted);
-                        updateClientField(client.id, 'startDate', formatted, label);
-                        setEditingField(null);
-                      }
-                    }}
-                    initialFocus
-                    locale={ptBR}
-                    className="p-3 pointer-events-auto"
-                  />
-                </PopoverContent>
-              </Popover>
-            ) : field === 'squadId' ? (
-              <select
-                value={editValue}
-                onChange={e => setEditValue(e.target.value)}
-                className="flex-1 text-sm bg-background border border-input rounded px-2 py-1 text-foreground"
-              >
-                {squads.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-              </select>
-            ) : field === 'responsible' ? (
-              <select
-                value={editValue}
-                onChange={e => setEditValue(e.target.value)}
-                className="flex-1 text-sm bg-background border border-input rounded px-2 py-1 text-foreground"
-              >
-                <option value="">Selecione...</option>
-                {appUsers.map(u => <option key={u.id} value={u.name}>{u.name}</option>)}
-              </select>
-            ) : (
-              <Input type={type} value={editValue} onChange={e => setEditValue(e.target.value)} className="h-7 text-sm flex-1" />
-            )}
-            {field !== 'startDate' && (
-              <>
-                <button onClick={() => saveEdit(field, label)} className="p-1 text-success hover:bg-success/10 rounded"><Save className="w-3.5 h-3.5" /></button>
-                <button onClick={cancelEdit} className="p-1 text-destructive hover:bg-destructive/10 rounded"><X className="w-3.5 h-3.5" /></button>
-              </>
-            )}
-          </div>
-        ) : (
-          <div className="flex items-center justify-between group/edit">
-            <p className="text-sm font-semibold text-foreground">{value}</p>
-            <button onClick={() => startEdit(field, field === 'squadId' ? client.squadId : String((client as any)[field] ?? ''))} className="opacity-0 group-hover/edit:opacity-100 p-1 text-muted-foreground hover:text-primary rounded transition-opacity">
-              <Edit3 className="w-3 h-3" />
-            </button>
-          </div>
-        )}
-      </div>
-    );
-  };
+  const ReadOnlyField = ({ label, value }: { label: string; value: string }) => (
+    <div className="bg-muted/50 rounded-lg p-3">
+      <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">{label}</p>
+      <p className="text-sm font-semibold text-foreground">{value}</p>
+    </div>
+  );
 
   return (
     <Dialog open={open} onOpenChange={onClose}>

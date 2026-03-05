@@ -404,7 +404,7 @@ export function ProjectsPage() {
       const matchSearch = c.name.toLowerCase().includes(search.toLowerCase()) || c.segment.toLowerCase().includes(search.toLowerCase());
       const matchStatus = squadStatusFilter === 'all' || c.status === squadStatusFilter;
       const matchResponsible = squadResponsibleFilter === 'all' || c.responsible === squadResponsibleFilter;
-      const matchHealth = squadHealthFilter === 'all' || c.healthColor === squadHealthFilter;
+      const matchHealth = squadHealthFilter === 'all' || (c.healthColor ?? 'white') === squadHealthFilter;
       const matchPlatform = squadPlatformFilter === 'all' || (c.platforms?.includes(squadPlatformFilter) ?? false);
       const matchDateFrom = !squadDateFrom || c.startDate >= squadDateFrom;
       const matchDateTo = !squadDateTo || c.startDate <= squadDateTo;
