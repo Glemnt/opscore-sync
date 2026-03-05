@@ -411,6 +411,26 @@ export function ClientDetailModal({ client, open, onClose }: ClientDetailModalPr
                       <option value={12}>12 meses</option>
                     </select>
                   </div>
+                <div>
+                  <Label className="text-xs">Squad</Label>
+                  <select value={editData.squadId ?? ''} onChange={e => setEditData(p => ({ ...p, squadId: e.target.value }))} className="w-full h-8 px-2 text-sm bg-background border border-input rounded-md text-foreground">
+                    <option value="">—</option>
+                    {squads.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <Label className="text-xs">Data de Entrada</Label>
+                  <Input type="date" value={editData.startDate ?? ''} onChange={e => setEditData(p => ({ ...p, startDate: e.target.value }))} className="h-8 text-sm" />
+                </div>
+                <div>
+                  <Label className="text-xs">Saúde do Cliente</Label>
+                  <select value={(editData as any).healthColor ?? 'white'} onChange={e => setEditData(p => ({ ...p, healthColor: e.target.value as any }))} className="w-full h-8 px-2 text-sm bg-background border border-input rounded-md text-foreground">
+                    <option value="green">🟢 Saudável</option>
+                    <option value="yellow">🟡 Atenção</option>
+                    <option value="red">🔴 Crítico</option>
+                    <option value="white">⚪ Não avaliado</option>
+                  </select>
+                </div>
               </div>
               <div>
                 <Label className="text-xs">Plataformas</Label>
