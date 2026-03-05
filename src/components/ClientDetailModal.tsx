@@ -315,7 +315,7 @@ export function ClientDetailModal({ client, open, onClose }: ClientDetailModalPr
                 {client.contractType === 'mrr' ? 'MRR' : 'TCV'} {client.contractDurationMonths ? `${client.contractDurationMonths}m` : ''}
               </span>
               <button
-                onClick={() => { setEditMode(true); setEditData({ name: client.name, companyName: client.companyName, segment: client.segment, status: client.status, platforms: client.platforms ?? (client.platform ? [client.platform] : []), contractType: client.contractType, paymentDay: client.paymentDay, contractDurationMonths: client.contractDurationMonths, notes: client.notes, monthlyRevenue: client.monthlyRevenue, responsible: client.responsible, setupFee: client.setupFee, phone: client.phone, cnpj: client.cnpj, email: client.email }); }}
+                onClick={() => { setEditMode(true); setEditData({ name: client.name, companyName: client.companyName, segment: client.segment, status: client.status, platforms: client.platforms ?? (client.platform ? [client.platform] : []), contractType: client.contractType, paymentDay: client.paymentDay, contractDurationMonths: client.contractDurationMonths, notes: client.notes, monthlyRevenue: client.monthlyRevenue, responsible: client.responsible, setupFee: client.setupFee, phone: client.phone, cnpj: client.cnpj, email: client.email, healthColor: client.healthColor ?? 'white', squadId: client.squadId, startDate: client.startDate }); }}
                 className="p-1.5 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
                 title="Editar cliente"
               >
