@@ -1,33 +1,43 @@
 
 
-## Plano: Corrigir dialogs de Gerar Demandas e Transferir Plataforma
+## Plano: Feedback visual aprimorado no drag-and-drop dos Kanbans
 
-### Problema
-Os dialogs `GenerateDemandsDialog` e `TransferPlatformDialog` nunca aparecem porque estão renderizados no bloco `return` final do componente (linha 902-922), mas os botões que ativam o estado estão no bloco `return` do step 2.5 (linha 615-808). Como o step 2.5 faz um `return` antecipado, o código nunca chega à renderização dos dialogs.
+### Estado atual
+Todos os Kanbans ja possuem feedback basico: `bg-primary/5 ring-2 ring-primary/20` na coluna de destino ao arrastar cards. No entanto, falta:
+- Opacidade no card sendo arrastado
+- Animacao de transicao suave ao soltar
+- Indicador de "zona de drop" mais visivel (placeholder)
+- Feedback visual no card arrastado (ghost melhorado)
 
-### Solução
+### Mudancas
 
-**Arquivo: `src/pages/ProjectsPage.tsx`**
+**1. CSS global (`src/index.css`) — adicionar classes de drag feedback:**
+- `.dragging-card`: opacidade 50%, escala reduzida, sombra elevada
+- `.drop-zone-active`: background animado com pulso suave, borda tracejada primaria
+- `.card-dropped`: animacao `scale-in` + `fade-in` ao card recem-movido (via classe temporaria)
 
-Mover os dois blocos de renderização condicional dos dialogs (`generateTarget` e `transferTarget`) para dentro do bloco `return` do step 2.5, logo antes do `</div>` final (linha ~807), envolvendo tudo em um fragment `<>...</>`:
+**2. Componente `DemandCard` (`ProjectsPage.tsx` L1645):**
+- Adicionar classe `opacity-50 scale-95` durante `onDragStart`, remover em `onDragEnd`
+- Ja possui `handleDragStart`; adicionar estado local ou ref para controlar classe
 
-```tsx
-// Antes do fechamento do return do step 2.5 (linha 808):
-return (
-  <>
-    <div className="p-6 animate-fade-in">
-      {/* ... conteúdo existente do step 2.5 ... */}
-    </div>
+**3. Cards de cliente (`ProjectsPage.tsx` L626-634):**
+- Adicionar `opacity-50 scale-95 rotate-1` ao card sendo arrastado (usar `draggingClientId` state que ja faz parte do dataTransfer, mas sem estado visual)
+- Introduzir `draggingClientId` state para rastrear qual card esta sendo arrastado
 
-    {generateTarget && (
-      <GenerateDemandsDialog ... />
-    )}
-    {transferTarget && (
-      <TransferPlatformDialog ... />
-    )}
-  </>
-);
-```
+**4. Cards de plataforma (`ProjectsPage.tsx` L968-977):**
+- Ja tem `draggingPlatCardSlug`; adicionar classe condicional `opacity-50 scale-95` quando `draggingPlatCardSlug === slug`
 
-Nenhuma outra mudança necessária. A renderização no bloco final (linha 902-922) pode ser mantida para cobrir o step 3, ou removida se não houver botões lá.
+**5. Colunas de destino — todos os Kanbans:**
+- Trocar `bg-primary/5 ring-2 ring-primary/20` por feedback mais forte: `bg-primary/10 ring-2 ring-primary/40 shadow-inner` + transicao com `transition-all duration-200`
+- Adicionar texto "Solte aqui" centralizado quando coluna esta vazia e recebendo drag
+
+**6. Animacao pos-drop:**
+- Adicionar classe CSS `animate-scale-in` temporariamente ao card apos ser movido (ja existe a animacao no tailwind config)
+
+### Resumo de arquivos
+- `src/index.css`: 2 novas classes utilitarias
+- `src/pages/ProjectsPage.tsx`: ~15 linhas (estados + classes condicionais em 3 Kanbans)
+- `src/pages/TasksPage.tsx`: ~5 linhas (classe condicional no card + coluna)
+
+Sem migracao de banco.
 
