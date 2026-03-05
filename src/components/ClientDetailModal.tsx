@@ -457,10 +457,10 @@ export function ClientDetailModal({ client, open, onClose }: ClientDetailModalPr
           {!editMode && (
             <>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
-                <EditableField field="startDate" label="Entrada" value={formatDate(client.startDate)} type="date" />
-                <EditableField field="monthlyRevenue" label="Mensalidade" value={client.monthlyRevenue ? `R$ ${client.monthlyRevenue.toLocaleString('pt-BR')}` : '—'} type="number" />
-                <EditableField field="squadId" label="Squad" value={squad?.name ?? '—'} />
-                <EditableField field="responsible" label="Responsável" value={client.responsible || '—'} />
+                <ReadOnlyField label="Entrada" value={formatDate(client.startDate)} />
+                <ReadOnlyField label="Mensalidade" value={client.monthlyRevenue ? `R$ ${client.monthlyRevenue.toLocaleString('pt-BR')}` : '—'} />
+                <ReadOnlyField label="Squad" value={squad?.name ?? '—'} />
+                <ReadOnlyField label="Responsável" value={client.responsible || '—'} />
               </div>
 
               {/* Plataformas Operacionais */}
