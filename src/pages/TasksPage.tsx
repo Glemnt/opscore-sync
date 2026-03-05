@@ -449,7 +449,8 @@ function TaskCard({ task, isLate, onClick, canDelete, onDelete }: { task: Task; 
   return (
     <div
       draggable
-      onDragStart={handleDragStart}
+      onDragStart={(e) => { handleDragStart(e); e.currentTarget.classList.add('dragging-card'); }}
+      onDragEnd={(e) => { e.currentTarget.classList.remove('dragging-card'); }}
       onClick={onClick}
       className={cn(
         'bg-card rounded-xl border p-3.5 shadow-sm-custom hover:shadow-md-custom transition-all cursor-grab active:cursor-grabbing',
