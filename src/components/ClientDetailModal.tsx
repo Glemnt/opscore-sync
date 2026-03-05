@@ -221,8 +221,7 @@ export function ClientDetailModal({ client, open, onClose }: ClientDetailModalPr
   const addClientPlatformMut = useAddClientPlatform();
   const deleteClientPlatformMut = useDeleteClientPlatform();
   const [showFlowSelect, setShowFlowSelect] = useState(false);
-  const [editingField, setEditingField] = useState<string | null>(null);
-  const [editValue, setEditValue] = useState('');
+  const [noteMessage, setNoteMessage] = useState('');
   const [noteMessage, setNoteMessage] = useState('');
   const [showLogs, setShowLogs] = useState(false);
   const [editMode, setEditMode] = useState(false);
@@ -266,19 +265,6 @@ export function ClientDetailModal({ client, open, onClose }: ClientDetailModalPr
   const formatDate = (date: string) =>
     new Date(date).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' });
 
-  const startEdit = (field: string, currentValue: string) => {
-    setEditingField(field);
-    setEditValue(currentValue);
-  };
-
-  const saveEdit = (field: string, fieldLabel: string) => {
-    if (editValue !== String((client as any)[field] ?? '')) {
-      updateClientField(client.id, field, field === 'monthlyRevenue' ? Number(editValue) : editValue, fieldLabel);
-    }
-    setEditingField(null);
-  };
-
-  const cancelEdit = () => { setEditingField(null); setEditValue(''); };
 
   const handleSendNote = () => {
     if (!noteMessage.trim()) return;
