@@ -60,9 +60,12 @@ export function ClientsPage() {
   const deleteStatusMutation = useDeleteClientStatus();
   const [deletingStatusKey, setDeletingStatusKey] = useState<string | null>(null);
 
+  const knownStatusKeys = new Set(clientStatuses.map(s => s.key));
+  const orphanStatuses = [...new Set(clients.map(c => c.status))].filter(s => !knownStatusKeys.has(s));
   const statusFilters = [
     { label: 'Todos', value: 'all' },
     ...clientStatuses.map(s => ({ label: s.label, value: s.key })),
+    ...orphanStatuses.map(s => ({ label: s.charAt(0).toUpperCase() + s.slice(1).replace(/_/g, ' '), value: s })),
   ];
 
   const { data: platforms = [] } = usePlatformsQuery();

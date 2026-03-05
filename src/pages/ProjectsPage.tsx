@@ -161,9 +161,13 @@ export function ProjectsPage() {
   // Sync kanban columns when dynamic statuses load
   useEffect(() => {
     if (clientStatuses.length > 0) {
-      setClientCols(clientStatuses.map((s) => ({ id: s.key, label: s.label, status: s.key })));
+      const baseCols = clientStatuses.map((s) => ({ id: s.key, label: s.label, status: s.key }));
+      const knownKeys = new Set(baseCols.map(c => c.status));
+      const orphanStatuses = [...new Set(clients.map(c => c.status))].filter(s => !knownKeys.has(s));
+      const extraCols = orphanStatuses.map(s => ({ id: s, label: s.charAt(0).toUpperCase() + s.slice(1).replace(/_/g, ' '), status: s }));
+      setClientCols([...baseCols, ...extraCols]);
     }
-  }, [clientStatuses]);
+  }, [clientStatuses, clients]);
   const [dragOverClientCol, setDragOverClientCol] = useState<string | null>(null);
   const [editingColId, setEditingColId] = useState<string | null>(null);
   const [draggingClientColId, setDraggingClientColId] = useState<string | null>(null);
