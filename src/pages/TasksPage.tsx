@@ -326,8 +326,8 @@ export function TasksPage() {
                 </div>
               </div>
               <div className={cn(
-                'space-y-2.5 min-h-0 rounded-xl transition-colors p-1 flex-1 overflow-y-auto',
-                dragOverCol === col.status && 'bg-primary/5 ring-2 ring-primary/20'
+                'space-y-2.5 min-h-0 rounded-xl transition-all duration-200 p-1 flex-1 overflow-y-auto',
+                dragOverCol === col.status && 'drop-zone-highlight'
               )}
               onDragOver={(e) => {
                 e.preventDefault();
@@ -449,7 +449,8 @@ function TaskCard({ task, isLate, onClick, canDelete, onDelete }: { task: Task; 
   return (
     <div
       draggable
-      onDragStart={handleDragStart}
+      onDragStart={(e) => { handleDragStart(e); e.currentTarget.classList.add('dragging-card'); }}
+      onDragEnd={(e) => { e.currentTarget.classList.remove('dragging-card'); }}
       onClick={onClick}
       className={cn(
         'bg-card rounded-xl border p-3.5 shadow-sm-custom hover:shadow-md-custom transition-all cursor-grab active:cursor-grabbing',

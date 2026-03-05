@@ -98,6 +98,7 @@ export function ProjectsPage() {
   const [draggingPlatColKey, setDraggingPlatColKey] = useState<string | null>(null);
   const [platColDropTarget, setPlatColDropTarget] = useState<string | null>(null);
   const [draggingPlatCardSlug, setDraggingPlatCardSlug] = useState<string | null>(null);
+  const [draggingClientId, setDraggingClientId] = useState<string | null>(null);
   const wasDraggingPlatRef = useRef(false);
   const [flowMode, setFlowMode] = useState<FlowDialogMode>('create');
 
@@ -595,8 +596,8 @@ export function ProjectsPage() {
                   </button>
                 </div>
                 <div className={cn(
-                  'space-y-3 min-h-0 rounded-xl transition-colors p-1 flex-1 overflow-y-auto',
-                  dragOverClientCol === col.id && 'bg-primary/5 ring-2 ring-primary/20'
+                  'space-y-3 min-h-0 rounded-xl transition-all duration-200 p-1 flex-1 overflow-y-auto',
+                  dragOverClientCol === col.id && 'drop-zone-highlight'
                 )}
                 onDragOver={(e) => {
                   e.preventDefault();
@@ -629,9 +630,11 @@ export function ProjectsPage() {
                         onDragStart={(e) => {
                           e.dataTransfer.setData('text/plain', client.id);
                           e.dataTransfer.effectAllowed = 'move';
+                          setDraggingClientId(client.id);
                         }}
+                        onDragEnd={() => setDraggingClientId(null)}
                         onClick={() => {setSelectedPlatform(null);setSelectedClient(client);}}
-                        className="w-full bg-card rounded-xl border border-border p-5 shadow-sm-custom hover:shadow-md-custom hover:-translate-y-0.5 transition-all text-left group cursor-grab active:cursor-grabbing">
+                        className={cn("w-full bg-card rounded-xl border border-border p-5 shadow-sm-custom hover:shadow-md-custom hover:-translate-y-0.5 transition-all text-left group cursor-grab active:cursor-grabbing", draggingClientId === client.id && "dragging-card")}>
                         {/* Header */}
                         <div className="flex items-start justify-between mb-3">
                           <div className="flex items-center gap-3">
@@ -920,8 +923,8 @@ export function ProjectsPage() {
                       </button>
                     </div>
                     <div className={cn(
-                        'space-y-3 min-h-[80px] bg-muted/30 rounded-lg p-2 flex-1',
-                        platDragOverCol === colKey && !draggingPlatColKey && 'bg-primary/5 ring-2 ring-primary/20'
+                        'space-y-3 min-h-[80px] bg-muted/30 rounded-lg p-2 flex-1 transition-all duration-200',
+                        platDragOverCol === colKey && !draggingPlatColKey && 'drop-zone-highlight'
                       )}
                       onDragOver={(e) => {e.preventDefault();if (!draggingPlatColKey) setPlatDragOverCol(colKey);}}
                       onDrop={(e) => {e.stopPropagation();if (!draggingPlatColKey) handlePlatCardDrop(e, colKey);}}>
@@ -1574,8 +1577,8 @@ function KanbanView({ filtered, clientId, clientName, squadMembers, platformSlug
                 </button>
               </div>
               <div className={cn(
-                'space-y-3 min-h-[60px] rounded-xl transition-colors p-1 flex-1 flex flex-col gap-3',
-                dragOverCol === col.id && 'bg-primary/5 ring-2 ring-primary/20'
+                'space-y-3 min-h-[60px] rounded-xl transition-all duration-200 p-1 flex-1 flex flex-col gap-3',
+                dragOverCol === col.id && 'drop-zone-highlight'
               )}
                 onDragOver={(e) => { e.preventDefault(); setDragOverCol(col.id); }}
                 onDragLeave={() => setDragOverCol(null)}
@@ -1654,7 +1657,8 @@ function DemandCard({ task, onClick, canDelete, onDelete }: {task: import('@/typ
   return (
     <div
       draggable
-      onDragStart={handleDragStart}
+      onDragStart={(e) => { handleDragStart(e); e.currentTarget.classList.add('dragging-card'); }}
+      onDragEnd={(e) => { e.currentTarget.classList.remove('dragging-card'); }}
       onClick={onClick}
       className="bg-card rounded-xl border border-border p-4 shadow-sm-custom hover:shadow-md-custom transition-all cursor-grab active:cursor-grabbing">
       
