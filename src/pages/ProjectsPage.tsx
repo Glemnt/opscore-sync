@@ -158,6 +158,9 @@ export function ProjectsPage() {
   { id: 'churned', label: 'Churned', status: 'churned' }]
   );
 
+  // Stable key to avoid infinite loop (clients array changes reference every render)
+  const clientStatusKey = clients.map(c => `${c.id}:${c.status}`).sort().join(',');
+
   // Sync kanban columns when dynamic statuses load
   useEffect(() => {
     if (clientStatuses.length > 0) {
@@ -167,7 +170,7 @@ export function ProjectsPage() {
       const extraCols = orphanStatuses.map(s => ({ id: s, label: s.charAt(0).toUpperCase() + s.slice(1).replace(/_/g, ' '), status: s }));
       setClientCols([...baseCols, ...extraCols]);
     }
-  }, [clientStatuses, clients]);
+  }, [clientStatuses, clientStatusKey]);
   const [dragOverClientCol, setDragOverClientCol] = useState<string | null>(null);
   const [editingColId, setEditingColId] = useState<string | null>(null);
   const [draggingClientColId, setDraggingClientColId] = useState<string | null>(null);

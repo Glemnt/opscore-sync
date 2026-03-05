@@ -1,42 +1,33 @@
 
 
-## Plano: Corrigir loop infinito no useEffect da pagina Squads
+## Plano: Corrigir dialogs de Gerar Demandas e Transferir Plataforma
 
-### Problema raiz
+### Problema
+Os dialogs `GenerateDemandsDialog` e `TransferPlatformDialog` nunca aparecem porque estão renderizados no bloco `return` final do componente (linha 902-922), mas os botões que ativam o estado estão no bloco `return` do step 2.5 (linha 615-808). Como o step 2.5 faz um `return` antecipado, o código nunca chega à renderização dos dialogs.
 
-O console mostra o erro **"Maximum update depth exceeded"** na `ProjectsPage.tsx`. O `useEffect` na linha 162 depende de `clients` (que vem de `getVisibleClients()`), mas `getVisibleClients()` retorna um novo array a cada render. Isso cria um ciclo infinito: `setClientCols` → re-render → novo array `clients` → `useEffect` dispara novamente → `setClientCols` → ...
+### Solução
 
-Esse loop infinito pode causar o travamento da renderizacao do componente, impedindo que as plataformas aparecam corretamente no Kanban.
+**Arquivo: `src/pages/ProjectsPage.tsx`**
 
-### Nota sobre dados
+Mover os dois blocos de renderização condicional dos dialogs (`generateTarget` e `transferTarget`) para dentro do bloco `return` do step 2.5, logo antes do `</div>` final (linha ~807), envolvendo tudo em um fragment `<>...</>`:
 
-Os dados estao 100% sincronizados no banco — todos os clientes com plataformas configuradas possuem registros correspondentes em `client_platforms` com o `squad_id` correto. O problema e exclusivamente de renderizacao no frontend.
+```tsx
+// Antes do fechamento do return do step 2.5 (linha 808):
+return (
+  <>
+    <div className="p-6 animate-fade-in">
+      {/* ... conteúdo existente do step 2.5 ... */}
+    </div>
 
-### Solucao
-
-**1. `src/pages/ProjectsPage.tsx` — Corrigir dependencia do useEffect (~5 linhas)**
-
-Substituir a dependencia `clients` por uma chave estavel derivada dos status dos clientes, evitando re-execucoes desnecessarias:
-
-```typescript
-// Criar uma chave estavel baseada nos status dos clientes
-const clientStatusKey = clients.map(c => `${c.id}:${c.status}`).sort().join(',');
-
-useEffect(() => {
-  if (clientStatuses.length > 0) {
-    const baseCols = clientStatuses.map((s) => ({ id: s.key, label: s.label, status: s.key }));
-    const knownKeys = new Set(baseCols.map(c => c.status));
-    const orphanStatuses = [...new Set(clients.map(c => c.status))].filter(s => !knownKeys.has(s));
-    const extraCols = orphanStatuses.map(s => ({ id: s, label: s.charAt(0).toUpperCase() + s.slice(1).replace(/_/g, ' '), status: s }));
-    setClientCols([...baseCols, ...extraCols]);
-  }
-}, [clientStatuses, clientStatusKey]);
+    {generateTarget && (
+      <GenerateDemandsDialog ... />
+    )}
+    {transferTarget && (
+      <TransferPlatformDialog ... />
+    )}
+  </>
+);
 ```
 
-A variavel `clientStatusKey` so muda quando os status dos clientes realmente mudam, quebrando o ciclo infinito.
-
-### Impacto
-- 1 arquivo alterado (`ProjectsPage.tsx`, ~3 linhas)
-- Corrige o loop infinito que impede a renderizacao correta
-- Sem quebra de funcionalidade
+Nenhuma outra mudança necessária. A renderização no bloco final (linha 902-922) pode ser mantida para cobrir o step 3, ou removida se não houver botões lá.
 
