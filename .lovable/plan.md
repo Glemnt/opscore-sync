@@ -1,44 +1,33 @@
 
 
-## Plano: Melhorar dialog de adicionar/remover plataformas na pagina Squads
+## Plano: Corrigir dialogs de Gerar Demandas e Transferir Plataforma
 
-### Situacao atual
-- O dialog de "Adicionar Plataforma" usa um `<Select>` mostrando apenas as plataformas ainda nao adicionadas
-- O botao "Adicionar Plataforma" fica oculto quando nao ha plataformas disponiveis
-- Nao existe opcao de remover uma plataforma ja adicionada ao cliente
+### Problema
+Os dialogs `GenerateDemandsDialog` e `TransferPlatformDialog` nunca aparecem porque estão renderizados no bloco `return` final do componente (linha 902-922), mas os botões que ativam o estado estão no bloco `return` do step 2.5 (linha 615-808). Como o step 2.5 faz um `return` antecipado, o código nunca chega à renderização dos dialogs.
 
-### Mudancas em `src/pages/ProjectsPage.tsx`
+### Solução
 
-**1. Importar `useDeleteClientPlatform`** do hook existente em `useClientPlatformsQuery.ts`
+**Arquivo: `src/pages/ProjectsPage.tsx`**
 
-**2. Substituir o dialog atual por uma lista completa de plataformas:**
-- Mostrar TODAS as plataformas cadastradas em Configuracoes (`platformOptions`)
-- Cada plataforma aparece como um item com:
-  - Nome da plataforma
-  - Botao "Adicionar" (habilitado) se ainda nao foi adicionada ao cliente
-  - Botao "Remover" (vermelho) se ja foi adicionada — com confirmacao
-  - Visual desabilitado/cinza + badge "Adicionada" para as que ja estao vinculadas
+Mover os dois blocos de renderização condicional dos dialogs (`generateTarget` e `transferTarget`) para dentro do bloco `return` do step 2.5, logo antes do `</div>` final (linha ~807), envolvendo tudo em um fragment `<>...</>`:
 
-**3. Mostrar o botao "Adicionar Plataforma" sempre** (remover condicional `available.length > 0`)
-- O dialog agora serve tanto para adicionar quanto para remover
+```tsx
+// Antes do fechamento do return do step 2.5 (linha 808):
+return (
+  <>
+    <div className="p-6 animate-fade-in">
+      {/* ... conteúdo existente do step 2.5 ... */}
+    </div>
 
-**4. Logica de remocao:**
-- Chamar `deleteClientPlatformMut.mutate(platformId)` para remover o registro em `client_platforms`
-- Atualizar o array `clients.platforms` removendo o slug via `updateClientField`
-- Atualizar `selectedClient` local
-
-**5. Layout do dialog:**
-```text
-┌─ Gerenciar Plataformas ──────────────────┐
-│                                          │
-│  Mercado Livre    [✓ Adicionada]  [🗑]   │
-│  Shopee           [✓ Adicionada]  [🗑]   │
-│  Amazon           [ + Adicionar ]        │
-│  Magalu           [ + Adicionar ]        │
-│                                          │
-│                          [Fechar]        │
-└──────────────────────────────────────────┘
+    {generateTarget && (
+      <GenerateDemandsDialog ... />
+    )}
+    {transferTarget && (
+      <TransferPlatformDialog ... />
+    )}
+  </>
+);
 ```
 
-Nenhuma migracao de banco necessaria — `useDeleteClientPlatform` ja existe no hook.
+Nenhuma outra mudança necessária. A renderização no bloco final (linha 902-922) pode ser mantida para cobrir o step 3, ou removida se não houver botões lá.
 
