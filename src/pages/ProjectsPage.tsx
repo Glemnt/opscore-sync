@@ -62,6 +62,7 @@ export function ProjectsPage() {
   const deleteClientPlatformMut = useDeleteClientPlatform();
   const [addPlatformDialogOpen, setAddPlatformDialogOpen] = useState(false);
   const [newPlatformSlug, setNewPlatformSlug] = useState('');
+  const [platformToRemove, setPlatformToRemove] = useState<{ slug: string; cpId: string | undefined } | null>(null);
   const { data: platformPhaseStatuses = [] } = usePlatformPhaseStatusesQuery();
   const addPlatPhaseMut = useAddPlatformPhaseStatus();
   const deletePlatPhaseMut = useDeletePlatformPhaseStatus();
@@ -1166,14 +1167,7 @@ export function ProjectsPage() {
                       size="sm"
                       className="text-destructive hover:text-destructive hover:bg-destructive/10 gap-1"
                       disabled={deleteClientPlatformMut.isPending}
-                      onClick={() => {
-                        if (cpRecord) {
-                          deleteClientPlatformMut.mutate(cpRecord.id);
-                        }
-                        const newPlatforms = currentSlugs.filter((s) => s !== platform.slug);
-                        updateClientField(selectedClient!.id, 'platforms', newPlatforms, 'Plataformas');
-                        setSelectedClient({ ...selectedClient!, platforms: newPlatforms });
-                      }}>
+                      onClick={() => setPlatformToRemove({ slug: platform.slug, cpId: cpRecord?.id })}>
                       <Trash2 className="w-3.5 h-3.5" />
                       Remover
                     </Button>
@@ -1206,6 +1200,36 @@ export function ProjectsPage() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setAddPlatformDialogOpen(false)}>Fechar</Button>
           </DialogFooter>
+
+          {/* Confirm remove platform */}
+          <AlertDialog open={!!platformToRemove} onOpenChange={(open) => { if (!open) setPlatformToRemove(null); }}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Remover plataforma</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Tem certeza que deseja remover <strong>{platformOptions.find(p => p.slug === platformToRemove?.slug)?.name ?? platformToRemove?.slug}</strong> deste cliente? Esta ação não pode ser desfeita.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogAction
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  onClick={() => {
+                    if (!platformToRemove || !selectedClient) return;
+                    if (platformToRemove.cpId) {
+                      deleteClientPlatformMut.mutate(platformToRemove.cpId);
+                    }
+                    const currentSlugs = selectedClient.platforms ?? [];
+                    const newPlatforms = currentSlugs.filter((s) => s !== platformToRemove.slug);
+                    updateClientField(selectedClient.id, 'platforms', newPlatforms, 'Plataformas');
+                    setSelectedClient({ ...selectedClient, platforms: newPlatforms });
+                    setPlatformToRemove(null);
+                  }}>
+                  Remover
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </DialogContent>
       </Dialog>
 
