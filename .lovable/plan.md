@@ -1,39 +1,33 @@
 
 
-## Plano: Corrigir drag-and-drop dos cards de plataforma no Kanban
+## Plano: Corrigir dialogs de Gerar Demandas e Transferir Plataforma
 
-### Problema identificado
-O card de plataforma tem um handler `onClick={() => setSelectedPlatform(slug)}` (linha 977) que navega para a visao detalhada da plataforma. Quando o usuario solta o card apos arrastar, o evento `click` pode disparar antes ou junto com o `drop`, fazendo a pagina trocar de visao e impedindo que o drop funcione corretamente. Alem disso, falta `e.stopPropagation()` nos handlers de drop internos, causando dupla execucao.
+### Problema
+Os dialogs `GenerateDemandsDialog` e `TransferPlatformDialog` nunca aparecem porque estão renderizados no bloco `return` final do componente (linha 902-922), mas os botões que ativam o estado estão no bloco `return` do step 2.5 (linha 615-808). Como o step 2.5 faz um `return` antecipado, o código nunca chega à renderização dos dialogs.
 
-### Mudancas em `src/pages/ProjectsPage.tsx`
+### Solução
 
-**1. Evitar que `onClick` dispare durante drag:**
-- No `onDragStart` do card, setar um flag (`setDraggingPlatCardSlug` ja existe)
-- No `onClick`, verificar se `draggingPlatCardSlug` esta ativo e ignorar o click nesse caso
-- Usar um ref `wasDraggingRef` para capturar o estado entre `onDragEnd` e `onClick` (ambos disparam no mesmo ciclo)
+**Arquivo: `src/pages/ProjectsPage.tsx`**
 
-Substituir linha 977:
-```typescript
-onClick={() => setSelectedPlatform(slug)}
+Mover os dois blocos de renderização condicional dos dialogs (`generateTarget` e `transferTarget`) para dentro do bloco `return` do step 2.5, logo antes do `</div>` final (linha ~807), envolvendo tudo em um fragment `<>...</>`:
+
+```tsx
+// Antes do fechamento do return do step 2.5 (linha 808):
+return (
+  <>
+    <div className="p-6 animate-fade-in">
+      {/* ... conteúdo existente do step 2.5 ... */}
+    </div>
+
+    {generateTarget && (
+      <GenerateDemandsDialog ... />
+    )}
+    {transferTarget && (
+      <TransferPlatformDialog ... />
+    )}
+  </>
+);
 ```
-Por:
-```typescript
-onClick={() => {
-  if (wasDraggingPlatRef.current) {
-    wasDraggingPlatRef.current = false;
-    return;
-  }
-  setSelectedPlatform(slug);
-}}
-```
 
-E no `onDragStart` (linha 971-975), adicionar `e.stopPropagation()`. No `onDragEnd` (linha 976), setar `wasDraggingPlatRef.current = true`.
-
-**2. Adicionar `e.stopPropagation()` no drop handler interno** (linha 926):
-- Evitar que o evento de drop do container de cards buble para o container da coluna, prevenindo dupla execucao de `handlePlatCardDrop`
-
-**3. Adicionar ref `wasDraggingPlatRef`:**
-- `const wasDraggingPlatRef = useRef(false)` no inicio do componente
-
-Mudanca de ~10 linhas, sem migracao de banco.
+Nenhuma outra mudança necessária. A renderização no bloco final (linha 902-922) pode ser mantida para cobrir o step 3, ou removida se não houver botões lá.
 
