@@ -134,4 +134,18 @@
     background-color: hsl(var(--border));
     border-radius: 2px;
   }
+
+  .dragging-card {
+    @apply opacity-50 scale-95 rotate-1 shadow-inner;
+  }
+
+  .drop-zone-highlight {
+    @apply bg-primary/10 ring-2 ring-primary/40 shadow-inner;
+    animation: drop-pulse 1.5s ease-in-out infinite;
+  }
+
+  @keyframes drop-pulse {
+    0%, 100% { background-color: hsl(var(--primary) / 0.08); }
+    50% { background-color: hsl(var(--primary) / 0.15); }
+  }
 }

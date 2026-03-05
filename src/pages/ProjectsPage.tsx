@@ -98,6 +98,7 @@ export function ProjectsPage() {
   const [draggingPlatColKey, setDraggingPlatColKey] = useState<string | null>(null);
   const [platColDropTarget, setPlatColDropTarget] = useState<string | null>(null);
   const [draggingPlatCardSlug, setDraggingPlatCardSlug] = useState<string | null>(null);
+  const [draggingClientId, setDraggingClientId] = useState<string | null>(null);
   const wasDraggingPlatRef = useRef(false);
   const [flowMode, setFlowMode] = useState<FlowDialogMode>('create');
 
@@ -595,8 +596,8 @@ export function ProjectsPage() {
                   </button>
                 </div>
                 <div className={cn(
-                  'space-y-3 min-h-0 rounded-xl transition-colors p-1 flex-1 overflow-y-auto',
-                  dragOverClientCol === col.id && 'bg-primary/5 ring-2 ring-primary/20'
+                  'space-y-3 min-h-0 rounded-xl transition-all duration-200 p-1 flex-1 overflow-y-auto',
+                  dragOverClientCol === col.id && 'drop-zone-highlight'
                 )}
                 onDragOver={(e) => {
                   e.preventDefault();

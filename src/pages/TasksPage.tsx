@@ -326,8 +326,8 @@ export function TasksPage() {
                 </div>
               </div>
               <div className={cn(
-                'space-y-2.5 min-h-0 rounded-xl transition-colors p-1 flex-1 overflow-y-auto',
-                dragOverCol === col.status && 'bg-primary/5 ring-2 ring-primary/20'
+                'space-y-2.5 min-h-0 rounded-xl transition-all duration-200 p-1 flex-1 overflow-y-auto',
+                dragOverCol === col.status && 'drop-zone-highlight'
               )}
               onDragOver={(e) => {
                 e.preventDefault();
