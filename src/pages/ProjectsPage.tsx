@@ -1492,7 +1492,11 @@ function KanbanView({ filtered, clientId, clientName, squadMembers, platformSlug
 
   // Build task-backed project cards
   const getColTasks = (colStatus: string) => {
-    return allTasks.filter((t) => t.clientId === clientId && t.status === colStatus);
+    return allTasks.filter((t) => {
+      if (t.clientId !== clientId || t.status !== colStatus) return false;
+      if (platformSlug) return t.platforms?.includes(platformSlug);
+      return true;
+    });
   };
 
   return (

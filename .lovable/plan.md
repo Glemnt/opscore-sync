@@ -1,25 +1,33 @@
 
 
-## Plano: Filtrar demandas geradas por plataforma no Kanban
+## Plano: Corrigir dialogs de Gerar Demandas e Transferir Plataforma
 
 ### Problema
-A funcao `getColTasks` no componente `KanbanView` (linha 1494) filtra tarefas apenas por `clientId` e `status`, ignorando o `platformSlug`. Isso faz com que tarefas criadas para uma plataforma aparecam em todas as pipelines.
+Os dialogs `GenerateDemandsDialog` e `TransferPlatformDialog` nunca aparecem porque estão renderizados no bloco `return` final do componente (linha 902-922), mas os botões que ativam o estado estão no bloco `return` do step 2.5 (linha 615-808). Como o step 2.5 faz um `return` antecipado, o código nunca chega à renderização dos dialogs.
 
-### Mudanca em `src/pages/ProjectsPage.tsx`
+### Solução
 
-**1. Atualizar `getColTasks` para filtrar por plataforma** (linha 1494-1496):
-- Quando `platformSlug` estiver definido, adicionar filtro `t.platforms?.includes(platformSlug)`
-- Quando nao estiver definido (visao "todas"), manter comportamento atual
+**Arquivo: `src/pages/ProjectsPage.tsx`**
 
-```typescript
-const getColTasks = (colStatus: string) => {
-  return allTasks.filter((t) => {
-    if (t.clientId !== clientId || t.status !== colStatus) return false;
-    if (platformSlug) return t.platforms?.includes(platformSlug);
-    return true;
-  });
-};
+Mover os dois blocos de renderização condicional dos dialogs (`generateTarget` e `transferTarget`) para dentro do bloco `return` do step 2.5, logo antes do `</div>` final (linha ~807), envolvendo tudo em um fragment `<>...</>`:
+
+```tsx
+// Antes do fechamento do return do step 2.5 (linha 808):
+return (
+  <>
+    <div className="p-6 animate-fade-in">
+      {/* ... conteúdo existente do step 2.5 ... */}
+    </div>
+
+    {generateTarget && (
+      <GenerateDemandsDialog ... />
+    )}
+    {transferTarget && (
+      <TransferPlatformDialog ... />
+    )}
+  </>
+);
 ```
 
-Nenhuma migracao necessaria. Mudanca de 3 linhas.
+Nenhuma outra mudança necessária. A renderização no bloco final (linha 902-922) pode ser mantida para cobrir o step 3, ou removida se não houver botões lá.
 
