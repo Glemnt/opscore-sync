@@ -221,8 +221,6 @@ export function ClientDetailModal({ client, open, onClose }: ClientDetailModalPr
   const addClientPlatformMut = useAddClientPlatform();
   const deleteClientPlatformMut = useDeleteClientPlatform();
   const [showFlowSelect, setShowFlowSelect] = useState(false);
-  const [editingField, setEditingField] = useState<string | null>(null);
-  const [editValue, setEditValue] = useState('');
   const [noteMessage, setNoteMessage] = useState('');
   const [showLogs, setShowLogs] = useState(false);
   const [editMode, setEditMode] = useState(false);
@@ -266,19 +264,6 @@ export function ClientDetailModal({ client, open, onClose }: ClientDetailModalPr
   const formatDate = (date: string) =>
     new Date(date).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' });
 
-  const startEdit = (field: string, currentValue: string) => {
-    setEditingField(field);
-    setEditValue(currentValue);
-  };
-
-  const saveEdit = (field: string, fieldLabel: string) => {
-    if (editValue !== String((client as any)[field] ?? '')) {
-      updateClientField(client.id, field, field === 'monthlyRevenue' ? Number(editValue) : editValue, fieldLabel);
-    }
-    setEditingField(null);
-  };
-
-  const cancelEdit = () => { setEditingField(null); setEditValue(''); };
 
   const handleSendNote = () => {
     if (!noteMessage.trim()) return;
@@ -286,77 +271,12 @@ export function ClientDetailModal({ client, open, onClose }: ClientDetailModalPr
     setNoteMessage('');
   };
 
-  const EditableField = ({ field, label, value, type = 'text' }: { field: string; label: string; value: string; type?: string }) => {
-    const isEditing = editingField === field;
-    return (
-      <div className="bg-muted/50 rounded-lg p-3">
-        <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">{label}</p>
-        {isEditing ? (
-          <div className="flex items-center gap-1.5">
-            {field === 'startDate' ? (
-              <Popover open={true} onOpenChange={(open) => { if (!open) cancelEdit(); }}>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" className="flex-1 h-7 text-sm justify-start font-normal">
-                    <CalendarIcon className="mr-2 h-3.5 w-3.5" />
-                    {editValue ? format(parseISO(editValue), "dd 'de' MMM yyyy", { locale: ptBR }) : 'Selecione...'}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0 z-[9999]" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={editValue ? parseISO(editValue) : undefined}
-                    onSelect={(date) => {
-                      if (date) {
-                        const formatted = format(date, 'yyyy-MM-dd');
-                        setEditValue(formatted);
-                        updateClientField(client.id, 'startDate', formatted, label);
-                        setEditingField(null);
-                      }
-                    }}
-                    initialFocus
-                    locale={ptBR}
-                    className="p-3 pointer-events-auto"
-                  />
-                </PopoverContent>
-              </Popover>
-            ) : field === 'squadId' ? (
-              <select
-                value={editValue}
-                onChange={e => setEditValue(e.target.value)}
-                className="flex-1 text-sm bg-background border border-input rounded px-2 py-1 text-foreground"
-              >
-                {squads.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-              </select>
-            ) : field === 'responsible' ? (
-              <select
-                value={editValue}
-                onChange={e => setEditValue(e.target.value)}
-                className="flex-1 text-sm bg-background border border-input rounded px-2 py-1 text-foreground"
-              >
-                <option value="">Selecione...</option>
-                {appUsers.map(u => <option key={u.id} value={u.name}>{u.name}</option>)}
-              </select>
-            ) : (
-              <Input type={type} value={editValue} onChange={e => setEditValue(e.target.value)} className="h-7 text-sm flex-1" />
-            )}
-            {field !== 'startDate' && (
-              <>
-                <button onClick={() => saveEdit(field, label)} className="p-1 text-success hover:bg-success/10 rounded"><Save className="w-3.5 h-3.5" /></button>
-                <button onClick={cancelEdit} className="p-1 text-destructive hover:bg-destructive/10 rounded"><X className="w-3.5 h-3.5" /></button>
-              </>
-            )}
-          </div>
-        ) : (
-          <div className="flex items-center justify-between group/edit">
-            <p className="text-sm font-semibold text-foreground">{value}</p>
-            <button onClick={() => startEdit(field, field === 'squadId' ? client.squadId : String((client as any)[field] ?? ''))} className="opacity-0 group-hover/edit:opacity-100 p-1 text-muted-foreground hover:text-primary rounded transition-opacity">
-              <Edit3 className="w-3 h-3" />
-            </button>
-          </div>
-        )}
-      </div>
-    );
-  };
+  const ReadOnlyField = ({ label, value }: { label: string; value: string }) => (
+    <div className="bg-muted/50 rounded-lg p-3">
+      <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">{label}</p>
+      <p className="text-sm font-semibold text-foreground">{value}</p>
+    </div>
+  );
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
@@ -380,7 +300,7 @@ export function ClientDetailModal({ client, open, onClose }: ClientDetailModalPr
                 {client.contractType === 'mrr' ? 'MRR' : 'TCV'} {client.contractDurationMonths ? `${client.contractDurationMonths}m` : ''}
               </span>
               <button
-                onClick={() => { setEditMode(true); setEditData({ name: client.name, companyName: client.companyName, segment: client.segment, status: client.status, platforms: client.platforms ?? (client.platform ? [client.platform] : []), contractType: client.contractType, paymentDay: client.paymentDay, contractDurationMonths: client.contractDurationMonths, notes: client.notes, monthlyRevenue: client.monthlyRevenue, responsible: client.responsible, setupFee: client.setupFee, phone: client.phone, cnpj: client.cnpj, email: client.email }); }}
+                onClick={() => { setEditMode(true); setEditData({ name: client.name, companyName: client.companyName, segment: client.segment, status: client.status, platforms: client.platforms ?? (client.platform ? [client.platform] : []), contractType: client.contractType, paymentDay: client.paymentDay, contractDurationMonths: client.contractDurationMonths, notes: client.notes, monthlyRevenue: client.monthlyRevenue, responsible: client.responsible, setupFee: client.setupFee, phone: client.phone, cnpj: client.cnpj, email: client.email, healthColor: client.healthColor ?? 'white', squadId: client.squadId, startDate: client.startDate }); }}
                 className="p-1.5 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
                 title="Editar cliente"
               >
@@ -476,6 +396,26 @@ export function ClientDetailModal({ client, open, onClose }: ClientDetailModalPr
                       <option value={12}>12 meses</option>
                     </select>
                   </div>
+                <div>
+                  <Label className="text-xs">Squad</Label>
+                  <select value={editData.squadId ?? ''} onChange={e => setEditData(p => ({ ...p, squadId: e.target.value }))} className="w-full h-8 px-2 text-sm bg-background border border-input rounded-md text-foreground">
+                    <option value="">—</option>
+                    {squads.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <Label className="text-xs">Data de Entrada</Label>
+                  <Input type="date" value={editData.startDate ?? ''} onChange={e => setEditData(p => ({ ...p, startDate: e.target.value }))} className="h-8 text-sm" />
+                </div>
+                <div>
+                  <Label className="text-xs">Saúde do Cliente</Label>
+                  <select value={(editData as any).healthColor ?? 'white'} onChange={e => setEditData(p => ({ ...p, healthColor: e.target.value as any }))} className="w-full h-8 px-2 text-sm bg-background border border-input rounded-md text-foreground">
+                    <option value="green">🟢 Saudável</option>
+                    <option value="yellow">🟡 Atenção</option>
+                    <option value="red">🔴 Crítico</option>
+                    <option value="white">⚪ Não avaliado</option>
+                  </select>
+                </div>
               </div>
               <div>
                 <Label className="text-xs">Plataformas</Label>
@@ -522,10 +462,10 @@ export function ClientDetailModal({ client, open, onClose }: ClientDetailModalPr
           {!editMode && (
             <>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
-                <EditableField field="startDate" label="Entrada" value={formatDate(client.startDate)} type="date" />
-                <EditableField field="monthlyRevenue" label="Mensalidade" value={client.monthlyRevenue ? `R$ ${client.monthlyRevenue.toLocaleString('pt-BR')}` : '—'} type="number" />
-                <EditableField field="squadId" label="Squad" value={squad?.name ?? '—'} />
-                <EditableField field="responsible" label="Responsável" value={client.responsible || '—'} />
+                <ReadOnlyField label="Entrada" value={formatDate(client.startDate)} />
+                <ReadOnlyField label="Mensalidade" value={client.monthlyRevenue ? `R$ ${client.monthlyRevenue.toLocaleString('pt-BR')}` : '—'} />
+                <ReadOnlyField label="Squad" value={squad?.name ?? '—'} />
+                <ReadOnlyField label="Responsável" value={client.responsible || '—'} />
               </div>
 
               {/* Plataformas Operacionais */}
@@ -540,7 +480,7 @@ export function ClientDetailModal({ client, open, onClose }: ClientDetailModalPr
                 />
               )}
 
-              {/* Health color selector */}
+              {/* Health color - read only */}
               <div className="mt-3">
                 <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1.5">Saúde do Cliente</p>
                 <div className="flex items-center gap-2">
@@ -550,14 +490,13 @@ export function ClientDetailModal({ client, open, onClose }: ClientDetailModalPr
                     { value: 'red' as const, color: 'bg-destructive', label: 'Crítico' },
                     { value: 'white' as const, color: 'bg-border', label: 'Não avaliado' },
                   ]).map((opt) => (
-                    <button
+                    <div
                       key={opt.value}
-                      onClick={() => updateClientField(client.id, 'healthColor', opt.value, 'Saúde do Cliente')}
                       title={opt.label}
                       className={cn(
-                        'w-6 h-6 rounded-full border-2 transition-all',
+                        'w-6 h-6 rounded-full border-2',
                         opt.color,
-                        client.healthColor === opt.value ? 'border-foreground scale-110 ring-2 ring-primary/30' : 'border-border hover:scale-105'
+                        client.healthColor === opt.value ? 'border-foreground scale-110 ring-2 ring-primary/30' : 'border-border opacity-40'
                       )}
                     />
                   ))}
