@@ -1,33 +1,42 @@
 
 
-## Plano: Corrigir dialogs de Gerar Demandas e Transferir Plataforma
+## Plano: Sincronizar plataformas dos clientes com a tabela client_platforms
 
 ### Problema
-Os dialogs `GenerateDemandsDialog` e `TransferPlatformDialog` nunca aparecem porque estão renderizados no bloco `return` final do componente (linha 902-922), mas os botões que ativam o estado estão no bloco `return` do step 2.5 (linha 615-808). Como o step 2.5 faz um `return` antecipado, o código nunca chega à renderização dos dialogs.
 
-### Solução
+52 dos 95 clientes que possuem plataformas configuradas no campo `clients.platforms` nao possuem registros correspondentes na tabela `client_platforms`. Isso faz com que a aba de plataformas na pagina Squads apareca vazia para esses clientes.
 
-**Arquivo: `src/pages/ProjectsPage.tsx`**
+A causa raiz e que esses clientes foram criados antes da funcionalidade de sincronizacao automatica ser implementada, ou a sincronizacao falhou.
 
-Mover os dois blocos de renderização condicional dos dialogs (`generateTarget` e `transferTarget`) para dentro do bloco `return` do step 2.5, logo antes do `</div>` final (linha ~807), envolvendo tudo em um fragment `<>...</>`:
+### Solucao
 
-```tsx
-// Antes do fechamento do return do step 2.5 (linha 808):
-return (
-  <>
-    <div className="p-6 animate-fade-in">
-      {/* ... conteúdo existente do step 2.5 ... */}
-    </div>
+**1. Migracao SQL para criar registros faltantes (~1 query)**
 
-    {generateTarget && (
-      <GenerateDemandsDialog ... />
-    )}
-    {transferTarget && (
-      <TransferPlatformDialog ... />
-    )}
-  </>
-);
+Inserir registros em `client_platforms` para cada combinacao cliente/plataforma que existe em `clients.platforms` mas nao tem registro correspondente em `client_platforms`:
+
+```sql
+INSERT INTO public.client_platforms (client_id, platform_slug, phase, responsible, squad_id)
+SELECT c.id, unnest(c.platforms)::text, 'onboarding', c.responsible, c.squad_id
+FROM clients c
+WHERE c.platforms IS NOT NULL AND array_length(c.platforms, 1) > 0
+AND NOT EXISTS (
+  SELECT 1 FROM client_platforms cp 
+  WHERE cp.client_id = c.id
+)
+ON CONFLICT DO NOTHING;
 ```
 
-Nenhuma outra mudança necessária. A renderização no bloco final (linha 902-922) pode ser mantida para cobrir o step 3, ou removida se não houver botões lá.
+Isso cria os registros com:
+- `phase` = 'onboarding' (padrao)
+- `responsible` = mesmo responsavel do cliente
+- `squad_id` = mesmo squad do cliente
+
+**2. Proteção futura (opcional, recomendado)**
+
+Verificar no codigo de criacao de clientes (`AddClientDialog.tsx` ou `ClientsContext.tsx`) se a sincronizacao ja esta implementada corretamente para novos clientes, evitando reincidencia.
+
+### Impacto
+- 1 migracao SQL
+- 0 arquivos de codigo alterados (a menos que a sincronizacao precise de ajuste)
+- ~130 novos registros em `client_platforms` (52 clientes x ~2.5 plataformas em media)
 
