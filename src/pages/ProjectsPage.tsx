@@ -1440,6 +1440,8 @@ function KanbanView({ filtered, clientId, clientName, squadMembers, platformSlug
   const [demandDialog, setDemandDialog] = useState<{open: boolean;status: TaskStatus;}>({ open: false, status: 'backlog' });
   const [dragOverCol, setDragOverCol] = useState<string | null>(null);
   const [selectedTask, setSelectedTask] = useState<string | null>(null);
+  const [draggingKanbanColId, setDraggingKanbanColId] = useState<string | null>(null);
+  const [kanbanColDropTarget, setKanbanColDropTarget] = useState<string | null>(null);
 
   const liveSelectedTask = selectedTask ? allTasks.find((t) => t.id === selectedTask) ?? null : null;
 
