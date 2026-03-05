@@ -475,7 +475,7 @@ export function ClientDetailModal({ client, open, onClose }: ClientDetailModalPr
                 />
               )}
 
-              {/* Health color selector */}
+              {/* Health color - read only */}
               <div className="mt-3">
                 <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1.5">Saúde do Cliente</p>
                 <div className="flex items-center gap-2">
@@ -485,14 +485,13 @@ export function ClientDetailModal({ client, open, onClose }: ClientDetailModalPr
                     { value: 'red' as const, color: 'bg-destructive', label: 'Crítico' },
                     { value: 'white' as const, color: 'bg-border', label: 'Não avaliado' },
                   ]).map((opt) => (
-                    <button
+                    <div
                       key={opt.value}
-                      onClick={() => updateClientField(client.id, 'healthColor', opt.value, 'Saúde do Cliente')}
                       title={opt.label}
                       className={cn(
-                        'w-6 h-6 rounded-full border-2 transition-all',
+                        'w-6 h-6 rounded-full border-2',
                         opt.color,
-                        client.healthColor === opt.value ? 'border-foreground scale-110 ring-2 ring-primary/30' : 'border-border hover:scale-105'
+                        client.healthColor === opt.value ? 'border-foreground scale-110 ring-2 ring-primary/30' : 'border-border opacity-40'
                       )}
                     />
                   ))}
