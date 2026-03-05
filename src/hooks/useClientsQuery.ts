@@ -85,6 +85,13 @@ export function useUpdateClient() {
       }
       const { error } = await supabase.from('clients').update(dbUpdates).eq('id', id);
       if (error) throw error;
+      // Propagate squad change to client_platforms
+      if (dbUpdates.squad_id !== undefined) {
+        await supabase
+          .from('client_platforms')
+          .update({ squad_id: dbUpdates.squad_id })
+          .eq('client_id', id);
+      }
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['clients'] }),
   });

@@ -1,41 +1,33 @@
 
 
-## Plano: Sincronizar squad das plataformas ao alterar squad do cliente
+## Plano: Corrigir dialogs de Gerar Demandas e Transferir Plataforma
 
 ### Problema
+Os dialogs `GenerateDemandsDialog` e `TransferPlatformDialog` nunca aparecem porque estão renderizados no bloco `return` final do componente (linha 902-922), mas os botões que ativam o estado estão no bloco `return` do step 2.5 (linha 615-808). Como o step 2.5 faz um `return` antecipado, o código nunca chega à renderização dos dialogs.
 
-Quando o squad de um cliente e alterado na pagina Clientes, os registros em `client_platforms` mantêm o `squad_id` antigo. Isso faz com que as plataformas não apareçam ao abrir o cliente pela pagina Squads do novo squad.
+### Solução
 
-### Solucao
+**Arquivo: `src/pages/ProjectsPage.tsx`**
 
-**1. `src/hooks/useClientsQuery.ts` — `useUpdateClient` (~5 linhas)**
+Mover os dois blocos de renderização condicional dos dialogs (`generateTarget` e `transferTarget`) para dentro do bloco `return` do step 2.5, logo antes do `</div>` final (linha ~807), envolvendo tudo em um fragment `<>...</>`:
 
-Apos o `UPDATE` na tabela `clients`, verificar se `squad_id` foi alterado. Se sim, executar um segundo `UPDATE` em `client_platforms` para propagar o novo `squad_id` a todas as plataformas do cliente:
+```tsx
+// Antes do fechamento do return do step 2.5 (linha 808):
+return (
+  <>
+    <div className="p-6 animate-fade-in">
+      {/* ... conteúdo existente do step 2.5 ... */}
+    </div>
 
-```typescript
-// After updating clients table
-if (dbUpdates.squad_id !== undefined) {
-  await supabase
-    .from('client_platforms')
-    .update({ squad_id: dbUpdates.squad_id })
-    .eq('client_id', id);
-}
+    {generateTarget && (
+      <GenerateDemandsDialog ... />
+    )}
+    {transferTarget && (
+      <TransferPlatformDialog ... />
+    )}
+  </>
+);
 ```
 
-**2. Migracao de dados — corrigir registros existentes**
-
-Executar um `UPDATE` para alinhar o `squad_id` de todos os `client_platforms` com o `squad_id` atual do cliente correspondente:
-
-```sql
-UPDATE public.client_platforms cp
-SET squad_id = c.squad_id
-FROM public.clients c
-WHERE cp.client_id = c.id
-AND (cp.squad_id IS DISTINCT FROM c.squad_id);
-```
-
-### Impacto
-- 1 arquivo alterado (`useClientsQuery.ts`, ~5 linhas)
-- 1 operacao de dados para corrigir registros existentes
-- Nenhuma quebra de funcionalidade
+Nenhuma outra mudança necessária. A renderização no bloco final (linha 902-922) pode ser mantida para cobrir o step 3, ou removida se não houver botões lá.
 
