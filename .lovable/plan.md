@@ -1,33 +1,40 @@
 
 
-## Plano: Corrigir dialogs de Gerar Demandas e Transferir Plataforma
+## Plano: Corrigir exclusao de colunas no Kanban de Squads
 
-### Problema
-Os dialogs `GenerateDemandsDialog` e `TransferPlatformDialog` nunca aparecem porque estão renderizados no bloco `return` final do componente (linha 902-922), mas os botões que ativam o estado estão no bloco `return` do step 2.5 (linha 615-808). Como o step 2.5 faz um `return` antecipado, o código nunca chega à renderização dos dialogs.
+### Problema raiz
 
-### Solução
+Ao excluir uma coluna do Kanban (ex: "Onboarding"), o registro e deletado da tabela `client_statuses` com sucesso. Porem, os clientes que possuem `status = 'onboarding'` continuam com esse valor. O `useEffect` detecta esse status como "orfao" e recria a coluna automaticamente — fazendo parecer que a exclusao nao funcionou.
+
+### Solucao
+
+Na funcao `confirmRemoveCol` (~linha 340), alem de deletar o status do banco, tambem reassinar todos os clientes daquela coluna para o primeiro status valido restante. Isso se aplica tanto para colunas do banco quanto para orfas:
 
 **Arquivo: `src/pages/ProjectsPage.tsx`**
 
-Mover os dois blocos de renderização condicional dos dialogs (`generateTarget` e `transferTarget`) para dentro do bloco `return` do step 2.5, logo antes do `</div>` final (linha ~807), envolvendo tudo em um fragment `<>...</>`:
-
-```tsx
-// Antes do fechamento do return do step 2.5 (linha 808):
-return (
-  <>
-    <div className="p-6 animate-fade-in">
-      {/* ... conteúdo existente do step 2.5 ... */}
-    </div>
-
-    {generateTarget && (
-      <GenerateDemandsDialog ... />
-    )}
-    {transferTarget && (
-      <TransferPlatformDialog ... />
-    )}
-  </>
-);
+```typescript
+const confirmRemoveCol = () => {
+  if (deleteColConfirm) {
+    const isOrphan = !clientStatuses.find(s => s.key === deleteColConfirm.status);
+    // Determine first valid status (excluding the one being deleted)
+    const firstValid = clientStatuses.find(s => s.key !== deleteColConfirm.status)?.key ?? 'active';
+    
+    // Always reassign clients with this status
+    squadClients
+      .filter(c => c.status === deleteColConfirm.status)
+      .forEach(c => updateClient(c.id, { status: firstValid }));
+    
+    // If it's a DB status, also delete the record
+    if (!isOrphan) {
+      deleteStatusMut.mutate(deleteColConfirm.status);
+    }
+    
+    setDeleteColConfirm(null);
+  }
+};
 ```
 
-Nenhuma outra mudança necessária. A renderização no bloco final (linha 902-922) pode ser mantida para cobrir o step 3, ou removida se não houver botões lá.
+### Impacto
+- 1 arquivo alterado, ~10 linhas modificadas
+- Clientes sao movidos para outra coluna antes da exclusao, impedindo a recriacao da coluna como orfao
 
