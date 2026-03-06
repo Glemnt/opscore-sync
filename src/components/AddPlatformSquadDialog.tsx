@@ -31,6 +31,7 @@ export function AddPlatformSquadDialog({ open, onClose, defaultSquadId }: AddPla
   const { data: platformOptions = [] } = usePlatformsQuery();
   const { data: appUsers = [] } = useAppUsersQuery();
   const { data: clients = [] } = useClientsQuery();
+  const { data: clientPlatformsData = [] } = useClientPlatformsQuery();
   const addClientPlatformMut = useAddClientPlatform();
 
   const [clientId, setClientId] = useState('');
