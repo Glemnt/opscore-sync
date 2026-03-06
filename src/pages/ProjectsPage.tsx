@@ -47,7 +47,7 @@ export function ProjectsPage() {
   const { squads, addSquad, removeSquad, updateSquad } = useSquads();
   const { tasks: allTasksData, addTask } = useTasks();
   const { data: projects = [] } = useProjectsQuery();
-  const { updateClientField, getVisibleClients } = useClients();
+  const { updateClientField, updateClient, getVisibleClients } = useClients();
   const { data: appUsers = [] } = useAppUsersQuery();
   const { data: clientStatuses = [] } = useClientStatusesQuery();
   const clientStatusMap = useClientStatusesMap();
@@ -1148,7 +1148,20 @@ export function ProjectsPage() {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction
-                onClick={() => {if (platDeleteColConfirm) {deletePlatPhaseMut.mutate(platDeleteColConfirm.key);setPlatDeleteColConfirm(null);}}}
+                onClick={() => {
+                  if (platDeleteColConfirm) {
+                    const isOrphan = !platformPhaseStatuses.find(s => s.key === platDeleteColConfirm.key);
+                    if (isOrphan) {
+                      const firstValid = platformPhaseStatuses[0]?.key ?? 'onboarding';
+                      clientPlatformsData
+                        .filter(cp => cp.clientId === selectedClient?.id && cp.phase === platDeleteColConfirm.key)
+                        .forEach(cp => updatePlatformMut.mutate({ id: cp.id, updates: { phase: firstValid } }));
+                    } else {
+                      deletePlatPhaseMut.mutate(platDeleteColConfirm.key);
+                    }
+                    setPlatDeleteColConfirm(null);
+                  }
+                }}
                 className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
                 
               Excluir

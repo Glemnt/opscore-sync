@@ -34,7 +34,7 @@ const COLOR_OPTIONS = [
 ];
 
 export function ClientsPage() {
-  const { getVisibleClients } = useClients();
+  const { getVisibleClients, updateClient } = useClients();
   const { squads } = useSquads();
   const { data: projects = [] } = useProjectsQuery();
   const { tasks } = useTasks();
