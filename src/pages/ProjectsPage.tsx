@@ -340,13 +340,14 @@ export function ProjectsPage() {
     const confirmRemoveCol = () => {
       if (deleteColConfirm) {
         const isOrphan = !clientStatuses.find(s => s.key === deleteColConfirm.status);
-        if (isOrphan) {
-          // Orphan status: move all clients with this status to the first valid status
-          const firstValid = clientStatuses[0]?.key ?? 'active';
-          squadClients
-            .filter(c => c.status === deleteColConfirm.status)
-            .forEach(c => updateClient(c.id, { status: firstValid }));
-        } else {
+        const firstValid = clientStatuses.find(s => s.key !== deleteColConfirm.status)?.key ?? 'active';
+
+        // Always reassign clients to prevent orphan column recreation
+        squadClients
+          .filter(c => c.status === deleteColConfirm.status)
+          .forEach(c => updateClient(c.id, { status: firstValid }));
+
+        if (!isOrphan) {
           deleteStatusMut.mutate(deleteColConfirm.status);
         }
         setDeleteColConfirm(null);
