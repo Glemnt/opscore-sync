@@ -1,33 +1,27 @@
 
 
-## Plano: Corrigir dialogs de Gerar Demandas e Transferir Plataforma
+## Plano: "Nova Plataforma" cria apenas registro em `client_platforms` (sem criar cliente)
 
 ### Problema
-Os dialogs `GenerateDemandsDialog` e `TransferPlatformDialog` nunca aparecem porque estão renderizados no bloco `return` final do componente (linha 902-922), mas os botões que ativam o estado estão no bloco `return` do step 2.5 (linha 615-808). Como o step 2.5 faz um `return` antecipado, o código nunca chega à renderização dos dialogs.
+Atualmente o dialog cria um **novo cliente** + plataforma. O usuario quer criar **apenas** um registro em `client_platforms`, vinculando a um cliente ja existente.
 
-### Solução
+### Alteracao: `src/components/AddPlatformSquadDialog.tsx`
 
-**Arquivo: `src/pages/ProjectsPage.tsx`**
+Reescrever o formulario para:
 
-Mover os dois blocos de renderização condicional dos dialogs (`generateTarget` e `transferTarget`) para dentro do bloco `return` do step 2.5, logo antes do `</div>` final (linha ~807), envolvendo tudo em um fragment `<>...</>`:
+1. **Substituir campos de cliente** (nome, empresa, CNPJ, nicho, telefone, email, faturamento, tempo de contrato, origem) por um **dropdown de selecao de cliente existente**
+2. **Manter apenas os campos da plataforma:**
+   - Cliente (dropdown dos clientes existentes)
+   - Plataforma (selecao unica)
+   - Tipo de Cliente (Seller/Lojista) → `quality_level`
+   - Responsavel pelo Onboarding → `responsible`
+   - Time Responsavel (pre-selecionado) → `squad_id`
+   - Saude da Plataforma → `health_color`
 
-```tsx
-// Antes do fechamento do return do step 2.5 (linha 808):
-return (
-  <>
-    <div className="p-6 animate-fade-in">
-      {/* ... conteúdo existente do step 2.5 ... */}
-    </div>
+3. **Submit**: chamar apenas `useAddClientPlatform` com o `clientId` selecionado — sem chamar `addClient()`
 
-    {generateTarget && (
-      <GenerateDemandsDialog ... />
-    )}
-    {transferTarget && (
-      <TransferPlatformDialog ... />
-    )}
-  </>
-);
-```
-
-Nenhuma outra mudança necessária. A renderização no bloco final (linha 902-922) pode ser mantida para cobrir o step 3, ou removida se não houver botões lá.
+### Remover
+- Imports de `useClients`, `useAuth`, `Client`, `Platform`
+- Todos os states de campos de cliente (name, companyName, cnpj, segment, phone, email, revenueTier, contractDuration, origin)
+- Constantes `ORIGIN_OPTIONS`, `REVENUE_OPTIONS`
 
