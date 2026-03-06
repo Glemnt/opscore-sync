@@ -84,6 +84,7 @@ export function AddPlatformSquadDialog({ open, onClose, defaultSquadId }: AddPla
             description: isDuplicate ? 'Selecione outra plataforma ou outro cliente.' : 'Tente novamente.',
             variant: 'destructive',
           });
+        },
       }
     );
   };
