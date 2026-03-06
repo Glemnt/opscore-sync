@@ -1,33 +1,37 @@
 
 
-## Plano: Corrigir dialogs de Gerar Demandas e Transferir Plataforma
+## Plano: "Nova Plataforma" com formulario completo (sem vincular a cliente existente)
 
-### Problema
-Os dialogs `GenerateDemandsDialog` e `TransferPlatformDialog` nunca aparecem porque estão renderizados no bloco `return` final do componente (linha 902-922), mas os botões que ativam o estado estão no bloco `return` do step 2.5 (linha 615-808). Como o step 2.5 faz um `return` antecipado, o código nunca chega à renderização dos dialogs.
+O botao "Nova Plataforma" criara um **cliente novo** (com os dados preenchidos) **e** um registro em `client_platforms`, tudo de uma vez. O card no Kanban exibira o nome no formato **"Nome do Cliente - Nome da Plataforma"**.
 
-### Solução
+### Alteracao unica: `src/components/AddPlatformSquadDialog.tsx`
 
-**Arquivo: `src/pages/ProjectsPage.tsx`**
+Reescrever o componente substituindo o dropdown de cliente existente pelo formulario completo com todos os 14 campos:
 
-Mover os dois blocos de renderização condicional dos dialogs (`generateTarget` e `transferTarget`) para dentro do bloco `return` do step 2.5, logo antes do `</div>` final (linha ~807), envolvendo tudo em um fragment `<>...</>`:
+| Campo | Componente |
+|-------|-----------|
+| Nome do Cliente | Input texto |
+| Nome da Empresa | Input texto |
+| CNPJ | Input texto |
+| Nicho do Cliente | Input texto |
+| Tipo de Cliente | Botoes Seller / Lojista |
+| Telefone | Input texto |
+| Email | Input texto |
+| Plataforma | Botoes (selecao unica) |
+| Origem | Select (Trafego, Indicacao, Organico, Outro) |
+| Responsavel Onboarding | Select (app_users) |
+| Time Responsavel | Select disabled (pre-selecionado) |
+| Tempo de Contrato | Select (6 / 12 meses) |
+| Saude da Plataforma | Botoes verde/amarelo/vermelho |
+| Faturamento | Botoes (Ate 30k / 30-100k / 100k+) |
 
-```tsx
-// Antes do fechamento do return do step 2.5 (linha 808):
-return (
-  <>
-    <div className="p-6 animate-fade-in">
-      {/* ... conteúdo existente do step 2.5 ... */}
-    </div>
+### Logica de submit
 
-    {generateTarget && (
-      <GenerateDemandsDialog ... />
-    )}
-    {transferTarget && (
-      <TransferPlatformDialog ... />
-    )}
-  </>
-);
-```
+1. Cria o cliente via `addClient()` com `name` = **"NomeCliente - NomePlataforma"** (ex: "Joao Silva - Mercado Livre")
+2. No `onSuccess`, cria `client_platform` via `useAddClientPlatform` com `qualityLevel`, `healthColor`, `squadId`
+3. Exibe toast de sucesso/erro
 
-Nenhuma outra mudança necessária. A renderização no bloco final (linha 902-922) pode ser mantida para cobrir o step 3, ou removida se não houver botões lá.
+### O que NAO muda
+- `ProjectsPage.tsx` — ja importa e usa `AddPlatformSquadDialog` corretamente
+- Nenhuma migracao de banco necessaria (a coluna `platforms` ja foi alterada para `text[]`)
 
