@@ -10,10 +10,15 @@ import {
   useAddClientChatNote,
 } from '@/hooks/useClientsQuery';
 
+interface MutationCallbacks {
+  onSuccess?: () => void;
+  onError?: (error: unknown) => void;
+}
+
 interface ClientsContextType {
   clients: Client[];
   isLoading: boolean;
-  addClient: (client: Client) => void;
+  addClient: (client: Client, callbacks?: MutationCallbacks) => void;
   deleteClient: (clientId: string) => void;
   updateClient: (clientId: string, updates: Partial<Client>) => void;
   updateClientField: (clientId: string, field: string, value: any, fieldLabel: string) => void;
@@ -32,8 +37,11 @@ export function ClientsProvider({ children }: { children: ReactNode }) {
   const addChangeLogMut = useAddChangeLog();
   const addChatNoteMut = useAddClientChatNote();
 
-  const addClient = useCallback((client: Client) => {
-    addClientMut.mutate(client);
+  const addClient = useCallback((client: Client, callbacks?: MutationCallbacks) => {
+    addClientMut.mutate(client, {
+      onSuccess: () => callbacks?.onSuccess?.(),
+      onError: (err) => callbacks?.onError?.(err),
+    });
   }, [addClientMut]);
 
   const deleteClient = useCallback((clientId: string) => {
