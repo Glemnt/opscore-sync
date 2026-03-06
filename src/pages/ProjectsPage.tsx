@@ -30,6 +30,7 @@ import { format } from 'date-fns';
 import { GenerateDemandsDialog } from '@/components/GenerateDemandsDialog';
 import { TransferPlatformDialog } from '@/components/TransferPlatformDialog';
 import { FlowManagerDialog, FlowDialogMode } from '@/components/FlowManagerDialog';
+import { AddClientDialog } from '@/components/AddClientDialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 type KanbanColumn = {id: string;label: string;status: ClientStatus | string;};
@@ -69,6 +70,7 @@ export function ProjectsPage() {
   const updatePlatPhaseMut = useUpdatePlatformPhaseStatus();
   const reorderPlatPhaseMut = useReorderPlatformPhaseStatuses();
   const [selectedSquad, setSelectedSquad] = useState<Squad | null>(null);
+  const [showAddClientSquad, setShowAddClientSquad] = useState(false);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [selectedPlatform, setSelectedPlatform] = useState<string | null>(null);
   const [search, setSearch] = useState('');
@@ -421,17 +423,24 @@ export function ProjectsPage() {
     const visibleCols = squadStatusFilter === 'all' ? clientCols : clientCols.filter((col) => col.status === squadStatusFilter);
 
     return (
+      <>
       <div className="p-6 animate-fade-in h-full flex flex-col">
         <PageHeader
           title={selectedSquad.name}
           subtitle={`${squadClients.length} clientes neste squad`}
           actions={
-          <button
-            onClick={() => setSelectedSquad(null)}
-            className="flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
-              <ArrowLeft className="w-4 h-4" />
-              Voltar aos Squads
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setSelectedSquad(null)}
+              className="flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
+                <ArrowLeft className="w-4 h-4" />
+                Voltar aos Squads
             </button>
+            <Button onClick={() => setShowAddClientSquad(true)} size="sm" className="gap-1.5">
+              <Plus className="w-4 h-4" />
+              Novo Cliente
+            </Button>
+          </div>
           } />
 
         {/* Row 1: Search + filter dropdowns */}
@@ -774,7 +783,14 @@ export function ProjectsPage() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
-      </div>);
+      </div>
+      <AddClientDialog
+        open={showAddClientSquad}
+        onClose={() => setShowAddClientSquad(false)}
+        hideFields={['contractType', 'setupFee']}
+        defaultSquadId={selectedSquad.id}
+      />
+      </>);
 
   }
 
