@@ -49,11 +49,11 @@ export function ProjectsPage() {
   const { data: projects = [] } = useProjectsQuery();
   const { updateClientField, updateClient, getVisibleClients } = useClients();
   const { data: appUsers = [] } = useAppUsersQuery();
-  const { data: clientStatuses = [] } = useClientStatusesQuery();
-  const clientStatusMap = useClientStatusesMap();
-  const addStatusMut = useAddClientStatus();
-  const deleteStatusMut = useDeleteClientStatus();
-  const updateStatusMut = useUpdateClientStatus();
+  const { data: clientStatuses = [] } = useClientStatusesQuery('squads');
+  const clientStatusMap = useClientStatusesMap('squads');
+  const addStatusMut = useAddClientStatus('squads');
+  const deleteStatusMut = useDeleteClientStatus('squads');
+  const updateStatusMut = useUpdateClientStatus('squads');
   const clients = getVisibleClients();
   const { data: platformOptions = [] } = usePlatformsQuery();
   const { data: clientPlatformsData = [] } = useClientPlatformsQuery();
@@ -150,7 +150,7 @@ export function ProjectsPage() {
     }
     setSquadDialogOpen(false);
   };
-  const reorderClientMut = useReorderClientStatuses();
+  const reorderClientMut = useReorderClientStatuses('squads');
   const [clientCols, setClientCols] = useState<KanbanColumn[]>([
   { id: 'onboarding', label: 'Onboarding', status: 'onboarding' },
   { id: 'active', label: 'Ativo', status: 'active' },
