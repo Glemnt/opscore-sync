@@ -158,11 +158,13 @@ export type Database = {
           health_color: string | null
           id: string
           notes: string
+          origin: string
           phase: string
           platform_attributes: Json
           platform_slug: string
           quality_level: string | null
           responsible: string
+          sales_responsible: string
           squad_id: string | null
           start_date: string | null
           updated_at: string
@@ -174,11 +176,13 @@ export type Database = {
           health_color?: string | null
           id?: string
           notes?: string
+          origin?: string
           phase?: string
           platform_attributes?: Json
           platform_slug: string
           quality_level?: string | null
           responsible?: string
+          sales_responsible?: string
           squad_id?: string | null
           start_date?: string | null
           updated_at?: string
@@ -190,11 +194,13 @@ export type Database = {
           health_color?: string | null
           id?: string
           notes?: string
+          origin?: string
           phase?: string
           platform_attributes?: Json
           platform_slug?: string
           quality_level?: string | null
           responsible?: string
+          sales_responsible?: string
           squad_id?: string | null
           start_date?: string | null
           updated_at?: string

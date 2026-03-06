@@ -1,38 +1,33 @@
 
 
-## Plano: Adicionar campos ao formulario "Nova Plataforma"
+## Plano: Corrigir dialogs de Gerar Demandas e Transferir Plataforma
 
-### Analise
+### Problema
+Os dialogs `GenerateDemandsDialog` e `TransferPlatformDialog` nunca aparecem porque estão renderizados no bloco `return` final do componente (linha 902-922), mas os botões que ativam o estado estão no bloco `return` do step 2.5 (linha 615-808). Como o step 2.5 faz um `return` antecipado, o código nunca chega à renderização dos dialogs.
 
-Dos 4 campos solicitados, 2 ja existem no banco:
-- **Data de onboarding** → coluna `start_date` (ja existe, so falta o campo no formulario)
-- **Responsavel pelo Onboarding** → coluna `responsible` (ja existe no formulario)
+### Solução
 
-2 campos precisam de novas colunas:
-- **Origem** → nova coluna `origin` (text)
-- **Vendedor responsavel** → nova coluna `sales_responsible` (text)
+**Arquivo: `src/pages/ProjectsPage.tsx`**
 
-### 1. Migracao de banco de dados
+Mover os dois blocos de renderização condicional dos dialogs (`generateTarget` e `transferTarget`) para dentro do bloco `return` do step 2.5, logo antes do `</div>` final (linha ~807), envolvendo tudo em um fragment `<>...</>`:
 
-Adicionar 2 colunas a `client_platforms`:
-```sql
-ALTER TABLE client_platforms ADD COLUMN origin text NOT NULL DEFAULT '';
-ALTER TABLE client_platforms ADD COLUMN sales_responsible text NOT NULL DEFAULT '';
+```tsx
+// Antes do fechamento do return do step 2.5 (linha 808):
+return (
+  <>
+    <div className="p-6 animate-fade-in">
+      {/* ... conteúdo existente do step 2.5 ... */}
+    </div>
+
+    {generateTarget && (
+      <GenerateDemandsDialog ... />
+    )}
+    {transferTarget && (
+      <TransferPlatformDialog ... />
+    )}
+  </>
+);
 ```
 
-### 2. Hook `useClientPlatformsQuery.ts`
-
-- Adicionar `origin` e `salesResponsible` ao tipo `ClientPlatform`
-- Mapear `origin` e `sales_responsible` em `mapRow`
-- Aceitar `origin` e `salesResponsible` no input de `useAddClientPlatform`
-
-### 3. Dialog `AddPlatformSquadDialog.tsx`
-
-Adicionar ao formulario:
-- **Data de Onboarding**: DatePicker (Popover + Calendar) usando `start_date`
-- **Origem**: input text livre
-- **Vendedor Responsavel**: dropdown dos `appUsers` (mesmo padrao do responsavel)
-
-Atualizar `handleSubmit` para enviar `startDate`, `origin` e `salesResponsible`.
-Atualizar `resetForm` para limpar os novos estados.
+Nenhuma outra mudança necessária. A renderização no bloco final (linha 902-922) pode ser mantida para cobrir o step 3, ou removida se não houver botões lá.
 

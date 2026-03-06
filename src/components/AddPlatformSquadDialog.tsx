@@ -1,6 +1,12 @@
 import { useState } from 'react';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import { CalendarIcon } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
 import { useSquads } from '@/contexts/SquadsContext';
 import { usePlatformsQuery } from '@/hooks/usePlatformsQuery';
 import { useAddClientPlatform, useClientPlatformsQuery } from '@/hooks/useClientPlatformsQuery';
@@ -39,6 +45,9 @@ export function AddPlatformSquadDialog({ open, onClose, defaultSquadId }: AddPla
   const [clientType, setClientType] = useState('Seller');
   const [responsible, setResponsible] = useState('');
   const [healthColor, setHealthColor] = useState('green');
+  const [startDate, setStartDate] = useState<Date | undefined>(new Date());
+  const [origin, setOrigin] = useState('');
+  const [salesResponsible, setSalesResponsible] = useState('');
 
   const resetForm = () => {
     setClientId('');
@@ -46,6 +55,9 @@ export function AddPlatformSquadDialog({ open, onClose, defaultSquadId }: AddPla
     setClientType('Seller');
     setResponsible('');
     setHealthColor('green');
+    setStartDate(new Date());
+    setOrigin('');
+    setSalesResponsible('');
   };
 
   const existingPlatformSlugs = clientPlatformsData
@@ -69,6 +81,9 @@ export function AddPlatformSquadDialog({ open, onClose, defaultSquadId }: AddPla
         qualityLevel: clientType,
         healthColor,
         responsible,
+        startDate: startDate ? format(startDate, 'yyyy-MM-dd') : undefined,
+        origin,
+        salesResponsible,
       },
       {
         onSuccess: () => {
@@ -161,6 +176,37 @@ export function AddPlatformSquadDialog({ open, onClose, defaultSquadId }: AddPla
             </div>
           </div>
 
+          <div>
+            <Label className="text-xs">Data de Onboarding</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  className={cn(
+                    'w-full h-8 px-2 text-sm bg-background border border-input rounded-md flex items-center justify-between text-foreground',
+                    !startDate && 'text-muted-foreground'
+                  )}
+                >
+                  {startDate ? format(startDate, 'dd/MM/yyyy', { locale: ptBR }) : 'Selecione...'}
+                  <CalendarIcon className="h-4 w-4 text-muted-foreground" />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar mode="single" selected={startDate} onSelect={setStartDate} locale={ptBR} initialFocus />
+              </PopoverContent>
+            </Popover>
+          </div>
+
+          <div>
+            <Label className="text-xs">Origem</Label>
+            <Input
+              value={origin}
+              onChange={e => setOrigin(e.target.value)}
+              placeholder="Ex: Indicação, Google Ads..."
+              className="h-8 text-sm"
+            />
+          </div>
+
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label className="text-xs">Responsável pelo Onboarding</Label>
@@ -173,6 +219,20 @@ export function AddPlatformSquadDialog({ open, onClose, defaultSquadId }: AddPla
                 {appUsers.map(u => <option key={u.id} value={u.name}>{u.name}</option>)}
               </select>
             </div>
+            <div>
+              <Label className="text-xs">Vendedor Responsável</Label>
+              <select
+                value={salesResponsible}
+                onChange={e => setSalesResponsible(e.target.value)}
+                className="w-full h-8 px-2 text-sm bg-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring text-foreground"
+              >
+                <option value="">Selecione...</option>
+                {appUsers.map(u => <option key={u.id} value={u.name}>{u.name}</option>)}
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
             <div>
               <Label className="text-xs">Time Responsável</Label>
               <select
