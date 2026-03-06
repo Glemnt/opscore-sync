@@ -1317,6 +1317,43 @@ export function ProjectsPage() {
           currentResponsible={transferTarget.responsible} />
 
         }
+
+      {/* Edit Platform Dialog */}
+      {editingPlatform && (
+        <EditPlatformDialog
+          open={!!editingPlatform}
+          onClose={() => setEditingPlatform(null)}
+          platform={editingPlatform}
+        />
+      )}
+
+      {/* Delete Platform Confirmation */}
+      <AlertDialog open={!!deletingPlatform} onOpenChange={(open) => { if (!open) setDeletingPlatform(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir plataforma?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir <strong>{platformOptions.find(p => p.slug === deletingPlatform?.slug)?.name ?? deletingPlatform?.slug}</strong>? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                if (!deletingPlatform || !selectedClient) return;
+                deleteClientPlatformMut.mutate(deletingPlatform.id);
+                const currentSlugs = selectedClient.platforms ?? [];
+                const newPlatforms = currentSlugs.filter((s) => s !== deletingPlatform.slug);
+                updateClientField(selectedClient.id, 'platforms', newPlatforms, 'Plataformas');
+                setSelectedClient({ ...selectedClient, platforms: newPlatforms });
+                setDeletingPlatform(null);
+              }}>
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>);
 
   }
