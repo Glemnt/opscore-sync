@@ -339,7 +339,16 @@ export function ProjectsPage() {
 
     const confirmRemoveCol = () => {
       if (deleteColConfirm) {
-        deleteStatusMut.mutate(deleteColConfirm.status);
+        const isOrphan = !clientStatuses.find(s => s.key === deleteColConfirm.status);
+        if (isOrphan) {
+          // Orphan status: move all clients with this status to the first valid status
+          const firstValid = clientStatuses[0]?.key ?? 'active';
+          squadClients
+            .filter(c => c.status === deleteColConfirm.status)
+            .forEach(c => updateClient(c.id, { status: firstValid }));
+        } else {
+          deleteStatusMut.mutate(deleteColConfirm.status);
+        }
         setDeleteColConfirm(null);
       }
     };
