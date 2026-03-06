@@ -1,0 +1,1 @@
+ALTER TABLE public.clients ALTER COLUMN platforms TYPE text[] USING platforms::text[];
