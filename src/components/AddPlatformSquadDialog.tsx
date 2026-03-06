@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Label } from '@/components/ui/label';
 import { useSquads } from '@/contexts/SquadsContext';
 import { usePlatformsQuery } from '@/hooks/usePlatformsQuery';
-import { useAddClientPlatform } from '@/hooks/useClientPlatformsQuery';
+import { useAddClientPlatform, useClientPlatformsQuery } from '@/hooks/useClientPlatformsQuery';
 import { useAppUsersQuery } from '@/hooks/useAppUsersQuery';
 import { useClientsQuery } from '@/hooks/useClientsQuery';
 import { cn } from '@/lib/utils';
@@ -31,6 +31,7 @@ export function AddPlatformSquadDialog({ open, onClose, defaultSquadId }: AddPla
   const { data: platformOptions = [] } = usePlatformsQuery();
   const { data: appUsers = [] } = useAppUsersQuery();
   const { data: clients = [] } = useClientsQuery();
+  const { data: clientPlatformsData = [] } = useClientPlatformsQuery();
   const addClientPlatformMut = useAddClientPlatform();
 
   const [clientId, setClientId] = useState('');
@@ -45,6 +46,15 @@ export function AddPlatformSquadDialog({ open, onClose, defaultSquadId }: AddPla
     setClientType('Seller');
     setResponsible('');
     setHealthColor('green');
+  };
+
+  const existingPlatformSlugs = clientPlatformsData
+    .filter(cp => cp.clientId === clientId)
+    .map(cp => cp.platformSlug);
+
+  const handleClientChange = (newClientId: string) => {
+    setClientId(newClientId);
+    setPlatformSlug('');
   };
 
   const handleSubmit = () => {
@@ -66,8 +76,14 @@ export function AddPlatformSquadDialog({ open, onClose, defaultSquadId }: AddPla
           resetForm();
           onClose();
         },
-        onError: () => {
-          toast({ title: 'Erro ao criar plataforma', description: 'Tente novamente.', variant: 'destructive' });
+        onError: (err: any) => {
+          const msg = err?.message || '';
+          const isDuplicate = /duplicate|unique|already exists/i.test(msg);
+          toast({
+            title: isDuplicate ? 'Este cliente já possui essa plataforma' : 'Erro ao criar plataforma',
+            description: isDuplicate ? 'Selecione outra plataforma ou outro cliente.' : 'Tente novamente.',
+            variant: 'destructive',
+          });
         },
       }
     );
@@ -87,7 +103,7 @@ export function AddPlatformSquadDialog({ open, onClose, defaultSquadId }: AddPla
             <Label className="text-xs">Cliente</Label>
             <select
               value={clientId}
-              onChange={e => setClientId(e.target.value)}
+              onChange={e => handleClientChange(e.target.value)}
               className="w-full h-8 px-2 text-sm bg-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring text-foreground"
             >
               <option value="">Selecione um cliente...</option>
@@ -100,21 +116,27 @@ export function AddPlatformSquadDialog({ open, onClose, defaultSquadId }: AddPla
           <div>
             <Label className="text-xs">Plataforma</Label>
             <div className="flex flex-wrap gap-2 mt-1.5">
-              {platformOptions.map((plat) => (
-                <button
-                  key={plat.id}
-                  type="button"
-                  onClick={() => setPlatformSlug(plat.slug)}
-                  className={cn(
-                    'px-3 py-1.5 text-xs rounded-lg border transition-all font-medium',
-                    platformSlug === plat.slug
-                      ? 'border-primary bg-primary/10 text-primary ring-1 ring-primary/30'
-                      : 'border-border bg-card text-muted-foreground hover:border-primary/40'
-                  )}
-                >
-                  {plat.name}
-                </button>
-              ))}
+              {platformOptions.map((plat) => {
+                const alreadyAdded = existingPlatformSlugs.includes(plat.slug);
+                return (
+                  <button
+                    key={plat.id}
+                    type="button"
+                    disabled={alreadyAdded}
+                    onClick={() => !alreadyAdded && setPlatformSlug(plat.slug)}
+                    className={cn(
+                      'px-3 py-1.5 text-xs rounded-lg border transition-all font-medium',
+                      alreadyAdded
+                        ? 'border-border bg-muted text-muted-foreground opacity-50 cursor-not-allowed'
+                        : platformSlug === plat.slug
+                          ? 'border-primary bg-primary/10 text-primary ring-1 ring-primary/30'
+                          : 'border-border bg-card text-muted-foreground hover:border-primary/40'
+                    )}
+                  >
+                    {plat.name}{alreadyAdded ? ' (já adicionada)' : ''}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
