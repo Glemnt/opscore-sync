@@ -49,7 +49,7 @@ export function ProjectsPage() {
   const { data: projects = [] } = useProjectsQuery();
   const { updateClientField, getVisibleClients } = useClients();
   const { data: appUsers = [] } = useAppUsersQuery();
-  const { data: clientStatuses = [] } = useClientStatusesQuery();
+  const { data: clientStatuses = [] } = useClientStatusesQuery('squads');
   const clientStatusMap = useClientStatusesMap();
   const addStatusMut = useAddClientStatus();
   const deleteStatusMut = useDeleteClientStatus();
