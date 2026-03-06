@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useClients } from '@/contexts/ClientsContext';
 import { useSquads } from '@/contexts/SquadsContext';
+import { useClients } from '@/contexts/ClientsContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { Client, Platform } from '@/types';
 import { usePlatformsQuery } from '@/hooks/usePlatformsQuery';
 import { useAddClientPlatform } from '@/hooks/useClientPlatformsQuery';
 import { useAppUsersQuery } from '@/hooks/useAppUsersQuery';
@@ -15,6 +17,19 @@ interface AddPlatformSquadDialogProps {
   onClose: () => void;
   defaultSquadId: string;
 }
+
+const ORIGIN_OPTIONS = [
+  { value: 'trafego', label: 'Tráfego' },
+  { value: 'indicacao', label: 'Indicação' },
+  { value: 'organico', label: 'Orgânico' },
+  { value: 'outro', label: 'Outro' },
+];
+
+const REVENUE_OPTIONS = [
+  { value: 'ate-30k', label: 'Até 30k', amount: 30000 },
+  { value: '30k-100k', label: '30k - 100k', amount: 100000 },
+  { value: '100k-plus', label: '100k+', amount: 150000 },
+];
 
 const CLIENT_TYPE_OPTIONS = [
   { value: 'Seller', label: 'Seller' },
@@ -28,100 +43,119 @@ const HEALTH_OPTIONS: { value: string; label: string; color: string }[] = [
 ];
 
 export function AddPlatformSquadDialog({ open, onClose, defaultSquadId }: AddPlatformSquadDialogProps) {
-  const { clients } = useClients();
+  const { addClient } = useClients();
+  const { currentUser } = useAuth();
   const { squads } = useSquads();
   const { data: platformOptions = [] } = usePlatformsQuery();
   const { data: appUsers = [] } = useAppUsersQuery();
   const addClientPlatformMut = useAddClientPlatform();
 
-  const [clientId, setClientId] = useState('');
-  const [platformSlug, setPlatformSlug] = useState('');
+  const [name, setName] = useState('');
+  const [companyName, setCompanyName] = useState('');
+  const [cnpj, setCnpj] = useState('');
+  const [segment, setSegment] = useState('');
   const [clientType, setClientType] = useState('Seller');
+  const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
+  const [platformSlug, setPlatformSlug] = useState('');
+  const [origin, setOrigin] = useState('');
   const [responsible, setResponsible] = useState('');
+  const [contractDuration, setContractDuration] = useState('6');
   const [healthColor, setHealthColor] = useState('green');
+  const [revenueTier, setRevenueTier] = useState('ate-30k');
 
   const resetForm = () => {
-    setClientId('');
-    setPlatformSlug('');
-    setClientType('Seller');
-    setResponsible('');
-    setHealthColor('green');
+    setName(''); setCompanyName(''); setCnpj(''); setSegment('');
+    setClientType('Seller'); setPhone(''); setEmail('');
+    setPlatformSlug(''); setOrigin(''); setResponsible('');
+    setContractDuration('6'); setHealthColor('green'); setRevenueTier('ate-30k');
   };
 
   const handleSubmit = () => {
-    if (!clientId || !platformSlug) return;
+    if (!name.trim() || !companyName.trim() || !platformSlug) return;
 
-    addClientPlatformMut.mutate(
-      {
-        clientId,
-        platformSlug,
-        phase: 'onboarding',
-        responsible,
-        squadId: defaultSquadId,
-        qualityLevel: clientType,
-        healthColor,
+    const clientId = crypto.randomUUID();
+    const revenueAmount = REVENUE_OPTIONS.find(r => r.value === revenueTier)?.amount ?? 0;
+    const selectedPlatform = platformOptions.find(p => p.slug === platformSlug);
+    const compositeName = `${name.trim()} - ${selectedPlatform?.name ?? platformSlug}`;
+
+    const newClient: Client = {
+      id: clientId,
+      name: compositeName,
+      companyName: companyName.trim(),
+      segment: segment.trim() || 'Geral',
+      responsible,
+      squadId: defaultSquadId,
+      startDate: new Date().toISOString().split('T')[0],
+      status: 'onboarding',
+      notes: '',
+      monthlyRevenue: revenueAmount,
+      activeProjects: 0,
+      pendingTasks: 0,
+      contractType: 'mrr',
+      paymentDay: 1,
+      contractDurationMonths: Number(contractDuration),
+      platforms: [platformSlug as Platform],
+      phone: phone.trim() || undefined,
+      cnpj: cnpj.trim() || undefined,
+      email: email.trim() || undefined,
+      origin: origin || undefined,
+      changeLogs: [],
+      chatNotes: [],
+    };
+
+    addClient(newClient, {
+      onSuccess: () => {
+        addClientPlatformMut.mutate({
+          clientId,
+          platformSlug,
+          phase: 'onboarding',
+          squadId: defaultSquadId,
+          qualityLevel: clientType,
+          healthColor,
+          responsible,
+        });
+        toast({ title: 'Plataforma adicionada com sucesso!' });
+        resetForm();
+        onClose();
       },
-      {
-        onSuccess: () => {
-          toast({ title: 'Plataforma adicionada com sucesso!' });
-          resetForm();
-          onClose();
-        },
-        onError: () => {
-          toast({ title: 'Erro ao adicionar plataforma', variant: 'destructive' });
-        },
-      }
-    );
+      onError: () => {
+        toast({ title: 'Erro ao criar plataforma', description: 'Tente novamente.', variant: 'destructive' });
+      },
+    });
   };
 
   const selectedSquad = squads.find(s => s.id === defaultSquadId);
 
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) { resetForm(); onClose(); } }}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md max-h-[85vh] overflow-y-auto">
         <DialogHeader className="pb-2">
           <DialogTitle>Nova Plataforma — {selectedSquad?.name ?? 'Squad'}</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-3">
-          {/* Cliente */}
           <div>
-            <Label className="text-xs">Cliente</Label>
-            <Select value={clientId} onValueChange={setClientId}>
-              <SelectTrigger className="h-8 text-sm mt-1">
-                <SelectValue placeholder="Selecione um cliente..." />
-              </SelectTrigger>
-              <SelectContent>
-                {clients.map(c => (
-                  <SelectItem key={c.id} value={c.id}>{c.companyName} — {c.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Label className="text-xs">Nome do Cliente</Label>
+            <Input value={name} onChange={e => setName(e.target.value)} placeholder="Ex: João Silva" className="h-8 text-sm" />
           </div>
 
-          {/* Plataforma */}
           <div>
-            <Label className="text-xs">Plataforma</Label>
-            <div className="flex flex-wrap gap-2 mt-1.5">
-              {platformOptions.map((plat) => (
-                <button
-                  key={plat.id}
-                  type="button"
-                  onClick={() => setPlatformSlug(plat.slug)}
-                  className={cn(
-                    'px-3 py-1.5 text-xs rounded-lg border transition-all font-medium',
-                    platformSlug === plat.slug
-                      ? 'border-primary bg-primary/10 text-primary ring-1 ring-primary/30'
-                      : 'border-border bg-card text-muted-foreground hover:border-primary/40'
-                  )}
-                >
-                  {plat.name}
-                </button>
-              ))}
+            <Label className="text-xs">Nome da Empresa</Label>
+            <Input value={companyName} onChange={e => setCompanyName(e.target.value)} placeholder="Ex: Empresa XYZ LTDA" className="h-8 text-sm" />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label className="text-xs">CNPJ</Label>
+              <Input value={cnpj} onChange={e => setCnpj(e.target.value)} placeholder="00.000.000/0000-00" className="h-8 text-sm" />
+            </div>
+            <div>
+              <Label className="text-xs">Nicho do Cliente</Label>
+              <Input value={segment} onChange={e => setSegment(e.target.value)} placeholder="Moda, Eletrônicos..." className="h-8 text-sm" />
             </div>
           </div>
 
-          {/* Tipo de Cliente */}
           <div>
             <Label className="text-xs">Tipo de Cliente</Label>
             <div className="flex gap-2 mt-1.5">
@@ -143,7 +177,46 @@ export function AddPlatformSquadDialog({ open, onClose, defaultSquadId }: AddPla
             </div>
           </div>
 
-          {/* Responsável + Time */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label className="text-xs">Telefone</Label>
+              <Input value={phone} onChange={e => setPhone(e.target.value)} placeholder="(11) 99999-9999" className="h-8 text-sm" />
+            </div>
+            <div>
+              <Label className="text-xs">Email</Label>
+              <Input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="cliente@empresa.com" className="h-8 text-sm" />
+            </div>
+          </div>
+
+          <div>
+            <Label className="text-xs">Plataforma</Label>
+            <div className="flex flex-wrap gap-2 mt-1.5">
+              {platformOptions.map((plat) => (
+                <button
+                  key={plat.id}
+                  type="button"
+                  onClick={() => setPlatformSlug(plat.slug)}
+                  className={cn(
+                    'px-3 py-1.5 text-xs rounded-lg border transition-all font-medium',
+                    platformSlug === plat.slug
+                      ? 'border-primary bg-primary/10 text-primary ring-1 ring-primary/30'
+                      : 'border-border bg-card text-muted-foreground hover:border-primary/40'
+                  )}
+                >
+                  {plat.name}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <Label className="text-xs">Origem</Label>
+            <select value={origin} onChange={e => setOrigin(e.target.value)} className="w-full h-8 px-2 text-sm bg-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring text-foreground">
+              <option value="">Selecione...</option>
+              {ORIGIN_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
+          </div>
+
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label className="text-xs">Responsável pelo Onboarding</Label>
@@ -160,7 +233,14 @@ export function AddPlatformSquadDialog({ open, onClose, defaultSquadId }: AddPla
             </div>
           </div>
 
-          {/* Saúde da Plataforma */}
+          <div>
+            <Label className="text-xs">Tempo de Contrato</Label>
+            <select value={contractDuration} onChange={e => setContractDuration(e.target.value)} className="w-full h-8 px-2 text-sm bg-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring text-foreground">
+              <option value="6">6 meses</option>
+              <option value="12">12 meses</option>
+            </select>
+          </div>
+
           <div>
             <Label className="text-xs">Saúde da Plataforma</Label>
             <div className="flex gap-2 mt-1.5">
@@ -182,9 +262,30 @@ export function AddPlatformSquadDialog({ open, onClose, defaultSquadId }: AddPla
             </div>
           </div>
 
+          <div>
+            <Label className="text-xs">Faturamento do Cliente</Label>
+            <div className="flex gap-2 mt-1.5">
+              {REVENUE_OPTIONS.map(opt => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setRevenueTier(opt.value)}
+                  className={cn(
+                    'flex-1 px-3 py-1.5 text-xs rounded-lg border transition-all font-medium',
+                    revenueTier === opt.value
+                      ? 'border-primary bg-primary/10 text-primary ring-1 ring-primary/30'
+                      : 'border-border bg-card text-muted-foreground hover:border-primary/40'
+                  )}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <button
             onClick={handleSubmit}
-            disabled={!clientId || !platformSlug || addClientPlatformMut.isPending}
+            disabled={!name.trim() || !companyName.trim() || !platformSlug}
             className="w-full py-2 mt-2 gradient-primary text-primary-foreground rounded-lg text-sm font-medium shadow-primary hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Adicionar Plataforma
