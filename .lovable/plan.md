@@ -1,33 +1,23 @@
 
 
-## Plano: Corrigir dialogs de Gerar Demandas e Transferir Plataforma
+## Diagnostico do erro "Erro ao criar plataforma"
 
-### Problema
-Os dialogs `GenerateDemandsDialog` e `TransferPlatformDialog` nunca aparecem porque estão renderizados no bloco `return` final do componente (linha 902-922), mas os botões que ativam o estado estão no bloco `return` do step 2.5 (linha 615-808). Como o step 2.5 faz um `return` antecipado, o código nunca chega à renderização dos dialogs.
+O banco de dados possui uma constraint **UNIQUE** na combinacao `(client_id, platform_slug)` na tabela `client_platforms`. Isso significa que **nao e possivel criar duas entradas da mesma plataforma para o mesmo cliente** (ex: dois registros de "Shopee" para o cliente X).
 
-### Solução
+Quando voce tenta adicionar uma plataforma que o cliente ja possui, o banco rejeita a insercao e o dialog exibe o toast de erro generico.
 
-**Arquivo: `src/pages/ProjectsPage.tsx`**
+## Solucao
 
-Mover os dois blocos de renderização condicional dos dialogs (`generateTarget` e `transferTarget`) para dentro do bloco `return` do step 2.5, logo antes do `</div>` final (linha ~807), envolvendo tudo em um fragment `<>...</>`:
+Alterar `src/components/AddPlatformSquadDialog.tsx` para:
 
-```tsx
-// Antes do fechamento do return do step 2.5 (linha 808):
-return (
-  <>
-    <div className="p-6 animate-fade-in">
-      {/* ... conteúdo existente do step 2.5 ... */}
-    </div>
+1. **Filtrar plataformas ja vinculadas** ao cliente selecionado, desabilitando ou ocultando as opcoes ja existentes
+2. **Melhorar a mensagem de erro** para exibir o motivo real (ex: "Este cliente ja possui essa plataforma")
 
-    {generateTarget && (
-      <GenerateDemandsDialog ... />
-    )}
-    {transferTarget && (
-      <TransferPlatformDialog ... />
-    )}
-  </>
-);
-```
+### Alteracoes
 
-Nenhuma outra mudança necessária. A renderização no bloco final (linha 902-922) pode ser mantida para cobrir o step 3, ou removida se não houver botões lá.
+**`src/components/AddPlatformSquadDialog.tsx`:**
+- Ao selecionar um cliente, consultar `clientPlatformsData` (ja disponivel via `useClientPlatformsQuery`) para obter os `platform_slug` ja vinculados a esse cliente
+- Desabilitar visualmente os botoes de plataformas ja existentes com texto "(ja adicionada)"
+- No `onError`, verificar se a mensagem contem "duplicate" ou "unique" e exibir toast mais descritivo
+- Resetar `platformSlug` ao trocar de cliente (para evitar selecao invalida)
 
