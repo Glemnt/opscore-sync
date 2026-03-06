@@ -31,6 +31,7 @@ import { GenerateDemandsDialog } from '@/components/GenerateDemandsDialog';
 import { TransferPlatformDialog } from '@/components/TransferPlatformDialog';
 import { FlowManagerDialog, FlowDialogMode } from '@/components/FlowManagerDialog';
 import { AddPlatformSquadDialog } from '@/components/AddPlatformSquadDialog';
+import { EditPlatformDialog } from '@/components/EditPlatformDialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 type KanbanColumn = {id: string;label: string;status: ClientStatus | string;};
@@ -103,6 +104,8 @@ export function ProjectsPage() {
   const [draggingClientId, setDraggingClientId] = useState<string | null>(null);
   const wasDraggingPlatRef = useRef(false);
   const [flowMode, setFlowMode] = useState<FlowDialogMode>('create');
+  const [editingPlatform, setEditingPlatform] = useState<import('@/hooks/useClientPlatformsQuery').ClientPlatform | null>(null);
+  const [deletingPlatform, setDeletingPlatform] = useState<{ id: string; slug: string; clientId: string } | null>(null);
 
   // Squad management state
   const [squadDialogOpen, setSquadDialogOpen] = useState(false);
@@ -1084,15 +1087,32 @@ export function ProjectsPage() {
                                 <span className="inline-flex items-center gap-1"><Briefcase className="w-3 h-3" />{platProjects.length}</span>
                                 <span className="inline-flex items-center gap-1"><ListChecks className="w-3 h-3" />{platTasks.length}</span>
                               </div>
-                              <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-6 w-6"
-                                  title="Transferir Plataforma"
-                                  onClick={(e) => {e.stopPropagation();setTransferTarget({ platformId: cp?.id ?? '', squadId: cp?.squadId ?? null, responsible: cp?.responsible ?? '' });}}>
-                                  
-                                <ArrowRightLeft className="w-3.5 h-3.5" />
-                              </Button>
+                              <div className="flex items-center gap-0.5">
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-6 w-6"
+                                    title="Editar Plataforma"
+                                    onClick={(e) => {e.stopPropagation();if (cp) setEditingPlatform(cp);}}>
+                                  <Pencil className="w-3.5 h-3.5" />
+                                </Button>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-6 w-6"
+                                    title="Transferir Plataforma"
+                                    onClick={(e) => {e.stopPropagation();setTransferTarget({ platformId: cp?.id ?? '', squadId: cp?.squadId ?? null, responsible: cp?.responsible ?? '' });}}>
+                                  <ArrowRightLeft className="w-3.5 h-3.5" />
+                                </Button>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                                    title="Excluir Plataforma"
+                                    onClick={(e) => {e.stopPropagation();if (cp) setDeletingPlatform({ id: cp.id, slug: cp.platformSlug, clientId: cp.clientId });}}>
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </Button>
+                              </div>
                             </div>
                           </div>);
 
