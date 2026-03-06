@@ -14,6 +14,8 @@ export interface ClientPlatform {
   platformAttributes: Record<string, any>;
   qualityLevel: string | null;
   healthColor: string | null;
+  origin: string;
+  salesResponsible: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -32,6 +34,8 @@ function mapRow(row: any): ClientPlatform {
     platformAttributes: row.platform_attributes ?? {},
     qualityLevel: row.quality_level ?? null,
     healthColor: row.health_color ?? null,
+    origin: row.origin ?? '',
+    salesResponsible: row.sales_responsible ?? '',
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -51,7 +55,7 @@ export function useClientPlatformsQuery() {
 export function useAddClientPlatform() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (input: { clientId: string; platformSlug: string; phase?: string; responsible?: string; squadId?: string | null; startDate?: string; deadline?: string | null; qualityLevel?: string; healthColor?: string }) => {
+    mutationFn: async (input: { clientId: string; platformSlug: string; phase?: string; responsible?: string; squadId?: string | null; startDate?: string; deadline?: string | null; qualityLevel?: string; healthColor?: string; origin?: string; salesResponsible?: string }) => {
       const { error } = await supabase.from('client_platforms').insert({
         client_id: input.clientId,
         platform_slug: input.platformSlug,
@@ -62,6 +66,8 @@ export function useAddClientPlatform() {
         deadline: input.deadline ?? null,
         quality_level: input.qualityLevel ?? null,
         health_color: input.healthColor ?? null,
+        origin: input.origin ?? '',
+        sales_responsible: input.salesResponsible ?? '',
       } as any);
       if (error) throw error;
     },
@@ -81,6 +87,8 @@ export function useUpdateClientPlatform() {
         platformAttributes: 'platform_attributes',
         qualityLevel: 'quality_level',
         healthColor: 'health_color',
+        origin: 'origin',
+        salesResponsible: 'sales_responsible',
       };
       for (const [k, v] of Object.entries(updates)) {
         dbUpdates[keyMap[k] ?? k] = v;
