@@ -103,7 +103,7 @@ export function AddPlatformSquadDialog({ open, onClose, defaultSquadId }: AddPla
             <Label className="text-xs">Cliente</Label>
             <select
               value={clientId}
-              onChange={e => setClientId(e.target.value)}
+              onChange={e => handleClientChange(e.target.value)}
               className="w-full h-8 px-2 text-sm bg-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring text-foreground"
             >
               <option value="">Selecione um cliente...</option>
