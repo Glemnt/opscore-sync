@@ -1,33 +1,30 @@
 
 
-## Plano: Corrigir dialogs de Gerar Demandas e Transferir Plataforma
+## Plano: Garantir que cliente criado via Squads salve no banco e apareca no Kanban
 
-### Problema
-Os dialogs `GenerateDemandsDialog` e `TransferPlatformDialog` nunca aparecem porque estão renderizados no bloco `return` final do componente (linha 902-922), mas os botões que ativam o estado estão no bloco `return` do step 2.5 (linha 615-808). Como o step 2.5 faz um `return` antecipado, o código nunca chega à renderização dos dialogs.
+### Diagnostico
 
-### Solução
+O codigo atual ja faz o fluxo correto:
+1. `AddClientSquadDialog.handleSubmit()` chama `addClient()` que insere na tabela `clients` com `squad_id = defaultSquadId`
+2. Cria registros em `client_platforms` com o mesmo `squad_id`
+3. O Kanban filtra por `clients.filter(c => c.squadId === selectedSquad.id)`
 
-**Arquivo: `src/pages/ProjectsPage.tsx`**
+**Porem ha um bug potencial:** A coluna `platforms` na tabela `clients` e do tipo `platform_type[]` (enum com apenas `mercado_livre`, `shopee`, `shein`). O slug `tik_tok` existe na tabela `platforms` mas nao no enum. Se o usuario selecionar TikTok, o INSERT falha silenciosamente e o cliente nao aparece.
 
-Mover os dois blocos de renderização condicional dos dialogs (`generateTarget` e `transferTarget`) para dentro do bloco `return` do step 2.5, logo antes do `</div>` final (linha ~807), envolvendo tudo em um fragment `<>...</>`:
+### Alteracoes
 
-```tsx
-// Antes do fechamento do return do step 2.5 (linha 808):
-return (
-  <>
-    <div className="p-6 animate-fade-in">
-      {/* ... conteúdo existente do step 2.5 ... */}
-    </div>
-
-    {generateTarget && (
-      <GenerateDemandsDialog ... />
-    )}
-    {transferTarget && (
-      <TransferPlatformDialog ... />
-    )}
-  </>
-);
+**1. Migracao de banco — alterar coluna `platforms` de `platform_type[]` para `text[]`**
+```sql
+ALTER TABLE public.clients ALTER COLUMN platforms TYPE text[] USING platforms::text[];
 ```
+Isso permite que qualquer plataforma cadastrada na tabela `platforms` seja salva sem restricao de enum.
 
-Nenhuma outra mudança necessária. A renderização no bloco final (linha 902-922) pode ser mantida para cobrir o step 3, ou removida se não houver botões lá.
+**2. `src/components/AddClientSquadDialog.tsx` — adicionar feedback de erro**
+- Adicionar toast de sucesso ("Cliente criado com sucesso") apos o submit
+- Adicionar toast de erro caso a mutacao falhe, usando `onError` no `addClientMut`
+
+**3. `src/contexts/ClientsContext.tsx` — invalidar `client_platforms` apos criar cliente**
+- No callback `addClient`, alem de chamar `addClientMut.mutate`, garantir que a query `client_platforms` tambem seja invalidada apos sucesso (ja acontece via `useAddClientPlatform`, mas pode haver race condition)
+
+Nenhuma alteracao de logica no Kanban e necessaria — ele ja filtra corretamente por `squadId`.
 
