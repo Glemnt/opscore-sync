@@ -261,6 +261,7 @@ export type Database = {
           monthly_revenue: number | null
           name: string
           notes: string
+          origin: string
           payment_day: number
           pending_tasks: number
           phone: string
@@ -287,6 +288,7 @@ export type Database = {
           monthly_revenue?: number | null
           name: string
           notes?: string
+          origin?: string
           payment_day?: number
           pending_tasks?: number
           phone?: string
@@ -313,6 +315,7 @@ export type Database = {
           monthly_revenue?: number | null
           name?: string
           notes?: string
+          origin?: string
           payment_day?: number
           pending_tasks?: number
           phone?: string
