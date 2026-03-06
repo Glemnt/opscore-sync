@@ -1,33 +1,30 @@
 
 
-## Plano: Corrigir dialogs de Gerar Demandas e Transferir Plataforma
+## Plano: Reestruturar abas do Kanban de Clientes
 
-### Problema
-Os dialogs `GenerateDemandsDialog` e `TransferPlatformDialog` nunca aparecem porque estão renderizados no bloco `return` final do componente (linha 902-922), mas os botões que ativam o estado estão no bloco `return` do step 2.5 (linha 615-808). Como o step 2.5 faz um `return` antecipado, o código nunca chega à renderização dos dialogs.
+### Situacao atual
 
-### Solução
+As abas do Kanban na pagina Clientes vem da tabela `client_statuses` (filtradas por `board = 'clients'`). Atualmente existem: Onboarding (Em Espera), Reuniao Agendada, Reuniao Concluida, Inativo (Churn) — que nao correspondem ao que voce precisa.
 
-**Arquivo: `src/pages/ProjectsPage.tsx`**
+### Solucao
 
-Mover os dois blocos de renderização condicional dos dialogs (`generateTarget` e `transferTarget`) para dentro do bloco `return` do step 2.5, logo antes do `</div>` final (linha ~807), envolvendo tudo em um fragment `<>...</>`:
+**1. Migracao SQL** — Substituir os registros de `client_statuses` com `board = 'clients'` pelos novos:
 
-```tsx
-// Antes do fechamento do return do step 2.5 (linha 808):
-return (
-  <>
-    <div className="p-6 animate-fade-in">
-      {/* ... conteúdo existente do step 2.5 ... */}
-    </div>
+| Aba | Key | Cor |
+|-----|-----|-----|
+| Ativo | `active` | Verde |
+| Inativo | `inactive` | Cinza |
+| Onboarding | `onboarding` | Laranja |
+| Implementacao | `implementacao` | Azul |
+| Performance | `performance` | Roxo |
+| Escala | `escala` | Verde |
 
-    {generateTarget && (
-      <GenerateDemandsDialog ... />
-    )}
-    {transferTarget && (
-      <TransferPlatformDialog ... />
-    )}
-  </>
-);
-```
+A aba "Todos" ja existe no codigo (valor `'all'` hardcoded).
 
-Nenhuma outra mudança necessária. A renderização no bloco final (linha 902-922) pode ser mantida para cobrir o step 3, ou removida se não houver botões lá.
+**2. Atualizar status dos clientes existentes** — Clientes com status antigos (ex: `inativo_churn`) serao mapeados para os novos keys para nao ficarem orfaos.
+
+**3. Nenhuma alteracao de codigo** — O componente `ClientsPage.tsx` ja le dinamicamente da tabela `client_statuses` e gera as abas. A query atual nao filtra por `board`, entao os novos registros aparecerao automaticamente.
+
+### Nota
+Os registros com `board = 'squads'` nao serao afetados.
 
