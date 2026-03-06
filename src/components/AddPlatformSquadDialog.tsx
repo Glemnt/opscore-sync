@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Label } from '@/components/ui/label';
 import { useSquads } from '@/contexts/SquadsContext';
 import { usePlatformsQuery } from '@/hooks/usePlatformsQuery';
-import { useAddClientPlatform } from '@/hooks/useClientPlatformsQuery';
+import { useAddClientPlatform, useClientPlatformsQuery } from '@/hooks/useClientPlatformsQuery';
 import { useAppUsersQuery } from '@/hooks/useAppUsersQuery';
 import { useClientsQuery } from '@/hooks/useClientsQuery';
 import { cn } from '@/lib/utils';
