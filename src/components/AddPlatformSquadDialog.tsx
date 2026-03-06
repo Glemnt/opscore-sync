@@ -76,9 +76,14 @@ export function AddPlatformSquadDialog({ open, onClose, defaultSquadId }: AddPla
           resetForm();
           onClose();
         },
-        onError: () => {
-          toast({ title: 'Erro ao criar plataforma', description: 'Tente novamente.', variant: 'destructive' });
-        },
+        onError: (err: any) => {
+          const msg = err?.message || '';
+          const isDuplicate = /duplicate|unique|already exists/i.test(msg);
+          toast({
+            title: isDuplicate ? 'Este cliente já possui essa plataforma' : 'Erro ao criar plataforma',
+            description: isDuplicate ? 'Selecione outra plataforma ou outro cliente.' : 'Tente novamente.',
+            variant: 'destructive',
+          });
       }
     );
   };
