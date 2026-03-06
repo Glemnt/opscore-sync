@@ -30,7 +30,7 @@ import { format } from 'date-fns';
 import { GenerateDemandsDialog } from '@/components/GenerateDemandsDialog';
 import { TransferPlatformDialog } from '@/components/TransferPlatformDialog';
 import { FlowManagerDialog, FlowDialogMode } from '@/components/FlowManagerDialog';
-import { AddClientSquadDialog } from '@/components/AddClientSquadDialog';
+import { AddPlatformSquadDialog } from '@/components/AddPlatformSquadDialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 type KanbanColumn = {id: string;label: string;status: ClientStatus | string;};
@@ -70,7 +70,7 @@ export function ProjectsPage() {
   const updatePlatPhaseMut = useUpdatePlatformPhaseStatus();
   const reorderPlatPhaseMut = useReorderPlatformPhaseStatuses();
   const [selectedSquad, setSelectedSquad] = useState<Squad | null>(null);
-  const [showAddClientSquad, setShowAddClientSquad] = useState(false);
+  const [showAddPlatformSquad, setShowAddPlatformSquad] = useState(false);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [selectedPlatform, setSelectedPlatform] = useState<string | null>(null);
   const [search, setSearch] = useState('');
@@ -436,9 +436,9 @@ export function ProjectsPage() {
                 <ArrowLeft className="w-4 h-4" />
                 Voltar aos Squads
             </button>
-            <Button onClick={() => setShowAddClientSquad(true)} size="sm" className="gap-1.5">
+            <Button onClick={() => setShowAddPlatformSquad(true)} size="sm" className="gap-1.5">
               <Plus className="w-4 h-4" />
-              Novo Cliente
+              Nova Plataforma
             </Button>
           </div>
           } />
@@ -784,9 +784,9 @@ export function ProjectsPage() {
           </AlertDialogContent>
         </AlertDialog>
       </div>
-      <AddClientSquadDialog
-        open={showAddClientSquad}
-        onClose={() => setShowAddClientSquad(false)}
+      <AddPlatformSquadDialog
+        open={showAddPlatformSquad}
+        onClose={() => setShowAddPlatformSquad(false)}
         defaultSquadId={selectedSquad.id}
       />
       </>);
