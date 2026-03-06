@@ -98,7 +98,7 @@ export function ClientsPage() {
     <div className="p-6 animate-fade-in">
       <PageHeader
         title="Clientes"
-        subtitle={`${clients.filter((c) => c.status === 'active').length} clientes ativos`}
+        subtitle={`${clients.filter((c) => c.status !== 'inactive').length} clientes ativos`}
         actions={
           <button
             onClick={() => setAddDialogOpen(true)}
