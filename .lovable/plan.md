@@ -1,35 +1,33 @@
 
 
-## Plano: Botao "Nova Plataforma" no Squads — cria apenas client_platform
+## Plano: Corrigir dialogs de Gerar Demandas e Transferir Plataforma
 
-### Entendimento
-O botao na pagina Squads deve criar apenas um registro de plataforma (`client_platforms`), sem criar um novo cliente. Como `client_platforms` requer um `client_id`, o formulario tera um dropdown para selecionar um cliente ja existente.
+### Problema
+Os dialogs `GenerateDemandsDialog` e `TransferPlatformDialog` nunca aparecem porque estão renderizados no bloco `return` final do componente (linha 902-922), mas os botões que ativam o estado estão no bloco `return` do step 2.5 (linha 615-808). Como o step 2.5 faz um `return` antecipado, o código nunca chega à renderização dos dialogs.
 
-### Campos do novo formulario
+### Solução
 
-| Campo | Origem | Salva em |
-|-------|--------|----------|
-| Cliente | Dropdown de clientes existentes | `client_platforms.client_id` |
-| Plataforma | Selecao de plataformas cadastradas | `client_platforms.platform_slug` |
-| Tipo de Cliente (Seller/Lojista) | Botoes | `client_platforms.quality_level` |
-| Responsavel pelo Onboarding | Dropdown de usuarios | `client_platforms.responsible` |
-| Time Responsavel | Pre-selecionado (disabled) | `client_platforms.squad_id` |
-| Saude da Plataforma | Botoes verde/amarelo/vermelho | `client_platforms.health_color` |
+**Arquivo: `src/pages/ProjectsPage.tsx`**
 
-Campos como Nome, Empresa, CNPJ, Nicho, Telefone, Email, Faturamento e Tempo de Contrato sao dados do **cliente** e nao se aplicam ao criar apenas uma plataforma — eles ja existem no cadastro do cliente selecionado.
+Mover os dois blocos de renderização condicional dos dialogs (`generateTarget` e `transferTarget`) para dentro do bloco `return` do step 2.5, logo antes do `</div>` final (linha ~807), envolvendo tudo em um fragment `<>...</>`:
 
-### Alteracoes
+```tsx
+// Antes do fechamento do return do step 2.5 (linha 808):
+return (
+  <>
+    <div className="p-6 animate-fade-in">
+      {/* ... conteúdo existente do step 2.5 ... */}
+    </div>
 
-**1. `src/components/AddClientSquadDialog.tsx` — reescrever completamente**
-- Renomear para `AddPlatformSquadDialog`
-- Substituir todos os campos de cliente por um dropdown de selecao de cliente existente
-- Manter campos de plataforma: plataforma, tipo de cliente, responsavel, saude
-- Ao submeter: cria apenas `client_platform` via `useAddClientPlatform`
-- Titulo: "Nova Plataforma — {squadName}"
-- Botao: "Adicionar Plataforma"
+    {generateTarget && (
+      <GenerateDemandsDialog ... />
+    )}
+    {transferTarget && (
+      <TransferPlatformDialog ... />
+    )}
+  </>
+);
+```
 
-**2. `src/pages/ProjectsPage.tsx`**
-- Renomear botao de "Novo Cliente" para "Nova Plataforma"
-- Importar `AddPlatformSquadDialog` no lugar de `AddClientSquadDialog`
-- Renomear estado `showAddClientSquad` para `showAddPlatformSquad`
+Nenhuma outra mudança necessária. A renderização no bloco final (linha 902-922) pode ser mantida para cobrir o step 3, ou removida se não houver botões lá.
 
