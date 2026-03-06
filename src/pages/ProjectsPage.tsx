@@ -423,6 +423,7 @@ export function ProjectsPage() {
     const visibleCols = squadStatusFilter === 'all' ? clientCols : clientCols.filter((col) => col.status === squadStatusFilter);
 
     return (
+      <>
       <div className="p-6 animate-fade-in h-full flex flex-col">
         <PageHeader
           title={selectedSquad.name}
@@ -782,7 +783,14 @@ export function ProjectsPage() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
-      </div>);
+      </div>
+      <AddClientDialog
+        open={showAddClientSquad}
+        onClose={() => setShowAddClientSquad(false)}
+        hideFields={['contractType', 'setupFee']}
+        defaultSquadId={selectedSquad.id}
+      />
+      </>);
 
   }
 
