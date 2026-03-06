@@ -20,6 +20,8 @@ import { cn } from '@/lib/utils';
 interface AddClientDialogProps {
   open: boolean;
   onClose: () => void;
+  hideFields?: string[];
+  defaultSquadId?: string;
 }
 
 const DEFAULT_TEMPLATES = [
@@ -29,7 +31,7 @@ const DEFAULT_TEMPLATES = [
   { id: 'default_4', name: 'Otimização de Campanha', subtasks: ['Análise de métricas', 'Ajuste de público', 'Ajuste de criativos', 'Testes A/B', 'Relatório'] },
 ];
 
-export function AddClientDialog({ open, onClose }: AddClientDialogProps) {
+export function AddClientDialog({ open, onClose, hideFields = [], defaultSquadId }: AddClientDialogProps) {
   const { addClient } = useClients();
   const { addTask, customTemplates, flows } = useTasks();
   const { currentUser } = useAuth();
@@ -44,7 +46,7 @@ export function AddClientDialog({ open, onClose }: AddClientDialogProps) {
   const [contractDuration, setContractDuration] = useState('6');
   const [segment, setSegment] = useState('');
   const { squads } = useSquads();
-  const [squadId, setSquadId] = useState(squads[0]?.id ?? '');
+  const [squadId, setSquadId] = useState(defaultSquadId ?? squads[0]?.id ?? '');
   const [monthlyRevenue, setMonthlyRevenue] = useState('');
   const [setupFee, setSetupFee] = useState('');
   const [phone, setPhone] = useState('');
@@ -206,10 +208,12 @@ export function AddClientDialog({ open, onClose }: AddClientDialogProps) {
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label className="text-xs">Setup Pago (R$)</Label>
-                <Input type="number" value={setupFee} onChange={e => setSetupFee(e.target.value)} placeholder="1500" className="h-8 text-sm" />
-              </div>
+            {!hideFields.includes('setupFee') && (
+            <div>
+              <Label className="text-xs">Setup Pago (R$)</Label>
+              <Input type="number" value={setupFee} onChange={e => setSetupFee(e.target.value)} placeholder="1500" className="h-8 text-sm" />
+            </div>
+            )}
               <div>
                 <Label className="text-xs">CNPJ</Label>
                 <Input value={cnpj} onChange={e => setCnpj(e.target.value)} placeholder="00.000.000/0000-00" className="h-8 text-sm" />
@@ -267,6 +271,7 @@ export function AddClientDialog({ open, onClose }: AddClientDialogProps) {
               <Label className="text-xs">Dia de Pagamento</Label>
               <Input type="number" min={1} max={31} value={paymentDay} onChange={e => setPaymentDay(e.target.value)} className="h-8 text-sm" />
             </div>
+            {!hideFields.includes('contractType') && (
             <div>
               <Label className="text-xs mb-1.5 block">Tipo de Contrato</Label>
               <RadioGroup value={contractType} onValueChange={v => setContractType(v as ContractType)} className="flex gap-4">
@@ -280,6 +285,7 @@ export function AddClientDialog({ open, onClose }: AddClientDialogProps) {
                 </div>
               </RadioGroup>
             </div>
+            )}
             <div>
               <Label className="text-xs">Duração do Contrato</Label>
               <select value={contractDuration} onChange={e => setContractDuration(e.target.value)} className="w-full h-8 px-2 text-sm bg-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring text-foreground">
