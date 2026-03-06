@@ -54,7 +54,7 @@ export function ClientsPage() {
   const [newStatusLabel, setNewStatusLabel] = useState('');
   const [newStatusColor, setNewStatusColor] = useState(COLOR_OPTIONS[0].value);
 
-  const { data: clientStatuses = [] } = useClientStatusesQuery();
+  const { data: clientStatuses = [] } = useClientStatusesQuery('clients');
   const statusMap = useClientStatusesMap();
   const addStatusMutation = useAddClientStatus();
   const deleteStatusMutation = useDeleteClientStatus();
