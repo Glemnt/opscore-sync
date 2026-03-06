@@ -1,33 +1,52 @@
 
 
-## Plano: Corrigir dialogs de Gerar Demandas e Transferir Plataforma
+## Plano: Configuracao independente de colunas por Kanban
 
 ### Problema
-Os dialogs `GenerateDemandsDialog` e `TransferPlatformDialog` nunca aparecem porque estão renderizados no bloco `return` final do componente (linha 902-922), mas os botões que ativam o estado estão no bloco `return` do step 2.5 (linha 615-808). Como o step 2.5 faz um `return` antecipado, o código nunca chega à renderização dos dialogs.
 
-### Solução
+A tabela `client_statuses` e compartilhada entre o Kanban da pagina **Clientes** e o Kanban da pagina **Squads**. Ao adicionar ou excluir uma coluna em um, o outro e afetado. Os demais Kanbans (Demandas e Plataformas) ja possuem tabelas independentes.
 
-**Arquivo: `src/pages/ProjectsPage.tsx`**
+### Solucao
 
-Mover os dois blocos de renderização condicional dos dialogs (`generateTarget` e `transferTarget`) para dentro do bloco `return` do step 2.5, logo antes do `</div>` final (linha ~807), envolvendo tudo em um fragment `<>...</>`:
+Adicionar uma coluna `board` na tabela `client_statuses` para isolar as configuracoes de cada Kanban.
 
-```tsx
-// Antes do fechamento do return do step 2.5 (linha 808):
-return (
-  <>
-    <div className="p-6 animate-fade-in">
-      {/* ... conteúdo existente do step 2.5 ... */}
-    </div>
+**1. Migracao SQL**
 
-    {generateTarget && (
-      <GenerateDemandsDialog ... />
-    )}
-    {transferTarget && (
-      <TransferPlatformDialog ... />
-    )}
-  </>
-);
+```sql
+-- Adicionar coluna board
+ALTER TABLE public.client_statuses ADD COLUMN board text NOT NULL DEFAULT 'all';
+
+-- Duplicar registros existentes: um conjunto para 'clients', outro para 'squads'
+INSERT INTO public.client_statuses (key, label, class_name, sort_order, board)
+SELECT key, label, class_name, sort_order, 'clients'
+FROM public.client_statuses WHERE board = 'all';
+
+INSERT INTO public.client_statuses (key, label, class_name, sort_order, board)
+SELECT key, label, class_name, sort_order, 'squads'
+FROM public.client_statuses WHERE board = 'all';
+
+-- Remover os registros genericos
+DELETE FROM public.client_statuses WHERE board = 'all';
 ```
 
-Nenhuma outra mudança necessária. A renderização no bloco final (linha 902-922) pode ser mantida para cobrir o step 3, ou removida se não houver botões lá.
+**2. `src/hooks/useClientStatusesQuery.ts`**
+
+- Atualizar `useClientStatusesQuery` para aceitar parametro `board: string`
+- Filtrar por `.eq('board', board)` em todas as queries
+- Atualizar `useAddClientStatus` para aceitar `board` no input
+- Atualizar query keys para incluir `[board]`
+
+**3. `src/pages/ClientsPage.tsx`**
+
+- Passar `board='clients'` para os hooks de status
+
+**4. `src/pages/ProjectsPage.tsx`**
+
+- Passar `board='squads'` para os hooks de status de clientes
+
+### Impacto
+- 1 migracao SQL
+- 1 hook alterado (`useClientStatusesQuery.ts`)
+- 2 paginas atualizadas (parametro board)
+- Kanbans de Demandas e Plataformas ja sao independentes, sem alteracao necessaria
 
