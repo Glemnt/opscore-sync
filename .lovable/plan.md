@@ -1,60 +1,33 @@
 
 
-## Plano: Formulario dedicado de criacao de cliente para a pagina Squads
+## Plano: Corrigir dialogs de Gerar Demandas e Transferir Plataforma
 
-### Contexto
-O formulario atual (`AddClientDialog`) compartilha campos com a pagina de Clientes. O usuario quer um formulario completamente diferente para a pagina Squads, com campos especificos e novos campos que nao existem no formulario original.
+### Problema
+Os dialogs `GenerateDemandsDialog` e `TransferPlatformDialog` nunca aparecem porque estão renderizados no bloco `return` final do componente (linha 902-922), mas os botões que ativam o estado estão no bloco `return` do step 2.5 (linha 615-808). Como o step 2.5 faz um `return` antecipado, o código nunca chega à renderização dos dialogs.
 
-### Campos solicitados vs situacao atual
+### Solução
 
-| Campo | Status |
-|-------|--------|
-| Nome do Cliente | Ja existe |
-| Nome da Empresa | Ja existe |
-| CNPJ | Ja existe |
-| Nicho do Cliente | Ja existe (campo "Segmento") |
-| Tipo de Cliente (Seller/Lojista) | **NOVO** — salvar como `quality_level` no `client_platforms` |
-| Telefone | Ja existe |
-| Email | Ja existe |
-| Plataforma | Ja existe |
-| Origem (trafego, indicacao, etc) | **NOVO** — precisa de coluna no banco |
-| Responsavel pelo Onboarding | Ja existe (campo "Responsavel") |
-| Time Responsavel | Ja existe (campo "Squad", pre-selecionado) |
-| Tempo de Contrato | Ja existe (6/12 meses) |
-| Saude da Plataforma | **NOVO** — salvar como `health_color` no `client_platforms` |
-| Faturamento do Cliente | **NOVO** — substituir mensalidade por faixas (ate 30k / 30-100k / 100k+) |
+**Arquivo: `src/pages/ProjectsPage.tsx`**
 
-Campos que serao REMOVIDOS neste formulario: Setup Pago, Tipo de Contrato, Dia de Pagamento, Fluxo de Demandas (tab inteira).
+Mover os dois blocos de renderização condicional dos dialogs (`generateTarget` e `transferTarget`) para dentro do bloco `return` do step 2.5, logo antes do `</div>` final (linha ~807), envolvendo tudo em um fragment `<>...</>`:
 
-### Alteracoes
+```tsx
+// Antes do fechamento do return do step 2.5 (linha 808):
+return (
+  <>
+    <div className="p-6 animate-fade-in">
+      {/* ... conteúdo existente do step 2.5 ... */}
+    </div>
 
-**1. Migracao de banco — adicionar coluna `origin` na tabela `clients`**
-```sql
-ALTER TABLE public.clients ADD COLUMN origin text NOT NULL DEFAULT '';
+    {generateTarget && (
+      <GenerateDemandsDialog ... />
+    )}
+    {transferTarget && (
+      <TransferPlatformDialog ... />
+    )}
+  </>
+);
 ```
 
-**2. Novo componente `src/components/AddClientSquadDialog.tsx`**
-Formulario dedicado com layout otimizado contendo apenas os campos solicitados:
-- Nome do Cliente, Nome da Empresa, CNPJ (inputs de texto)
-- Nicho do Cliente (input texto, mapeado para `segment`)
-- Tipo de Cliente — select com opcoes "Seller" e "Lojista"
-- Telefone, Email (inputs)
-- Plataforma — selecao de plataformas (igual ao existente)
-- Origem — select com opcoes: Trafego, Indicacao, Organico, Outro
-- Responsavel pelo Onboarding — select de appUsers
-- Time Responsavel — select de squads (pre-selecionado e desabilitado)
-- Tempo de Contrato — select 6/12 meses
-- Saude da Plataforma — botoes com indicadores verde/amarelo/vermelho
-- Faturamento do Cliente — select com faixas: "Ate 30k", "30k - 100k", "100k+"
-
-Ao submeter:
-- Cria o cliente via `addClient` com os dados mapeados (faturamento converte faixa em valor representativo para `monthlyRevenue`)
-- Cria registro em `client_platforms` com `quality_level` (tipo de cliente) e `health_color` (saude) para cada plataforma selecionada
-
-**3. `src/pages/ProjectsPage.tsx`**
-- Substituir `AddClientDialog` por `AddClientSquadDialog` na view de squad selecionado
-- Passar `defaultSquadId={selectedSquad.id}`
-
-**4. Atualizar `src/types/index.ts`**
-- Adicionar campo `origin?: string` na interface `Client`
+Nenhuma outra mudança necessária. A renderização no bloco final (linha 902-922) pode ser mantida para cobrir o step 3, ou removida se não houver botões lá.
 
