@@ -332,11 +332,17 @@ export function ProjectsPage() {
 
   // Step 2: Show clients of selected squad (Kanban by status)
   if (!selectedClient) {
-    const clientIdsWithPlatformsInSquad = new Set(
-      clientPlatformsData
-        .filter(cp => cp.squadId === selectedSquad.id)
-        .map(cp => cp.clientId)
-    );
+    // Build platform entries for this squad
+    const squadPlatformEntries = clientPlatformsData
+      .filter(cp => cp.squadId === selectedSquad.id)
+      .map(cp => {
+        const client = clients.find(c => c.id === cp.clientId);
+        const plat = platformOptions.find(p => p.slug === cp.platformSlug);
+        return client ? { client, cp, platformName: plat?.name ?? cp.platformSlug } : null;
+      })
+      .filter((e): e is NonNullable<typeof e> => e !== null);
+
+    const clientIdsWithPlatformsInSquad = new Set(squadPlatformEntries.map(e => e.client.id));
     const squadClients = clients.filter(
       (c) => c.squadId === selectedSquad.id || clientIdsWithPlatformsInSquad.has(c.id)
     );
@@ -424,16 +430,17 @@ export function ProjectsPage() {
       inativo: 'Inativo'
     };
 
-    const uniqueResponsibles = [...new Set(squadClients.map((c) => c.responsible).filter(Boolean))];
+    const uniqueResponsibles = [...new Set(squadPlatformEntries.map((e) => e.cp.responsible).filter(Boolean))];
 
-    const filteredSquadClients = squadClients.filter((c) => {
-      const matchSearch = c.name.toLowerCase().includes(search.toLowerCase()) || c.segment.toLowerCase().includes(search.toLowerCase());
-      const matchStatus = squadStatusFilter === 'all' || c.status === squadStatusFilter;
-      const matchResponsible = squadResponsibleFilter === 'all' || c.responsible === squadResponsibleFilter;
-      const matchHealth = squadHealthFilter === 'all' || (c.healthColor ?? 'white') === squadHealthFilter;
-      const matchPlatform = squadPlatformFilter === 'all' || (c.platforms?.includes(squadPlatformFilter) ?? false);
-      const matchDateFrom = !squadDateFrom || c.startDate >= squadDateFrom;
-      const matchDateTo = !squadDateTo || c.startDate <= squadDateTo;
+    const filteredPlatformEntries = squadPlatformEntries.filter((e) => {
+      const matchSearch = e.client.name.toLowerCase().includes(search.toLowerCase()) || e.platformName.toLowerCase().includes(search.toLowerCase());
+      const matchStatus = squadStatusFilter === 'all' || e.client.status === squadStatusFilter;
+      const matchResponsible = squadResponsibleFilter === 'all' || e.cp.responsible === squadResponsibleFilter;
+      const matchHealth = squadHealthFilter === 'all' || (e.cp.healthColor ?? 'white') === squadHealthFilter;
+      const matchPlatform = squadPlatformFilter === 'all' || e.cp.platformSlug === squadPlatformFilter;
+      const startDate = e.cp.startDate ?? e.client.startDate;
+      const matchDateFrom = !squadDateFrom || startDate >= squadDateFrom;
+      const matchDateTo = !squadDateTo || startDate <= squadDateTo;
       return matchSearch && matchStatus && matchResponsible && matchHealth && matchPlatform && matchDateFrom && matchDateTo;
     });
 
@@ -444,7 +451,7 @@ export function ProjectsPage() {
       <div className="p-6 animate-fade-in h-full flex flex-col">
         <PageHeader
           title={selectedSquad.name}
-          subtitle={`${squadClients.length} clientes neste squad`}
+          subtitle={`${squadPlatformEntries.length} plataformas neste squad`}
           actions={
           <div className="flex items-center gap-2">
             <button
@@ -560,7 +567,7 @@ export function ProjectsPage() {
 
         <div className="flex gap-4 h-[calc(100vh-260px)] overflow-x-auto pb-4">
           {visibleCols.map((col) => {
-            const colClients = filteredSquadClients.filter((c) => c.status === col.status);
+            const colEntries = filteredPlatformEntries.filter((e) => e.client.status === col.status);
             const conf = clientStatusMap[col.status as string];
             return (
               <div
@@ -591,7 +598,6 @@ export function ProjectsPage() {
                   }
                 }}>
                 
-                {/* Column drop indicator */}
                 {clientColDropTarget === col.id && draggingClientColId &&
                 <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary rounded-full z-10" />
                 }
@@ -606,25 +612,21 @@ export function ProjectsPage() {
                     value={col.label}
                     onSave={(v) => handleRenameCol(col.id, v)}
                     onCancel={() => setEditingColId(null)} /> :
-
-
                   <button
                     onClick={() => setEditingColId(col.id)}
                     className="cursor-text">
-                    
                       <StatusBadge className={conf?.className ?? 'bg-muted text-muted-foreground border-border'}>
                         {col.label}
                       </StatusBadge>
                     </button>
                   }
                   <span className="text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded-full font-medium">
-                    {colClients.length}
+                    {colEntries.length}
                   </span>
                   <button
                     onClick={() => handleRemoveCol(col.id)}
                     className="ml-auto opacity-0 group-hover/col:opacity-100 transition-opacity p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
                     title="Remover coluna">
-                    
                     <X className="w-3.5 h-3.5" />
                   </button>
                 </div>
@@ -648,17 +650,16 @@ export function ProjectsPage() {
                     }
                   }
                 }}>
-                  {colClients.map((client) => {
-                    const clientProjects = projects.filter((p) => p.clientId === client.id);
-                    const activeCount = clientProjects.filter((p) => p.status === 'in_progress').length;
-                    const statusConf = clientStatusMap[client.status] ?? { label: client.status, className: 'bg-muted text-muted-foreground border-border' };
-                    const squad = squads.find((s) => s.id === client.squadId);
-                    const pendingTasks = allTasksData.filter((t) => t.clientId === client.id && t.status !== 'done').length;
-                    const analysis = mockAnalysisData[client.id];
-                    const nps = analysis?.satisfactionScore;
+                  {colEntries.map((entry) => {
+                    const { client, cp, platformName } = entry;
+                    const cpSquad = cp.squadId ? squads.find((s) => s.id === cp.squadId) : null;
+                    const displaySquad = cpSquad ?? (client.squadId ? squads.find((s) => s.id === client.squadId) : null);
+                    const attrs = cp.platformAttributes ?? {};
+                    const summaryBadges = getPlatformAttributeSummary(cp.platformSlug, attrs);
+
                     return (
                       <div
-                        key={client.id}
+                        key={cp.id}
                         draggable
                         onDragStart={(e) => {
                           e.dataTransfer.setData('text/plain', client.id);
@@ -666,92 +667,91 @@ export function ProjectsPage() {
                           setDraggingClientId(client.id);
                         }}
                         onDragEnd={() => setDraggingClientId(null)}
-                        onClick={() => {setSelectedPlatform(null);setSelectedClient(client);}}
-                        className={cn("w-full bg-card rounded-xl border border-border p-5 shadow-sm-custom hover:shadow-md-custom hover:-translate-y-0.5 transition-all text-left group cursor-grab active:cursor-grabbing", draggingClientId === client.id && "dragging-card")}>
-                        {/* Header */}
-                        <div className="flex items-start justify-between mb-3">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-primary-light flex items-center justify-center">
-                              <Building2 className="w-5 h-5 text-primary" />
+                        onClick={() => { setSelectedClient(client); setSelectedPlatform(cp.platformSlug); }}
+                        className={cn(
+                          'w-full bg-card rounded-xl border border-border p-4 shadow-sm-custom hover:shadow-md-custom hover:-translate-y-0.5 transition-all text-left group cursor-grab active:cursor-grabbing',
+                          draggingClientId === client.id && 'dragging-card'
+                        )}>
+                        
+                        {/* Header: Client + Platform */}
+                        <div className="flex items-start justify-between mb-2.5">
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <div className="w-9 h-9 rounded-lg bg-primary-light flex items-center justify-center shrink-0">
+                              <ShoppingBag className="w-4 h-4 text-primary" />
                             </div>
-                            <div>
-                              <h3 className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors line-clamp-1">
+                            <div className="min-w-0">
+                              <h3 className="text-sm font-bold text-foreground group-hover:text-primary transition-colors truncate">
                                 {client.name}
                               </h3>
-                              <p className="text-xs text-muted-foreground">{client.segment}</p>
+                              <p className="text-xs text-muted-foreground truncate">{platformName}</p>
                             </div>
                           </div>
-                          <StatusBadge className={statusConf.className}>{statusConf.label}</StatusBadge>
-                        </div>
-
-                        {/* Context line: Platforms + Health */}
-                        <div className="flex flex-wrap items-center gap-1.5 mb-2">
-                          {client.platforms && client.platforms.length > 0 && client.platforms.map((slug) => {
-                            const plat = platformOptions.find((p) => p.slug === slug);
-                            return (
-                              <span key={slug} className="inline-flex items-center gap-1 text-xs text-muted-foreground bg-muted/60 rounded-md px-2 py-1 font-medium">
-                                <ShoppingBag className="w-3 h-3 shrink-0" />
-                                {plat?.name ?? slug}
-                              </span>);
-
-                          })}
-                          <div
-                            className={cn(
-                              'w-3.5 h-3.5 rounded-full border border-border shrink-0 ml-auto',
-                              { green: 'bg-success', yellow: 'bg-warning', red: 'bg-destructive', white: 'bg-border' }[client.healthColor ?? 'white']
-                            )}
-                            title={`Saúde: ${client.healthColor ?? 'não avaliado'}`} />
-                          
-                        </div>
-
-                        {/* Metadata line */}
-                        <div className="flex flex-wrap items-center gap-1.5 mb-3">
-                          {client.responsible &&
-                          <span className="inline-flex items-center gap-1 text-xs text-muted-foreground bg-muted/60 rounded-md px-2 py-1 font-medium">
-                              <User className="w-3 h-3 shrink-0" />
-                              {client.responsible}
-                            </span>
-                          }
-                          <span className="inline-flex items-center gap-1 text-xs text-muted-foreground bg-muted/60 rounded-md px-2 py-1 font-medium">
-                            <Calendar className="w-3 h-3 shrink-0" />
-                            {new Date(client.startDate + 'T00:00:00').toLocaleDateString('pt-BR')}
-                          </span>
-                        </div>
-
-                        {/* Metrics grid */}
-                        <div className="pt-3 border-t border-border">
-                          <div className="grid grid-cols-3 gap-2">
-                            <div className="text-center">
-                              <p className="text-sm font-bold text-foreground">{pendingTasks}</p>
-                              <p className="text-xs text-muted-foreground">Pendentes</p>
-                            </div>
-                            <div className="text-center">
-                              <p className="text-sm font-bold text-foreground">
-                                {client.monthlyRevenue ? `R$${(client.monthlyRevenue / 1000).toFixed(1)}k` : '—'}
-                              </p>
-                              <p className="text-xs text-muted-foreground">Mensalidade</p>
-                            </div>
-                            <div className="text-center">
-                              <p className="text-sm font-bold text-foreground">
-                                {client.contractDurationMonths ? `${client.contractDurationMonths}m` : '—'}
-                              </p>
-                              <p className="text-xs text-muted-foreground">Contrato</p>
-                            </div>
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            {cp.qualityLevel && (() => {
+                              const qMap: Record<string, {emoji: string; label: string}> = { Seller: { emoji: '🛒', label: 'Seller' }, Lojista: { emoji: '🏪', label: 'Lojista' } };
+                              const q = qMap[cp.qualityLevel];
+                              return <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-accent text-[10px] font-semibold text-accent-foreground">{q ? `${q.emoji} ${q.label}` : cp.qualityLevel}</span>;
+                            })()}
+                            {cp.healthColor && (() => {
+                              const hMap: Record<string, string> = { green: 'bg-success', yellow: 'bg-warning', red: 'bg-destructive' };
+                              return <span className={cn('w-2.5 h-2.5 rounded-full shrink-0', hMap[cp.healthColor] ?? 'bg-border')} title={cp.healthColor} />;
+                            })()}
                           </div>
                         </div>
-                      </div>);
 
+                        {/* Context: Squad / Responsible */}
+                        <div className="grid grid-cols-2 gap-x-2 gap-y-1.5 mb-2.5 text-xs">
+                          <div className="flex items-center gap-1.5 text-muted-foreground min-w-0">
+                            <Users2 className="w-3.5 h-3.5 shrink-0" />
+                            <span className="truncate font-medium text-foreground">{displaySquad?.name ?? '—'}</span>
+                          </div>
+                          <div className="flex items-center gap-1.5 text-muted-foreground min-w-0">
+                            <UserCircle className="w-3.5 h-3.5 shrink-0" />
+                            <span className="truncate font-medium text-foreground">{cp.responsible || '—'}</span>
+                          </div>
+                        </div>
+
+                        {/* Attribute badges */}
+                        {summaryBadges.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mb-2.5 pt-2 border-t border-border/50">
+                            {summaryBadges.map((badge, i) => (
+                              <span key={i} className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-secondary text-[10px] font-medium text-secondary-foreground border border-border/50">
+                                {badge}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Footer: Phase + Actions */}
+                        <div className="flex items-center justify-between text-xs text-muted-foreground pt-2 border-t border-border/50">
+                          <span className="text-xs font-medium text-muted-foreground capitalize">{cp.phase}</span>
+                          <div className="flex items-center gap-0.5">
+                            <Button variant="ghost" size="icon" className="h-6 w-6" title="Editar"
+                              onClick={(e) => { e.stopPropagation(); setEditingPlatform(cp); }}>
+                              <Pencil className="w-3.5 h-3.5" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-6 w-6" title="Transferir"
+                              onClick={(e) => { e.stopPropagation(); setTransferTarget({ platformId: cp.id, squadId: cp.squadId, responsible: cp.responsible }); }}>
+                              <ArrowRightLeft className="w-3.5 h-3.5" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-destructive" title="Excluir"
+                              onClick={(e) => { e.stopPropagation(); setDeletingPlatform({ id: cp.id, slug: cp.platformSlug, clientId: cp.clientId }); }}>
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    );
                   })}
                 </div>
-              </div>);
-
+              </div>
+            );
           })}
           {/* Add new column button */}
           <div className="flex-shrink-0 w-80">
             <button
               onClick={handleAddCol}
               className="w-full py-3 border-2 border-dashed border-border rounded-xl text-sm text-muted-foreground hover:border-primary/40 hover:text-primary transition-colors flex items-center justify-center gap-2">
-              
               <Plus className="w-4 h-4" />
               Nova Coluna
             </button>
@@ -806,519 +806,6 @@ export function ProjectsPage() {
         onClose={() => setShowAddPlatformSquad(false)}
         defaultSquadId={selectedSquad.id}
       />
-      </>);
-
-  }
-
-  // Step 2.5: Platform selection for this client
-  if (selectedPlatform === null && selectedClient.platforms && selectedClient.platforms.length > 0) {
-    const clientTasks = allTasksData.filter((t) => t.clientId === selectedClient.id);
-    const clientProjects = projects.filter((p) => p.clientId === selectedClient.id);
-
-    return (
-      <>
-      <div className="p-6 animate-fade-in">
-        <PageHeader
-            title={selectedClient.name}
-            subtitle="Selecione uma plataforma para ver os projetos"
-            actions={
-            <button
-              onClick={() => setSelectedClient(null)}
-              className="flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
-              
-              <ArrowLeft className="w-4 h-4" />
-              Voltar
-            </button>
-            } />
-          
-        {/* Ver Todos button + Adicionar Plataforma */}
-        <div className="flex items-center gap-3 mt-2 mb-4">
-          <div
-              onClick={() => setSelectedPlatform('all')}
-              className="bg-card rounded-xl border border-border p-5 shadow-sm-custom hover:shadow-md-custom hover:-translate-y-0.5 transition-all cursor-pointer group inline-flex items-center gap-3">
-              
-            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-              <LayoutGrid className="w-5 h-5 text-primary" />
-            </div>
-            <div>
-              <h3 className="text-sm font-bold text-foreground group-hover:text-primary transition-colors">Todas</h3>
-              <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                <span>{clientProjects.length} projetos</span>
-                <span>•</span>
-                <span>{clientTasks.length} demandas</span>
-              </div>
-            </div>
-          </div>
-          <Button variant="outline" onClick={() => setAddPlatformDialogOpen(true)} className="gap-2">
-                <LayoutGrid className="w-4 h-4" />
-                Gerenciar Plataformas
-              </Button>
-        </div>
-
-        {/* Kanban by phase — editable */}
-        {(() => {
-            const platformsByPhase: Record<string, string[]> = {};
-            for (const slug of selectedClient.platforms!) {
-              const cp = clientPlatformsData.find((c) => c.clientId === selectedClient.id && c.platformSlug === slug);
-              const phase = cp?.phase ?? 'onboarding';
-              if (!platformsByPhase[phase]) platformsByPhase[phase] = [];
-              platformsByPhase[phase].push(slug);
-            }
-
-            const columns = platformPhaseStatuses.length > 0 ?
-            platformPhaseStatuses :
-            [{ key: 'onboarding', label: 'Onboarding' }, { key: 'implementacao', label: 'Implementação' }, { key: 'escala', label: 'Escala' }, { key: 'performance', label: 'Performance' }];
-
-            const handlePlatColDragStart = (e: React.DragEvent, key: string) => {
-              e.dataTransfer.setData('plat-column-key', key);
-              e.dataTransfer.effectAllowed = 'move';
-              setDraggingPlatColKey(key);
-            };
-            const handlePlatColDragEnd = () => {setDraggingPlatColKey(null);setPlatColDropTarget(null);};
-            const handlePlatColDrop = (e: React.DragEvent, targetKey: string) => {
-              e.preventDefault();
-              const sourceKey = e.dataTransfer.getData('plat-column-key');
-              if (!sourceKey || sourceKey === targetKey) {handlePlatColDragEnd();return;}
-              const keys = columns.map((c) => c.key);
-              const si = keys.indexOf(sourceKey);
-              const ti = keys.indexOf(targetKey);
-              if (si === -1 || ti === -1) return;
-              const newKeys = [...keys];
-              newKeys.splice(si, 1);
-              newKeys.splice(ti, 0, sourceKey);
-              reorderPlatPhaseMut.mutate(newKeys.map((k, i) => ({ key: k, sort_order: i })));
-              handlePlatColDragEnd();
-            };
-
-            const handlePlatCardDrop = (e: React.DragEvent, targetPhase: string) => {
-              e.preventDefault();
-              setPlatDragOverCol(null);
-              const slug = e.dataTransfer.getData('plat-card-slug');
-              if (!slug) return;
-              const cp = clientPlatformsData.find((c) => c.clientId === selectedClient.id && c.platformSlug === slug);
-              if (cp && cp.phase !== targetPhase) {
-                updatePlatformMut.mutate({ id: cp.id, updates: { phase: targetPhase } });
-              }
-            };
-
-            return (
-              <div className="flex gap-4 overflow-x-auto pb-4">
-              {columns.map((col) => {
-                  const colKey = col.key;
-                  const colLabel = col.label;
-                  const slugsInCol = platformsByPhase[colKey] ?? [];
-
-                  return (
-                    <div
-                      key={colKey}
-                      className={cn(
-                        'min-w-[240px] w-[260px] shrink-0 group/col relative flex flex-col',
-                        draggingPlatColKey === colKey && 'opacity-50'
-                      )}
-                      onDragOver={(e) => {
-                        e.preventDefault();
-                        if (draggingPlatColKey && draggingPlatColKey !== colKey) {
-                          setPlatColDropTarget(colKey);
-                        } else if (!draggingPlatColKey) {
-                          setPlatDragOverCol(colKey);
-                        }
-                      }}
-                      onDragLeave={() => {setPlatDragOverCol(null);setPlatColDropTarget(null);}}
-                      onDrop={(e) => {
-                        if (draggingPlatColKey) {
-                          handlePlatColDrop(e, colKey);
-                        } else {
-                          handlePlatCardDrop(e, colKey);
-                        }
-                      }}>
-                      
-                    {platColDropTarget === colKey && draggingPlatColKey &&
-                      <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary rounded-full z-10" />
-                      }
-                    <div
-                        draggable
-                        onDragStart={(e) => handlePlatColDragStart(e, colKey)}
-                        onDragEnd={handlePlatColDragEnd}
-                        className="flex items-center gap-2 mb-3 px-1 cursor-grab active:cursor-grabbing">
-                        
-                      {platEditingColKey === colKey ?
-                        <EditableColInput
-                          value={colLabel}
-                          onSave={(v) => {updatePlatPhaseMut.mutate({ key: colKey, label: v });setPlatEditingColKey(null);}}
-                          onCancel={() => setPlatEditingColKey(null)} /> :
-
-
-                        <button onClick={() => setPlatEditingColKey(colKey)} className="cursor-text">
-                          <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{colLabel}</span>
-                        </button>
-                        }
-                      <span className="text-xs text-muted-foreground bg-muted rounded-full px-2 py-0.5">{slugsInCol.length}</span>
-                      <button
-                          onClick={() => setPlatDeleteColConfirm({ key: colKey, label: colLabel })}
-                          className="ml-auto opacity-0 group-hover/col:opacity-100 transition-opacity p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
-                          title="Remover coluna">
-                          
-                        <X className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                    <div className={cn(
-                        'space-y-3 min-h-[80px] bg-muted/30 rounded-lg p-2 flex-1 transition-all duration-200',
-                        platDragOverCol === colKey && !draggingPlatColKey && 'drop-zone-highlight'
-                      )}
-                      onDragOver={(e) => {e.preventDefault();if (!draggingPlatColKey) setPlatDragOverCol(colKey);}}
-                      onDrop={(e) => {e.stopPropagation();if (!draggingPlatColKey) handlePlatCardDrop(e, colKey);}}>
-                        
-                      {slugsInCol.length === 0 &&
-                        <p className="text-xs text-muted-foreground text-center py-6 italic">Nenhuma plataforma</p>
-                        }
-                      {slugsInCol.map((slug) => {
-                          const plat = platformOptions.find((p) => p.slug === slug);
-                          const platTasks = clientTasks.filter((t) => t.platforms?.includes(slug));
-                          const platProjectIds = new Set(platTasks.map((t) => t.projectId).filter(Boolean));
-                          const platProjects = clientProjects.filter((p) => platProjectIds.has(p.id));
-                          const cp = clientPlatformsData.find((c) => c.clientId === selectedClient.id && c.platformSlug === slug);
-                          const cpSquad = cp?.squadId ? squads.find((s) => s.id === cp.squadId) : null;
-                          const displaySquad = cpSquad ?? (selectedClient.squadId ? squads.find((s) => s.id === selectedClient.squadId) : null);
-                          const fieldDefs = PLATFORM_ATTRIBUTE_DEFINITIONS[slug] ?? [];
-                          const attrs = cp?.platformAttributes ?? {};
-
-                          const getAttrDisplay = (field: typeof fieldDefs[number]) => {
-                            const val = attrs[field.key];
-                            if (field.type === 'toggle') return val ? 'Sim' : 'Não';
-                            if (field.type === 'select') {
-                              if (!val) return '—';
-                              const opt = field.options?.find((o) => o.value === val);
-                              return opt?.label ?? val;
-                            }
-                            return val ?? '—';
-                          };
-
-                          const getReputationBorder = () => {
-                            const rep = attrs.reputacao;
-                            if (!rep) return '';
-                            if (slug === 'mercado_livre') {
-                              const map: Record<string, string> = { verde: 'border-l-green-500', amarelo: 'border-l-yellow-500', laranja: 'border-l-orange-500', vermelho: 'border-l-red-500' };
-                              return map[rep] ? `border-l-4 ${map[rep]}` : '';
-                            }
-                            if (slug === 'shein') {
-                              const map: Record<string, string> = { L5: 'border-l-green-500', L4: 'border-l-green-500', L3: 'border-l-yellow-500', L2: 'border-l-orange-500', L1: 'border-l-red-500' };
-                              return map[rep] ? `border-l-4 ${map[rep]}` : '';
-                            }
-                            return '';
-                          };
-
-                          return (
-                            <div
-                              key={slug}
-                              draggable
-                              onDragStart={(e) => {
-                                e.stopPropagation();
-                                e.dataTransfer.setData('plat-card-slug', slug);
-                                e.dataTransfer.effectAllowed = 'move';
-                                setDraggingPlatCardSlug(slug);
-                              }}
-                              onDragEnd={() => { setDraggingPlatCardSlug(null); wasDraggingPlatRef.current = true; }}
-                              onClick={() => {
-                                if (wasDraggingPlatRef.current) { wasDraggingPlatRef.current = false; return; }
-                                setSelectedPlatform(slug);
-                              }}
-                              className={cn(
-                                'bg-card rounded-xl border border-border p-4 shadow-sm-custom hover:shadow-md-custom hover:-translate-y-0.5 transition-all cursor-grab active:cursor-grabbing group',
-                                getReputationBorder(),
-                                draggingPlatCardSlug === slug && 'opacity-50'
-                              )}>
-                              
-                            {/* ── Header ── */}
-                            <div className="flex items-center gap-2.5 mb-2.5">
-                              <div className="w-8 h-8 rounded-lg bg-accent/60 flex items-center justify-center shrink-0">
-                                <ShoppingBag className="w-4 h-4 text-accent-foreground" />
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <h3 className="text-sm font-bold text-foreground group-hover:text-primary transition-colors truncate">{plat?.name ?? slug}</h3>
-                              </div>
-                              <div className="flex items-center gap-1.5 shrink-0">
-                                {cp?.qualityLevel && (() => {
-                                    const qMap: Record<string, {emoji: string;label: string;}> = { seller: { emoji: '🛒', label: 'Seller' }, lojista: { emoji: '🏪', label: 'Lojista' } };
-                                    const q = qMap[cp.qualityLevel];
-                                    return <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-accent text-[10px] font-semibold text-accent-foreground">{q ? `${q.emoji} ${q.label}` : cp.qualityLevel}</span>;
-                                  })()}
-                                {cp?.healthColor && (() => {
-                                    const hMap: Record<string, string> = { green: 'bg-green-500', orange: 'bg-orange-500', red: 'bg-red-500' };
-                                    return <span className={cn('w-2.5 h-2.5 rounded-full shrink-0', hMap[cp.healthColor] ?? 'bg-muted')} title={cp.healthColor} />;
-                                  })()}
-                              </div>
-                            </div>
-
-                            {/* ── Context: Squad / Responsável / Contrato ── */}
-                            <div className="grid grid-cols-2 gap-x-2 gap-y-1.5 mb-2.5 text-xs">
-                              <div className="flex items-center gap-1.5 text-muted-foreground min-w-0">
-                                <Users2 className="w-3.5 h-3.5 shrink-0" />
-                                <span className="truncate font-medium text-foreground">{displaySquad?.name ?? '—'}</span>
-                              </div>
-                              <div className="flex items-center gap-1.5 text-muted-foreground min-w-0">
-                                <UserCircle className="w-3.5 h-3.5 shrink-0" />
-                                <span className="truncate font-medium text-foreground">{cp?.responsible || '—'}</span>
-                              </div>
-                              {cp?.platformAttributes?.tempo_contrato &&
-                                <div className="flex items-center gap-1.5 text-muted-foreground col-span-2 min-w-0">
-                                  <CalendarDays className="w-3.5 h-3.5 shrink-0" />
-                                  <span className="font-medium text-foreground">{cp.platformAttributes.tempo_contrato} meses</span>
-                                </div>
-                                }
-                            </div>
-
-                            {/* ── Operational Attributes as badges ── */}
-                            {(() => {
-                                const summaryBadges = getPlatformAttributeSummary(slug, attrs);
-                                return summaryBadges.length > 0 ?
-                                <div className="flex flex-wrap gap-1 mb-2.5 pt-2 border-t border-border/50">
-                                  {summaryBadges.map((badge, i) =>
-                                  <span key={i} className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-secondary text-[10px] font-medium text-secondary-foreground border border-border/50">
-                                      {badge}
-                                    </span>
-                                  )}
-                                </div> :
-                                null;
-                              })()}
-
-                            {/* ── Footer ── */}
-                            <div className="flex items-center justify-between text-xs text-muted-foreground pt-2 border-t border-border/50">
-                              <div className="flex items-center gap-2">
-                                <span className="inline-flex items-center gap-1"><Briefcase className="w-3 h-3" />{platProjects.length}</span>
-                                <span className="inline-flex items-center gap-1"><ListChecks className="w-3 h-3" />{platTasks.length}</span>
-                              </div>
-                              <div className="flex items-center gap-0.5">
-                                <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-6 w-6"
-                                    title="Editar Plataforma"
-                                    onClick={(e) => {e.stopPropagation();if (cp) setEditingPlatform(cp);}}>
-                                  <Pencil className="w-3.5 h-3.5" />
-                                </Button>
-                                <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-6 w-6"
-                                    title="Transferir Plataforma"
-                                    onClick={(e) => {e.stopPropagation();setTransferTarget({ platformId: cp?.id ?? '', squadId: cp?.squadId ?? null, responsible: cp?.responsible ?? '' });}}>
-                                  <ArrowRightLeft className="w-3.5 h-3.5" />
-                                </Button>
-                                <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-6 w-6 text-muted-foreground hover:text-destructive"
-                                    title="Excluir Plataforma"
-                                    onClick={(e) => {e.stopPropagation();if (cp) setDeletingPlatform({ id: cp.id, slug: cp.platformSlug, clientId: cp.clientId });}}>
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </Button>
-                              </div>
-                            </div>
-                          </div>);
-
-                        })}
-                    </div>
-                  </div>);
-
-                })}
-              {/* Add new column button */}
-              <div className="min-w-[240px] w-[260px] shrink-0">
-                <button
-                    onClick={() => {setPlatNewColLabel('');setPlatAddColOpen(true);}}
-                    className="w-full py-3 border-2 border-dashed border-border rounded-xl text-sm text-muted-foreground hover:border-primary/40 hover:text-primary transition-colors flex items-center justify-center gap-2">
-                    
-                  <Plus className="w-4 h-4" />
-                  Nova Coluna
-                </button>
-              </div>
-            </div>);
-
-          })()}
-      </div>
-
-      {/* Platform Phase Add Column Dialog */}
-      <Dialog open={platAddColOpen} onOpenChange={setPlatAddColOpen}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle>Nova Coluna de Fase</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3">
-            <Label>Nome da coluna</Label>
-            <Input
-                value={platNewColLabel}
-                onChange={(e) => setPlatNewColLabel(e.target.value)}
-                placeholder="Ex: Maturação"
-                onKeyDown={(e) => e.key === 'Enter' && (() => {
-                  const label = platNewColLabel.trim();
-                  if (!label) return;
-                  const key = label.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
-                  addPlatPhaseMut.mutate({ key, label, class_name: 'bg-muted text-muted-foreground border-border' });
-                  setPlatAddColOpen(false);
-                })()}
-                autoFocus />
-              
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setPlatAddColOpen(false)}>Cancelar</Button>
-            <Button
-                onClick={() => {
-                  const label = platNewColLabel.trim();
-                  if (!label) return;
-                  const key = label.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
-                  addPlatPhaseMut.mutate({ key, label, class_name: 'bg-muted text-muted-foreground border-border' });
-                  setPlatAddColOpen(false);
-                }}
-                disabled={!platNewColLabel.trim() || addPlatPhaseMut.isPending}>
-                
-              {addPlatPhaseMut.isPending ? 'Criando...' : 'Criar'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Platform Phase Delete Column Confirmation */}
-      <AlertDialog open={!!platDeleteColConfirm} onOpenChange={(open) => !open && setPlatDeleteColConfirm(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Excluir coluna "{platDeleteColConfirm?.label}"?</AlertDialogTitle>
-            <AlertDialogDescription>
-              As plataformas nesta coluna não serão excluídas, mas ficarão sem fase definida.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction
-                onClick={() => {if (platDeleteColConfirm) {deletePlatPhaseMut.mutate(platDeleteColConfirm.key);setPlatDeleteColConfirm(null);}}}
-                className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                
-              Excluir
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Manage Platforms Dialog */}
-      <Dialog open={addPlatformDialogOpen} onOpenChange={setAddPlatformDialogOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Gerenciar Plataformas</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-2 max-h-[400px] overflow-y-auto">
-            {platformOptions.length === 0 && (
-              <p className="text-sm text-muted-foreground text-center py-4">Nenhuma plataforma cadastrada. Adicione em Configurações.</p>
-            )}
-            {platformOptions.map((platform) => {
-              const currentSlugs = selectedClient?.platforms ?? [];
-              const isAdded = currentSlugs.includes(platform.slug);
-              const cpRecord = clientPlatformsData.find((c) => c.clientId === selectedClient?.id && c.platformSlug === platform.slug);
-              return (
-                <div key={platform.id} className={cn(
-                  'flex items-center justify-between p-3 rounded-lg border transition-colors',
-                  isAdded ? 'bg-primary/5 border-primary/20' : 'bg-card border-border'
-                )}>
-                  <div className="flex items-center gap-3">
-                    <ShoppingBag className={cn('w-4 h-4', isAdded ? 'text-primary' : 'text-muted-foreground')} />
-                    <span className={cn('text-sm font-medium', isAdded ? 'text-foreground' : 'text-muted-foreground')}>
-                      {platform.name}
-                    </span>
-                    {isAdded && (
-                      <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium">Adicionada</span>
-                    )}
-                  </div>
-                  {isAdded ? (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-destructive hover:text-destructive hover:bg-destructive/10 gap-1"
-                      disabled={deleteClientPlatformMut.isPending}
-                      onClick={() => setPlatformToRemove({ slug: platform.slug, cpId: cpRecord?.id })}>
-                      <Trash2 className="w-3.5 h-3.5" />
-                      Remover
-                    </Button>
-                  ) : (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="gap-1"
-                      disabled={addClientPlatformMut.isPending}
-                      onClick={() => {
-                        const firstPhase = platformPhaseStatuses.length > 0 ? platformPhaseStatuses[0].key : 'onboarding';
-                        addClientPlatformMut.mutate({
-                          clientId: selectedClient!.id,
-                          platformSlug: platform.slug,
-                          phase: firstPhase,
-                          squadId: selectedClient!.squadId
-                        });
-                        const newPlatforms = [...currentSlugs, platform.slug];
-                        updateClientField(selectedClient!.id, 'platforms', newPlatforms, 'Plataformas');
-                        setSelectedClient({ ...selectedClient!, platforms: newPlatforms });
-                      }}>
-                      <Plus className="w-3.5 h-3.5" />
-                      Adicionar
-                    </Button>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setAddPlatformDialogOpen(false)}>Fechar</Button>
-          </DialogFooter>
-
-          {/* Confirm remove platform */}
-          <AlertDialog open={!!platformToRemove} onOpenChange={(open) => { if (!open) setPlatformToRemove(null); }}>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Remover plataforma</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Tem certeza que deseja remover <strong>{platformOptions.find(p => p.slug === platformToRemove?.slug)?.name ?? platformToRemove?.slug}</strong> deste cliente? Esta ação não pode ser desfeita.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                <AlertDialogAction
-                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                  onClick={() => {
-                    if (!platformToRemove || !selectedClient) return;
-                    if (platformToRemove.cpId) {
-                      deleteClientPlatformMut.mutate(platformToRemove.cpId);
-                    }
-                    const currentSlugs = selectedClient.platforms ?? [];
-                    const newPlatforms = currentSlugs.filter((s) => s !== platformToRemove.slug);
-                    updateClientField(selectedClient.id, 'platforms', newPlatforms, 'Plataformas');
-                    setSelectedClient({ ...selectedClient, platforms: newPlatforms });
-                    setPlatformToRemove(null);
-                  }}>
-                  Remover
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        </DialogContent>
-      </Dialog>
-
-      {generateTarget &&
-        <GenerateDemandsDialog
-          open={!!generateTarget}
-          onOpenChange={(v) => {if (!v) setGenerateTarget(null);}}
-          phase={generateTarget.phase}
-          clientId={generateTarget.clientId}
-          clientName={generateTarget.clientName}
-          platformSlug={generateTarget.platformSlug}
-          squadId={generateTarget.squadId} />
-
-        }
-      {transferTarget &&
-        <TransferPlatformDialog
-          open={!!transferTarget}
-          onOpenChange={(v) => {if (!v) setTransferTarget(null);}}
-          platformId={transferTarget.platformId}
-          currentSquadId={transferTarget.squadId}
-          currentResponsible={transferTarget.responsible} />
-
-        }
-
-      {/* Edit Platform Dialog */}
       {editingPlatform && (
         <EditPlatformDialog
           open={!!editingPlatform}
@@ -1326,8 +813,15 @@ export function ProjectsPage() {
           platform={editingPlatform}
         />
       )}
-
-      {/* Delete Platform Confirmation */}
+      {transferTarget && (
+        <TransferPlatformDialog
+          open={!!transferTarget}
+          onOpenChange={(v) => { if (!v) setTransferTarget(null); }}
+          platformId={transferTarget.platformId}
+          currentSquadId={transferTarget.squadId}
+          currentResponsible={transferTarget.responsible}
+        />
+      )}
       <AlertDialog open={!!deletingPlatform} onOpenChange={(open) => { if (!open) setDeletingPlatform(null); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -1341,12 +835,14 @@ export function ProjectsPage() {
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               onClick={() => {
-                if (!deletingPlatform || !selectedClient) return;
+                if (!deletingPlatform) return;
                 deleteClientPlatformMut.mutate(deletingPlatform.id);
-                const currentSlugs = selectedClient.platforms ?? [];
-                const newPlatforms = currentSlugs.filter((s) => s !== deletingPlatform.slug);
-                updateClientField(selectedClient.id, 'platforms', newPlatforms, 'Plataformas');
-                setSelectedClient({ ...selectedClient, platforms: newPlatforms });
+                const client = clients.find(c => c.id === deletingPlatform.clientId);
+                if (client) {
+                  const currentSlugs = client.platforms ?? [];
+                  const newPlatforms = currentSlugs.filter((s) => s !== deletingPlatform.slug);
+                  updateClientField(client.id, 'platforms', newPlatforms, 'Plataformas');
+                }
                 setDeletingPlatform(null);
               }}>
               Excluir
@@ -1354,8 +850,15 @@ export function ProjectsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </>);
+      </>);
 
+  }
+
+  // If no platform selected yet, default to first available or 'all'
+  if (selectedPlatform === null) {
+    const firstPlatform = (selectedClient.platforms ?? [])[0];
+    setSelectedPlatform(firstPlatform ?? 'all');
+    return null;
   }
 
   // Step 3: Show projects of selected client (optionally filtered by platform)
@@ -1392,11 +895,8 @@ export function ProjectsPage() {
         <>
             <button
             onClick={() => {
-              if (selectedPlatform !== null) {
-                setSelectedPlatform(null);
-              } else {
-                setSelectedClient(null);
-              }
+              setSelectedClient(null);
+              setSelectedPlatform(null);
             }}
             className="flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
               <ArrowLeft className="w-4 h-4" />
