@@ -116,21 +116,27 @@ export function AddPlatformSquadDialog({ open, onClose, defaultSquadId }: AddPla
           <div>
             <Label className="text-xs">Plataforma</Label>
             <div className="flex flex-wrap gap-2 mt-1.5">
-              {platformOptions.map((plat) => (
-                <button
-                  key={plat.id}
-                  type="button"
-                  onClick={() => setPlatformSlug(plat.slug)}
-                  className={cn(
-                    'px-3 py-1.5 text-xs rounded-lg border transition-all font-medium',
-                    platformSlug === plat.slug
-                      ? 'border-primary bg-primary/10 text-primary ring-1 ring-primary/30'
-                      : 'border-border bg-card text-muted-foreground hover:border-primary/40'
-                  )}
-                >
-                  {plat.name}
-                </button>
-              ))}
+              {platformOptions.map((plat) => {
+                const alreadyAdded = existingPlatformSlugs.includes(plat.slug);
+                return (
+                  <button
+                    key={plat.id}
+                    type="button"
+                    disabled={alreadyAdded}
+                    onClick={() => !alreadyAdded && setPlatformSlug(plat.slug)}
+                    className={cn(
+                      'px-3 py-1.5 text-xs rounded-lg border transition-all font-medium',
+                      alreadyAdded
+                        ? 'border-border bg-muted text-muted-foreground opacity-50 cursor-not-allowed'
+                        : platformSlug === plat.slug
+                          ? 'border-primary bg-primary/10 text-primary ring-1 ring-primary/30'
+                          : 'border-border bg-card text-muted-foreground hover:border-primary/40'
+                    )}
+                  >
+                    {plat.name}{alreadyAdded ? ' (já adicionada)' : ''}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
