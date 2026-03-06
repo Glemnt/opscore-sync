@@ -48,6 +48,15 @@ export function AddPlatformSquadDialog({ open, onClose, defaultSquadId }: AddPla
     setHealthColor('green');
   };
 
+  const existingPlatformSlugs = clientPlatformsData
+    .filter(cp => cp.clientId === clientId)
+    .map(cp => cp.platformSlug);
+
+  const handleClientChange = (newClientId: string) => {
+    setClientId(newClientId);
+    setPlatformSlug('');
+  };
+
   const handleSubmit = () => {
     if (!clientId || !platformSlug) return;
 
