@@ -34,7 +34,7 @@ const COLOR_OPTIONS = [
 ];
 
 export function ClientsPage() {
-  const { getVisibleClients } = useClients();
+  const { getVisibleClients, updateClient } = useClients();
   const { squads } = useSquads();
   const { data: projects = [] } = useProjectsQuery();
   const { tasks } = useTasks();
@@ -282,12 +282,22 @@ export function ClientsPage() {
             <AlertDialogAction
               onClick={() => {
                 if (deletingStatusKey) {
-                  deleteStatusMutation.mutate(deletingStatusKey, {
-                    onSuccess: () => {
-                      if (statusFilter === deletingStatusKey) setStatusFilter('all');
-                      setDeletingStatusKey(null);
-                    },
-                  });
+                  const isOrphan = !clientStatuses.find(s => s.key === deletingStatusKey);
+                  if (isOrphan) {
+                    const firstValid = clientStatuses[0]?.key ?? 'active';
+                    clients
+                      .filter(c => c.status === deletingStatusKey)
+                      .forEach(c => updateClient(c.id, { status: firstValid }));
+                    if (statusFilter === deletingStatusKey) setStatusFilter('all');
+                    setDeletingStatusKey(null);
+                  } else {
+                    deleteStatusMutation.mutate(deletingStatusKey, {
+                      onSuccess: () => {
+                        if (statusFilter === deletingStatusKey) setStatusFilter('all');
+                        setDeletingStatusKey(null);
+                      },
+                    });
+                  }
                 }
               }}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
