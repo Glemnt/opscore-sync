@@ -133,15 +133,7 @@ export function TasksPage() {
 
   const handleDeleteCol = () => {
     if (!deleteColKey) return;
-    const isOrphan = !taskStatuses.find(s => s.key === deleteColKey);
-    if (isOrphan) {
-      const firstValid = taskStatuses[0]?.key ?? 'backlog';
-      tasks
-        .filter(t => t.status === deleteColKey)
-        .forEach(t => updateTask(t.id, { status: firstValid }));
-    } else {
-      deleteStatusMut.mutate(deleteColKey);
-    }
+    deleteStatusMut.mutate(deleteColKey);
     setDeleteColKey(null);
   };
 

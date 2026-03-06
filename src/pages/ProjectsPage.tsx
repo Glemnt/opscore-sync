@@ -47,13 +47,13 @@ export function ProjectsPage() {
   const { squads, addSquad, removeSquad, updateSquad } = useSquads();
   const { tasks: allTasksData, addTask } = useTasks();
   const { data: projects = [] } = useProjectsQuery();
-  const { updateClientField, updateClient, getVisibleClients } = useClients();
+  const { updateClientField, getVisibleClients } = useClients();
   const { data: appUsers = [] } = useAppUsersQuery();
-  const { data: clientStatuses = [] } = useClientStatusesQuery('squads');
-  const clientStatusMap = useClientStatusesMap('squads');
-  const addStatusMut = useAddClientStatus('squads');
-  const deleteStatusMut = useDeleteClientStatus('squads');
-  const updateStatusMut = useUpdateClientStatus('squads');
+  const { data: clientStatuses = [] } = useClientStatusesQuery();
+  const clientStatusMap = useClientStatusesMap();
+  const addStatusMut = useAddClientStatus();
+  const deleteStatusMut = useDeleteClientStatus();
+  const updateStatusMut = useUpdateClientStatus();
   const clients = getVisibleClients();
   const { data: platformOptions = [] } = usePlatformsQuery();
   const { data: clientPlatformsData = [] } = useClientPlatformsQuery();
@@ -150,7 +150,7 @@ export function ProjectsPage() {
     }
     setSquadDialogOpen(false);
   };
-  const reorderClientMut = useReorderClientStatuses('squads');
+  const reorderClientMut = useReorderClientStatuses();
   const [clientCols, setClientCols] = useState<KanbanColumn[]>([
   { id: 'onboarding', label: 'Onboarding', status: 'onboarding' },
   { id: 'active', label: 'Ativo', status: 'active' },
@@ -339,17 +339,7 @@ export function ProjectsPage() {
 
     const confirmRemoveCol = () => {
       if (deleteColConfirm) {
-        const isOrphan = !clientStatuses.find(s => s.key === deleteColConfirm.status);
-        const firstValid = clientStatuses.find(s => s.key !== deleteColConfirm.status)?.key ?? 'active';
-
-        // Always reassign clients to prevent orphan column recreation
-        squadClients
-          .filter(c => c.status === deleteColConfirm.status)
-          .forEach(c => updateClient(c.id, { status: firstValid }));
-
-        if (!isOrphan) {
-          deleteStatusMut.mutate(deleteColConfirm.status);
-        }
+        deleteStatusMut.mutate(deleteColConfirm.status);
         setDeleteColConfirm(null);
       }
     };
@@ -1149,20 +1139,7 @@ export function ProjectsPage() {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction
-                onClick={() => {
-                  if (platDeleteColConfirm) {
-                    const isOrphan = !platformPhaseStatuses.find(s => s.key === platDeleteColConfirm.key);
-                    if (isOrphan) {
-                      const firstValid = platformPhaseStatuses[0]?.key ?? 'onboarding';
-                      clientPlatformsData
-                        .filter(cp => cp.clientId === selectedClient?.id && cp.phase === platDeleteColConfirm.key)
-                        .forEach(cp => updatePlatformMut.mutate({ id: cp.id, updates: { phase: firstValid } }));
-                    } else {
-                      deletePlatPhaseMut.mutate(platDeleteColConfirm.key);
-                    }
-                    setPlatDeleteColConfirm(null);
-                  }
-                }}
+                onClick={() => {if (platDeleteColConfirm) {deletePlatPhaseMut.mutate(platDeleteColConfirm.key);setPlatDeleteColConfirm(null);}}}
                 className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
                 
               Excluir

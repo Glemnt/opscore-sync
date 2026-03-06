@@ -218,7 +218,6 @@ export type Database = {
       }
       client_statuses: {
         Row: {
-          board: string
           class_name: string
           created_at: string
           id: string
@@ -227,7 +226,6 @@ export type Database = {
           sort_order: number
         }
         Insert: {
-          board?: string
           class_name?: string
           created_at?: string
           id?: string
@@ -236,7 +234,6 @@ export type Database = {
           sort_order?: number
         }
         Update: {
-          board?: string
           class_name?: string
           created_at?: string
           id?: string

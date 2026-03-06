@@ -34,7 +34,7 @@ const COLOR_OPTIONS = [
 ];
 
 export function ClientsPage() {
-  const { getVisibleClients, updateClient } = useClients();
+  const { getVisibleClients } = useClients();
   const { squads } = useSquads();
   const { data: projects = [] } = useProjectsQuery();
   const { tasks } = useTasks();
@@ -54,10 +54,10 @@ export function ClientsPage() {
   const [newStatusLabel, setNewStatusLabel] = useState('');
   const [newStatusColor, setNewStatusColor] = useState(COLOR_OPTIONS[0].value);
 
-  const { data: clientStatuses = [] } = useClientStatusesQuery('clients');
-  const statusMap = useClientStatusesMap('clients');
-  const addStatusMutation = useAddClientStatus('clients');
-  const deleteStatusMutation = useDeleteClientStatus('clients');
+  const { data: clientStatuses = [] } = useClientStatusesQuery();
+  const statusMap = useClientStatusesMap();
+  const addStatusMutation = useAddClientStatus();
+  const deleteStatusMutation = useDeleteClientStatus();
   const [deletingStatusKey, setDeletingStatusKey] = useState<string | null>(null);
 
   const knownStatusKeys = new Set(clientStatuses.map(s => s.key));
@@ -282,22 +282,12 @@ export function ClientsPage() {
             <AlertDialogAction
               onClick={() => {
                 if (deletingStatusKey) {
-                  const isOrphan = !clientStatuses.find(s => s.key === deletingStatusKey);
-                  if (isOrphan) {
-                    const firstValid = clientStatuses[0]?.key ?? 'active';
-                    clients
-                      .filter(c => c.status === deletingStatusKey)
-                      .forEach(c => updateClient(c.id, { status: firstValid }));
-                    if (statusFilter === deletingStatusKey) setStatusFilter('all');
-                    setDeletingStatusKey(null);
-                  } else {
-                    deleteStatusMutation.mutate(deletingStatusKey, {
-                      onSuccess: () => {
-                        if (statusFilter === deletingStatusKey) setStatusFilter('all');
-                        setDeletingStatusKey(null);
-                      },
-                    });
-                  }
+                  deleteStatusMutation.mutate(deletingStatusKey, {
+                    onSuccess: () => {
+                      if (statusFilter === deletingStatusKey) setStatusFilter('all');
+                      setDeletingStatusKey(null);
+                    },
+                  });
                 }
               }}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
