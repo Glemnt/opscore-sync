@@ -30,7 +30,7 @@ import { format } from 'date-fns';
 import { GenerateDemandsDialog } from '@/components/GenerateDemandsDialog';
 import { TransferPlatformDialog } from '@/components/TransferPlatformDialog';
 import { FlowManagerDialog, FlowDialogMode } from '@/components/FlowManagerDialog';
-import { AddClientDialog } from '@/components/AddClientDialog';
+import { AddClientSquadDialog } from '@/components/AddClientSquadDialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 type KanbanColumn = {id: string;label: string;status: ClientStatus | string;};
@@ -784,10 +784,9 @@ export function ProjectsPage() {
           </AlertDialogContent>
         </AlertDialog>
       </div>
-      <AddClientDialog
+      <AddClientSquadDialog
         open={showAddClientSquad}
         onClose={() => setShowAddClientSquad(false)}
-        hideFields={['contractType', 'setupFee']}
         defaultSquadId={selectedSquad.id}
       />
       </>);

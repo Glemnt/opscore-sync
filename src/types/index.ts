@@ -48,6 +48,7 @@ export interface Client {
   phone?: string;
   cnpj?: string;
   email?: string;
+  origin?: string;
   contractFile?: { name: string; url: string; uploadedAt: string };
   changeLogs: ChangeLogEntry[];
   chatNotes: ChatNote[];
