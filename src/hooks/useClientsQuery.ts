@@ -55,6 +55,7 @@ export function useAddClient() {
         phone: client.phone ?? '',
         cnpj: client.cnpj ?? '',
         email: client.email ?? '',
+        origin: (client as any).origin ?? '',
       } as any);
       if (error) throw error;
     },
