@@ -10,6 +10,7 @@ import { usePlatformsQuery } from '@/hooks/usePlatformsQuery';
 import { useAddClientPlatform } from '@/hooks/useClientPlatformsQuery';
 import { useAppUsersQuery } from '@/hooks/useAppUsersQuery';
 import { cn } from '@/lib/utils';
+import { toast } from '@/hooks/use-toast';
 
 interface AddClientSquadDialogProps {
   open: boolean;
@@ -101,22 +102,27 @@ export function AddClientSquadDialog({ open, onClose, defaultSquadId }: AddClien
       chatNotes: [],
     };
 
-    addClient(newClient);
-
-    // Create client_platforms with quality_level and health_color
-    platforms.forEach(slug => {
-      addClientPlatformMut.mutate({
-        clientId,
-        platformSlug: slug,
-        phase: 'onboarding',
-        squadId: defaultSquadId,
-        qualityLevel: clientType,
-        healthColor,
-      });
+    addClient(newClient, {
+      onSuccess: () => {
+        // Create client_platforms with quality_level and health_color
+        platforms.forEach(slug => {
+          addClientPlatformMut.mutate({
+            clientId,
+            platformSlug: slug,
+            phase: 'onboarding',
+            squadId: defaultSquadId,
+            qualityLevel: clientType,
+            healthColor,
+          });
+        });
+        toast({ title: 'Cliente criado com sucesso!' });
+        resetForm();
+        onClose();
+      },
+      onError: () => {
+        toast({ title: 'Erro ao criar cliente', description: 'Tente novamente.', variant: 'destructive' });
+      },
     });
-
-    resetForm();
-    onClose();
   };
 
   const selectedSquad = squads.find(s => s.id === defaultSquadId);
