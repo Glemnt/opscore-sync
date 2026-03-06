@@ -199,7 +199,14 @@ export function ProjectsPage() {
         
         <div className="grid grid-cols-3 gap-4">
           {visibleSquads.map((squad) => {
-            const squadClients = clients.filter((c) => c.squadId === squad.id);
+            const cpIdsInSquad = new Set(
+              clientPlatformsData
+                .filter(cp => cp.squadId === squad.id)
+                .map(cp => cp.clientId)
+            );
+            const squadClients = clients.filter(
+              (c) => c.squadId === squad.id || cpIdsInSquad.has(c.id)
+            );
             const activeStatusKeys = clientStatuses.
             filter((s) => s.label.toLowerCase().includes('ativo') || s.key === 'active').
             map((s) => s.key);
@@ -322,7 +329,14 @@ export function ProjectsPage() {
 
   // Step 2: Show clients of selected squad (Kanban by status)
   if (!selectedClient) {
-    const squadClients = clients.filter((c) => c.squadId === selectedSquad.id);
+    const clientIdsWithPlatformsInSquad = new Set(
+      clientPlatformsData
+        .filter(cp => cp.squadId === selectedSquad.id)
+        .map(cp => cp.clientId)
+    );
+    const squadClients = clients.filter(
+      (c) => c.squadId === selectedSquad.id || clientIdsWithPlatformsInSquad.has(c.id)
+    );
 
     const handleRenameCol = (id: string, newLabel: string) => {
       const col = clientCols.find((c) => c.id === id);
