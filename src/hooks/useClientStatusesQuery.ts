@@ -10,14 +10,18 @@ export interface ClientStatusRow {
   sort_order: number;
 }
 
-export function useClientStatusesQuery() {
+export function useClientStatusesQuery(board?: string) {
   return useQuery({
-    queryKey: ['client_statuses'],
+    queryKey: ['client_statuses', board ?? 'all'],
     queryFn: async (): Promise<ClientStatusRow[]> => {
-      const { data, error } = await supabase
+      let query = supabase
         .from('client_statuses' as any)
         .select('id, key, label, class_name, sort_order')
         .order('sort_order');
+      if (board) {
+        query = query.eq('board', board);
+      }
+      const { data, error } = await query;
       if (error) throw error;
       return (data ?? []) as unknown as ClientStatusRow[];
     },
