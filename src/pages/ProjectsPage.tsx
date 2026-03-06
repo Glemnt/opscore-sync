@@ -31,6 +31,7 @@ import { GenerateDemandsDialog } from '@/components/GenerateDemandsDialog';
 import { TransferPlatformDialog } from '@/components/TransferPlatformDialog';
 import { FlowManagerDialog, FlowDialogMode } from '@/components/FlowManagerDialog';
 import { AddPlatformSquadDialog } from '@/components/AddPlatformSquadDialog';
+import { EditPlatformDialog } from '@/components/EditPlatformDialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 type KanbanColumn = {id: string;label: string;status: ClientStatus | string;};
@@ -103,6 +104,8 @@ export function ProjectsPage() {
   const [draggingClientId, setDraggingClientId] = useState<string | null>(null);
   const wasDraggingPlatRef = useRef(false);
   const [flowMode, setFlowMode] = useState<FlowDialogMode>('create');
+  const [editingPlatform, setEditingPlatform] = useState<import('@/hooks/useClientPlatformsQuery').ClientPlatform | null>(null);
+  const [deletingPlatform, setDeletingPlatform] = useState<{ id: string; slug: string; clientId: string } | null>(null);
 
   // Squad management state
   const [squadDialogOpen, setSquadDialogOpen] = useState(false);
@@ -1084,15 +1087,32 @@ export function ProjectsPage() {
                                 <span className="inline-flex items-center gap-1"><Briefcase className="w-3 h-3" />{platProjects.length}</span>
                                 <span className="inline-flex items-center gap-1"><ListChecks className="w-3 h-3" />{platTasks.length}</span>
                               </div>
-                              <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-6 w-6"
-                                  title="Transferir Plataforma"
-                                  onClick={(e) => {e.stopPropagation();setTransferTarget({ platformId: cp?.id ?? '', squadId: cp?.squadId ?? null, responsible: cp?.responsible ?? '' });}}>
-                                  
-                                <ArrowRightLeft className="w-3.5 h-3.5" />
-                              </Button>
+                              <div className="flex items-center gap-0.5">
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-6 w-6"
+                                    title="Editar Plataforma"
+                                    onClick={(e) => {e.stopPropagation();if (cp) setEditingPlatform(cp);}}>
+                                  <Pencil className="w-3.5 h-3.5" />
+                                </Button>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-6 w-6"
+                                    title="Transferir Plataforma"
+                                    onClick={(e) => {e.stopPropagation();setTransferTarget({ platformId: cp?.id ?? '', squadId: cp?.squadId ?? null, responsible: cp?.responsible ?? '' });}}>
+                                  <ArrowRightLeft className="w-3.5 h-3.5" />
+                                </Button>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                                    title="Excluir Plataforma"
+                                    onClick={(e) => {e.stopPropagation();if (cp) setDeletingPlatform({ id: cp.id, slug: cp.platformSlug, clientId: cp.clientId });}}>
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </Button>
+                              </div>
                             </div>
                           </div>);
 
@@ -1297,6 +1317,43 @@ export function ProjectsPage() {
           currentResponsible={transferTarget.responsible} />
 
         }
+
+      {/* Edit Platform Dialog */}
+      {editingPlatform && (
+        <EditPlatformDialog
+          open={!!editingPlatform}
+          onClose={() => setEditingPlatform(null)}
+          platform={editingPlatform}
+        />
+      )}
+
+      {/* Delete Platform Confirmation */}
+      <AlertDialog open={!!deletingPlatform} onOpenChange={(open) => { if (!open) setDeletingPlatform(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir plataforma?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir <strong>{platformOptions.find(p => p.slug === deletingPlatform?.slug)?.name ?? deletingPlatform?.slug}</strong>? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                if (!deletingPlatform || !selectedClient) return;
+                deleteClientPlatformMut.mutate(deletingPlatform.id);
+                const currentSlugs = selectedClient.platforms ?? [];
+                const newPlatforms = currentSlugs.filter((s) => s !== deletingPlatform.slug);
+                updateClientField(selectedClient.id, 'platforms', newPlatforms, 'Plataformas');
+                setSelectedClient({ ...selectedClient, platforms: newPlatforms });
+                setDeletingPlatform(null);
+              }}>
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>);
 
   }

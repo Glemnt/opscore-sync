@@ -1,32 +1,33 @@
 
 
-## Plano: Editar e Excluir plataformas no Kanban de Times
+## Plano: Corrigir dialogs de Gerar Demandas e Transferir Plataforma
 
-### Situacao atual
+### Problema
+Os dialogs `GenerateDemandsDialog` e `TransferPlatformDialog` nunca aparecem porque estão renderizados no bloco `return` final do componente (linha 902-922), mas os botões que ativam o estado estão no bloco `return` do step 2.5 (linha 615-808). Como o step 2.5 faz um `return` antecipado, o código nunca chega à renderização dos dialogs.
 
-Os cards de plataforma no Kanban possuem apenas o botao "Transferir". Nao ha opcao de editar os dados (responsavel, saude, origem, vendedor, data de onboarding, tipo de cliente) nem de excluir a plataforma diretamente pelo card.
+### Solução
 
-### Alteracoes em `src/pages/ProjectsPage.tsx`
+**Arquivo: `src/pages/ProjectsPage.tsx`**
 
-**1. Botao de excluir no card da plataforma (ao lado do botao de transferir)**
-- Adicionar um botao com icone `Trash2` no footer do card
-- Ao clicar, abrir um `AlertDialog` de confirmacao antes de excluir
-- A exclusao usa `deleteClientPlatformMut` (ja disponivel) e tambem remove o slug do array `platforms` do cliente
+Mover os dois blocos de renderização condicional dos dialogs (`generateTarget` e `transferTarget`) para dentro do bloco `return` do step 2.5, logo antes do `</div>` final (linha ~807), envolvendo tudo em um fragment `<>...</>`:
 
-**2. Botao de editar no card da plataforma**
-- Adicionar um botao com icone `Pencil` no footer do card
-- Ao clicar, abrir um Dialog de edicao pre-preenchido com os dados atuais da plataforma:
-  - Tipo de Cliente (Seller/Lojista)
-  - Data de Onboarding
-  - Origem
-  - Responsavel pelo Onboarding
-  - Vendedor Responsavel
-  - Saude da Plataforma
-- O dialog usa `updatePlatformMut` (ja disponivel) para salvar as alteracoes
+```tsx
+// Antes do fechamento do return do step 2.5 (linha 808):
+return (
+  <>
+    <div className="p-6 animate-fade-in">
+      {/* ... conteúdo existente do step 2.5 ... */}
+    </div>
 
-**3. Novos estados necessarios**
-- `editingPlatform`: armazena os dados do `ClientPlatform` sendo editado (ou `null`)
-- `deletingPlatform`: armazena `{ id, slug, clientId }` para confirmacao de exclusao (ou `null`)
+    {generateTarget && (
+      <GenerateDemandsDialog ... />
+    )}
+    {transferTarget && (
+      <TransferPlatformDialog ... />
+    )}
+  </>
+);
+```
 
-A estrutura do dialog de edicao seguira o mesmo padrao visual do `AddPlatformSquadDialog` (botoes de selecao para tipo/saude, datepicker, dropdowns para responsaveis).
+Nenhuma outra mudança necessária. A renderização no bloco final (linha 902-922) pode ser mantida para cobrir o step 3, ou removida se não houver botões lá.
 
