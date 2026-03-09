@@ -694,7 +694,7 @@ export function ProjectsPage() {
                         onClick={() => { setSelectedClient(client); setSelectedPlatform(cp.platformSlug); }}
                         className={cn(
                           'w-full bg-card rounded-xl border border-border p-4 shadow-sm-custom hover:shadow-md-custom hover:-translate-y-0.5 transition-all text-left group cursor-grab active:cursor-grabbing',
-                          draggingClientId === client.id && 'dragging-card'
+                          draggingClientId === cp.id && 'dragging-card'
                         )}>
                         
                         {/* Header: Client + Platform */}
