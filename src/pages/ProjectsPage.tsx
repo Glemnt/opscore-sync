@@ -515,6 +515,25 @@ export function ProjectsPage() {
             {platformOptions.map((p) => <option key={p.slug} value={p.slug}>{p.name}</option>)}
           </select>
 
+          <select
+            value={squadQualityFilter}
+            onChange={(e) => setSquadQualityFilter(e.target.value)}
+            className="px-3 py-2 text-sm bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition text-foreground">
+            <option value="all">Tipo Cliente</option>
+            <option value="Seller">🛒 Seller</option>
+            <option value="Lojista">🏪 Lojista</option>
+          </select>
+
+          <select
+            value={squadPriorityFilter}
+            onChange={(e) => setSquadPriorityFilter(e.target.value)}
+            className="px-3 py-2 text-sm bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition text-foreground">
+            <option value="all">Prioridade</option>
+            <option value="high">🔴 Alta</option>
+            <option value="medium">🟡 Média</option>
+            <option value="low">🟢 Baixa</option>
+          </select>
+
           <div className="flex items-center gap-2">
             <input type="date" value={squadDateFrom} onChange={(e) => setSquadDateFrom(e.target.value)} className="px-3 py-2 text-sm bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition text-foreground" />
             <span className="text-xs text-muted-foreground">até</span>
