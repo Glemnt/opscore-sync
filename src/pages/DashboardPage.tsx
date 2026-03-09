@@ -104,6 +104,17 @@ export function DashboardPage() {
   const visibleSquadIds = new Set(clients.map((c) => c.squadId).filter(Boolean));
   const teamMembers = allTeamMembers.filter((m) => !m.squadId || visibleSquadIds.has(m.squadId));
 
+  // Calculate current load dynamically from active tasks
+  const memberLoadMap = useMemo(() => {
+    const map: Record<string, number> = {};
+    tasks.forEach(t => {
+      if (t.status !== 'done' && t.responsible) {
+        map[t.responsible] = (map[t.responsible] || 0) + 1;
+      }
+    });
+    return map;
+  }, [tasks]);
+
   // Date filters
   const now = new Date();
   const [clientsStartDate, setClientsStartDate] = useState<Date | undefined>(startOfMonth(now));
