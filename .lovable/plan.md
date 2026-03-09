@@ -1,33 +1,32 @@
 
 
-## Plano: Corrigir dialogs de Gerar Demandas e Transferir Plataforma
+## Plano: Suporte a horas e minutos no tempo estimado/real
 
 ### Problema
-Os dialogs `GenerateDemandsDialog` e `TransferPlatformDialog` nunca aparecem porque estão renderizados no bloco `return` final do componente (linha 902-922), mas os botões que ativam o estado estão no bloco `return` do step 2.5 (linha 615-808). Como o step 2.5 faz um `return` antecipado, o código nunca chega à renderização dos dialogs.
+O campo de tempo estimado aceita apenas horas (step 0.5). Tarefas curtas precisam de granularidade em minutos.
 
-### Solução
+### Abordagem
+Substituir o input numérico simples por dois campos lado a lado (horas + minutos) nos 3 locais relevantes. O valor armazenado continua em horas decimais (ex: 1h30min = 1.5) para compatibilidade total — apenas a UI muda.
 
-**Arquivo: `src/pages/ProjectsPage.tsx`**
+### Alterações
 
-Mover os dois blocos de renderização condicional dos dialogs (`generateTarget` e `transferTarget`) para dentro do bloco `return` do step 2.5, logo antes do `</div>` final (linha ~807), envolvendo tudo em um fragment `<>...</>`:
+**1. Helper de conversão** — `src/lib/utils.ts`
+- `hoursToHM(decimal)` → `{ h: number, m: number }` (ex: 1.75 → {h:1, m:45})
+- `hmToHours(h, m)` → decimal (ex: 1, 30 → 1.5)
+- `formatTime(decimal)` → string legível (ex: 1.5 → "1h30min", 0.25 → "15min")
 
-```tsx
-// Antes do fechamento do return do step 2.5 (linha 808):
-return (
-  <>
-    <div className="p-6 animate-fade-in">
-      {/* ... conteúdo existente do step 2.5 ... */}
-    </div>
+**2. `AddTaskDialog.tsx`** (linhas 303-307)
+- Substituir input único por dois inputs: Horas (inteiro) + Minutos (0-59, step 5)
+- Label: "Tempo estimado"
 
-    {generateTarget && (
-      <GenerateDemandsDialog ... />
-    )}
-    {transferTarget && (
-      <TransferPlatformDialog ... />
-    )}
-  </>
-);
-```
+**3. `TaskDetailModal.tsx`** (linhas 264-285)
+- Mesma mudança para os campos Estimado e Real: dois inputs cada (h + min)
 
-Nenhuma outra mudança necessária. A renderização no bloco final (linha 902-922) pode ser mantida para cobrir o step 3, ou removida se não houver botões lá.
+**4. `TasksPage.tsx`** (linha 504)
+- Usar `formatTime()` no display: `1h30min` em vez de `1.5h`
+
+**5. `ReportsPage.tsx`** (linha 271)
+- Usar `formatTime()` no display de média
+
+Nenhuma mudança no banco — o campo continua armazenando horas decimais.
 
