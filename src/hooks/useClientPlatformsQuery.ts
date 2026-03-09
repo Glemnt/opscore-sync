@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { insertPlatformChangeLog } from '@/hooks/usePlatformChangeLogsQuery';
 
 export interface ClientPlatform {
   id: string;
@@ -82,6 +83,9 @@ export function useUpdateClientPlatform() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: Record<string, any> }) => {
+      // Fetch current record for change logging
+      const { data: currentRow } = await supabase.from('client_platforms').select('*').eq('id', id).single();
+
       const dbUpdates: Record<string, any> = {};
       const keyMap: Record<string, string> = {
         platformSlug: 'platform_slug',
@@ -99,8 +103,36 @@ export function useUpdateClientPlatform() {
       }
       const { error } = await supabase.from('client_platforms').update(dbUpdates).eq('id', id);
       if (error) throw error;
+
+      // Auto-log changes
+      if (currentRow) {
+        const fieldLabels: Record<string, string> = {
+          phase: 'Fase', squad_id: 'Squad', responsible: 'Responsável',
+          quality_level: 'Nível Qualidade', health_color: 'Saúde',
+          revenue_tier: 'Faixa Receita', origin: 'Origem',
+          sales_responsible: 'Resp. Comercial', deadline: 'Prazo',
+          platform_attributes: 'Atributos',
+        };
+        for (const [dbKey, newVal] of Object.entries(dbUpdates)) {
+          const oldVal = (currentRow as any)[dbKey];
+          const oldStr = oldVal == null ? '' : typeof oldVal === 'object' ? JSON.stringify(oldVal) : String(oldVal);
+          const newStr = newVal == null ? '' : typeof newVal === 'object' ? JSON.stringify(newVal) : String(newVal);
+          if (oldStr !== newStr) {
+            await insertPlatformChangeLog({
+              clientPlatformId: id,
+              field: fieldLabels[dbKey] ?? dbKey,
+              oldValue: oldStr,
+              newValue: newStr,
+              changedBy: 'Usuário',
+            });
+          }
+        }
+      }
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['client_platforms'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['client_platforms'] });
+      qc.invalidateQueries({ queryKey: ['platform_change_logs'] });
+    },
   });
 }
 
