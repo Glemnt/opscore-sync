@@ -278,7 +278,7 @@ export function ReportsPage() {
                       </span>
                     </td>
                     <td className="py-2.5 px-4 text-sm text-muted-foreground">{typeTasks.length}</td>
-                    <td className="py-2.5 px-4 text-sm text-muted-foreground">{avgTime}h</td>
+                    <td className="py-2.5 px-4 text-sm text-muted-foreground">{avgTime === '—' ? '—' : formatTime(parseFloat(avgTime))}</td>
                   </tr>
                 );
               })}

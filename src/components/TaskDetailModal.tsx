@@ -261,28 +261,32 @@ export function TaskDetailModal({ task, open, onOpenChange }: TaskDetailModalPro
                 <Clock className="w-3.5 h-3.5" />
                 Tempo
               </div>
-              <div className="flex items-center gap-2">
-                <div className="flex-1">
-                  <label className="text-[10px] text-muted-foreground">Estimado (h)</label>
-                  <Input
-                    type="number"
-                    min={0}
-                    step={0.5}
-                    value={task.estimatedTime}
-                    onChange={(e) => updateTask(task.id, { estimatedTime: parseFloat(e.target.value) || 0 })}
-                    className="h-8 bg-background border-border text-sm"
-                  />
+              <div className="space-y-2">
+                <div>
+                  <label className="text-[10px] text-muted-foreground">Estimado</label>
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1">
+                      <Input type="number" min={0} className="h-8 bg-background border-border text-sm" value={hoursToHM(task.estimatedTime).h} onChange={(e) => updateTask(task.id, { estimatedTime: hmToHours(parseInt(e.target.value) || 0, hoursToHM(task.estimatedTime).m) })} />
+                      <span className="text-[10px] text-muted-foreground">h</span>
+                    </div>
+                    <div className="flex-1">
+                      <Input type="number" min={0} max={59} step={5} className="h-8 bg-background border-border text-sm" value={hoursToHM(task.estimatedTime).m} onChange={(e) => updateTask(task.id, { estimatedTime: hmToHours(hoursToHM(task.estimatedTime).h, Math.min(59, parseInt(e.target.value) || 0)) })} />
+                      <span className="text-[10px] text-muted-foreground">min</span>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex-1">
-                  <label className="text-[10px] text-muted-foreground">Real (h)</label>
-                  <Input
-                    type="number"
-                    min={0}
-                    step={0.5}
-                    value={task.realTime ?? ''}
-                    onChange={(e) => updateTask(task.id, { realTime: e.target.value ? parseFloat(e.target.value) : null })}
-                    className="h-8 bg-background border-border text-sm"
-                  />
+                <div>
+                  <label className="text-[10px] text-muted-foreground">Real</label>
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1">
+                      <Input type="number" min={0} className="h-8 bg-background border-border text-sm" value={task.realTime != null ? hoursToHM(task.realTime).h : ''} onChange={(e) => { const v = parseInt(e.target.value); if (isNaN(v)) { updateTask(task.id, { realTime: null }); return; } updateTask(task.id, { realTime: hmToHours(v, task.realTime != null ? hoursToHM(task.realTime).m : 0) }); }} />
+                      <span className="text-[10px] text-muted-foreground">h</span>
+                    </div>
+                    <div className="flex-1">
+                      <Input type="number" min={0} max={59} step={5} className="h-8 bg-background border-border text-sm" value={task.realTime != null ? hoursToHM(task.realTime).m : ''} onChange={(e) => { const v = parseInt(e.target.value); if (isNaN(v)) { updateTask(task.id, { realTime: null }); return; } updateTask(task.id, { realTime: hmToHours(task.realTime != null ? hoursToHM(task.realTime).h : 0, Math.min(59, v)) }); }} />
+                      <span className="text-[10px] text-muted-foreground">min</span>
+                    </div>
+                  </div>
                 </div>
               </div>
               {isLate && (() => {

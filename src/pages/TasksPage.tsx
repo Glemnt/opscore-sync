@@ -501,8 +501,8 @@ function TaskCard({ task, isLate, onClick, canDelete, onDelete }: { task: Task; 
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
           <Clock className="w-3 h-3" />
-          {task.estimatedTime}h est.
-          {task.realTime && <span className="text-foreground font-medium"> · {task.realTime}h real</span>}
+          {formatTime(task.estimatedTime)} est.
+          {task.realTime && <span className="text-foreground font-medium"> · {formatTime(task.realTime)} real</span>}
         </div>
         <div className="flex items-center gap-1.5">
           {canDelete && (
