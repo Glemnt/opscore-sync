@@ -1,32 +1,33 @@
 
 
-## Plano: Substituir dados de teste em `team_members` por colaboradores reais de `app_users`
+## Plano: Calcular `current_load` automaticamente com base nas tarefas ativas
 
-### Situacao atual
+### Abordagem
 
-- `team_members` contem 8 registros fictícios (Ana Silva, Beatriz Costa, etc.)
-- `app_users` contem 13 colaboradores reais (Bianca Mansano, Felipe Alves, Isabel Chacale, etc.)
+Em vez de depender do valor estático `current_load` salvo na tabela `team_members`, calcular dinamicamente no Dashboard a quantidade de tarefas ativas (status diferente de `done`) atribuídas a cada colaborador, usando o campo `responsible` da tabela `tasks`.
 
 ### Alteracoes
 
-**1. Limpar tabela `team_members` e inserir colaboradores reais**
+**1. `src/pages/DashboardPage.tsx`**
 
-Usar o insert tool para:
-- `DELETE FROM team_members` (remover dados de teste)
-- `INSERT INTO team_members` com os nomes reais de `app_users`, usando o primeiro `squad_id` de cada usuario (quando disponivel), role correspondente, e `current_load = 0`
+No bloco que renderiza a "Carga da Equipe", cruzar `tasks` com `teamMembers` para calcular a carga real:
 
-Colaboradores a inserir (excluindo contas Admin):
-- Bianca Mansano (cs, squad 98710a6d)
-- Felipe Alves (operacional, squad 26a8effd)
-- Isabel Chacale (operacional, squad 98710a6d)
-- Juan (operacional)
-- Julia Ricotta (operacional)
-- Leonardo Gorriti (operacional, squad 26a8effd)
-- Milena Oliveira (operacional, squad 98710a6d)
-- Renata (operacional, squad 98710a6d)
-- Thiago Braganca (operacional, squad a0000000-...-0001)
-- Vinicius Gabriel (operacional)
-- Yasmin Ramos (operacional, squad 98710a6d)
+- Criar um `useMemo` que conta tarefas ativas (status != `done`) agrupadas por `responsible` (nome do membro)
+- Na renderizacao, usar esse valor calculado em vez de `member.currentLoad`
 
-**2. Nenhuma alteracao de codigo necessaria** — o Dashboard ja busca dados dinamicamente de `team_members`.
+```tsx
+const memberLoadMap = useMemo(() => {
+  const map: Record<string, number> = {};
+  tasks.forEach(t => {
+    if (t.status !== 'done' && t.responsible) {
+      map[t.responsible] = (map[t.responsible] || 0) + 1;
+    }
+  });
+  return map;
+}, [tasks]);
+```
+
+Na renderizacao, substituir `member.currentLoad` por `memberLoadMap[member.name] || 0`.
+
+**2. Nenhuma alteracao de banco necessaria** — o calculo sera feito no frontend com dados ja disponíveis.
 
