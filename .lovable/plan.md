@@ -1,33 +1,22 @@
 
 
-## Plano: Corrigir dialogs de Gerar Demandas e Transferir Plataforma
+## Plano: Adicionar status "Ativo" e "Inativo" na tabela client_statuses para o board "clients"
 
 ### Problema
-Os dialogs `GenerateDemandsDialog` e `TransferPlatformDialog` nunca aparecem porque estão renderizados no bloco `return` final do componente (linha 902-922), mas os botões que ativam o estado estão no bloco `return` do step 2.5 (linha 615-808). Como o step 2.5 faz um `return` antecipado, o código nunca chega à renderização dos dialogs.
+
+A tabela `client_statuses` com `board = 'clients'` contém apenas 3 registros: Onboarding (sort_order 2), Implementação (3) e Performance (4). Os status "Ativo" e "Inativo" não foram inseridos, por isso não aparecem como opções de filtro na página de Clientes.
 
 ### Solução
 
-**Arquivo: `src/pages/ProjectsPage.tsx`**
+Inserir os registros faltantes na tabela `client_statuses`:
 
-Mover os dois blocos de renderização condicional dos dialogs (`generateTarget` e `transferTarget`) para dentro do bloco `return` do step 2.5, logo antes do `</div>` final (linha ~807), envolvendo tudo em um fragment `<>...</>`:
+| key | label | class_name | board | sort_order |
+|-----|-------|------------|-------|------------|
+| active | Ativo | bg-success-light text-success border-success/20 | clients | 0 |
+| escala | Escala | bg-purple-100 text-purple-700 border-purple-200 | clients | 5 |
+| inativo | Inativo | bg-destructive/10 text-destructive border-destructive/20 | clients | 6 |
 
-```tsx
-// Antes do fechamento do return do step 2.5 (linha 808):
-return (
-  <>
-    <div className="p-6 animate-fade-in">
-      {/* ... conteúdo existente do step 2.5 ... */}
-    </div>
+Isso restaura a pipeline completa: Ativo → Onboarding → Implementação → Performance → Escala → Inativo.
 
-    {generateTarget && (
-      <GenerateDemandsDialog ... />
-    )}
-    {transferTarget && (
-      <TransferPlatformDialog ... />
-    )}
-  </>
-);
-```
-
-Nenhuma outra mudança necessária. A renderização no bloco final (linha 902-922) pode ser mantida para cobrir o step 3, ou removida se não houver botões lá.
+Nenhuma alteração de código necessária — a página já lê dinamicamente da tabela.
 
