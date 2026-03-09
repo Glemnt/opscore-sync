@@ -10,7 +10,7 @@ import { useTaskTypesMap } from '@/hooks/useTaskTypesQuery';
 import { usePlatformsQuery } from '@/hooks/usePlatformsQuery';
 import { useTaskStatusesQuery, useAddTaskStatus, useDeleteTaskStatus, useUpdateTaskStatus, useReorderTaskStatuses } from '@/hooks/useTaskStatusesQuery';
 import { Task, TaskStatus } from '@/types';
-import { cn } from '@/lib/utils';
+import { cn, formatTime } from '@/lib/utils';
 import { TaskDetailModal } from '@/components/TaskDetailModal';
 import { AddTaskDialog } from '@/components/AddTaskDialog';
 import { FlowManagerDialog, FlowDialogMode } from '@/components/FlowManagerDialog';
@@ -501,8 +501,8 @@ function TaskCard({ task, isLate, onClick, canDelete, onDelete }: { task: Task; 
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
           <Clock className="w-3 h-3" />
-          {task.estimatedTime}h est.
-          {task.realTime && <span className="text-foreground font-medium"> · {task.realTime}h real</span>}
+          {formatTime(task.estimatedTime)} est.
+          {task.realTime && <span className="text-foreground font-medium"> · {formatTime(task.realTime)} real</span>}
         </div>
         <div className="flex items-center gap-1.5">
           {canDelete && (

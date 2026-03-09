@@ -17,7 +17,7 @@ import { usePlatformsQuery } from '@/hooks/usePlatformsQuery';
 import { priorityConfig } from '@/lib/config';
 import { useTaskTypesQuery, useAddTaskType } from '@/hooks/useTaskTypesQuery';
 import { Task, TaskType, TaskStatus, Priority } from '@/types';
-import { cn } from '@/lib/utils';
+import { cn, hoursToHM, hmToHours } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
 
 interface AddTaskDialogProps {
@@ -47,7 +47,8 @@ export function AddTaskDialog({ open, onOpenChange, defaultStatus = 'backlog', d
   const [deadline, setDeadline] = useState<Date>();
   const [responsible, setResponsible] = useState('');
   const [priority, setPriority] = useState<Priority>('medium');
-  const [estimatedTime, setEstimatedTime] = useState('');
+  const [estH, setEstH] = useState(0);
+  const [estM, setEstM] = useState(0);
   const [comments, setComments] = useState('');
   const [subtaskInput, setSubtaskInput] = useState('');
   const [subtasks, setSubtasks] = useState<string[]>([]);
@@ -110,7 +111,8 @@ export function AddTaskDialog({ open, onOpenChange, defaultStatus = 'backlog', d
     setDeadline(undefined);
     setResponsible('');
     setPriority('medium');
-    setEstimatedTime('');
+    setEstH(0);
+    setEstM(0);
     setComments('');
     setSubtaskInput('');
     setSubtasks([]);
@@ -132,7 +134,7 @@ export function AddTaskDialog({ open, onOpenChange, defaultStatus = 'backlog', d
       clientName: client.name,
       responsible,
       type,
-      estimatedTime: parseFloat(estimatedTime) || 0,
+      estimatedTime: hmToHours(estH, estM),
       deadline: deadline.toISOString().split('T')[0],
       status: defaultStatus,
       priority,
@@ -302,8 +304,17 @@ export function AddTaskDialog({ open, onOpenChange, defaultStatus = 'backlog', d
 
           {/* Tempo estimado */}
           <div className="space-y-1.5">
-            <Label>Tempo estimado (horas)</Label>
-            <Input type="number" min="0" step="0.5" value={estimatedTime} onChange={(e) => setEstimatedTime(e.target.value)} placeholder="Ex: 3" />
+            <Label>Tempo estimado</Label>
+            <div className="flex gap-2">
+              <div className="flex-1">
+                <Input type="number" min={0} value={estH} onChange={(e) => setEstH(parseInt(e.target.value) || 0)} placeholder="0" />
+                <span className="text-[10px] text-muted-foreground">horas</span>
+              </div>
+              <div className="flex-1">
+                <Input type="number" min={0} max={59} step={5} value={estM} onChange={(e) => setEstM(Math.min(59, parseInt(e.target.value) || 0))} placeholder="0" />
+                <span className="text-[10px] text-muted-foreground">minutos</span>
+              </div>
+            </div>
           </div>
 
           {/* Observação */}
