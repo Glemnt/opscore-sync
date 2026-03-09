@@ -1,33 +1,26 @@
 
 
-## Plano: Corrigir dialogs de Gerar Demandas e Transferir Plataforma
+## Plano: Padronizar colunas dos Kanbans com Onboarding, Reunião Agendada, Ativo e Inativo
 
-### Problema
-Os dialogs `GenerateDemandsDialog` e `TransferPlatformDialog` nunca aparecem porque estão renderizados no bloco `return` final do componente (linha 902-922), mas os botões que ativam o estado estão no bloco `return` do step 2.5 (linha 615-808). Como o step 2.5 faz um `return` antecipado, o código nunca chega à renderização dos dialogs.
+### Situacao atual
 
-### Solução
+| Board | Colunas existentes |
+|-------|-------------------|
+| clients | Ativo, Onboarding, Implementação, Performance, Escala, Inativo |
+| squads | Onboarding (Em Espera), Reunião Agendada |
 
-**Arquivo: `src/pages/ProjectsPage.tsx`**
+O board **squads** esta faltando as colunas **Ativo** e **Inativo**.
 
-Mover os dois blocos de renderização condicional dos dialogs (`generateTarget` e `transferTarget`) para dentro do bloco `return` do step 2.5, logo antes do `</div>` final (linha ~807), envolvendo tudo em um fragment `<>...</>`:
+### Solucao
 
-```tsx
-// Antes do fechamento do return do step 2.5 (linha 808):
-return (
-  <>
-    <div className="p-6 animate-fade-in">
-      {/* ... conteúdo existente do step 2.5 ... */}
-    </div>
+Inserir os 2 registros faltantes na tabela `client_statuses` para o board `squads`:
 
-    {generateTarget && (
-      <GenerateDemandsDialog ... />
-    )}
-    {transferTarget && (
-      <TransferPlatformDialog ... />
-    )}
-  </>
-);
-```
+| key | label | board | sort_order |
+|-----|-------|-------|------------|
+| active | Ativo | squads | 2 |
+| inativo | Inativo | squads | 3 |
 
-Nenhuma outra mudança necessária. A renderização no bloco final (linha 902-922) pode ser mantida para cobrir o step 3, ou removida se não houver botões lá.
+Isso garante que o Kanban de Squads tenha as 4 colunas padrao: Onboarding → Reunião Agendada → Ativo → Inativo.
+
+Nenhuma alteracao de codigo necessaria — o Kanban ja le dinamicamente da tabela.
 
