@@ -1,26 +1,21 @@
 
 
-## Plano: Padronizar colunas dos Kanbans com Onboarding, Reunião Agendada, Ativo e Inativo
+## Plano: Mover plataformas com phase "escala" para "active"
 
-### Situacao atual
+### Situacao
 
-| Board | Colunas existentes |
-|-------|-------------------|
-| clients | Ativo, Onboarding, Implementação, Performance, Escala, Inativo |
-| squads | Onboarding (Em Espera), Reunião Agendada |
+Nao existe um status "Escala" cadastrado no board `squads` — a coluna aparece como "orfao" porque 4 registros em `client_platforms` possuem `phase = 'escala'`:
 
-O board **squads** esta faltando as colunas **Ativo** e **Inativo**.
+| Cliente | Plataforma |
+|---------|-----------|
+| Violeta Mabel | Shein |
+| Jhomini Modas | Shein |
+| MART TERRA (GABI) | Mercado Livre |
+| SAO RIO MODA INTIMA | Mercado Livre |
 
 ### Solucao
 
-Inserir os 2 registros faltantes na tabela `client_statuses` para o board `squads`:
+Atualizar o campo `phase` dessas 4 plataformas de `'escala'` para `'active'` (Ativo). Isso elimina a coluna orfao e posiciona os cards na coluna correta.
 
-| key | label | board | sort_order |
-|-----|-------|-------|------------|
-| active | Ativo | squads | 2 |
-| inativo | Inativo | squads | 3 |
-
-Isso garante que o Kanban de Squads tenha as 4 colunas padrao: Onboarding → Reunião Agendada → Ativo → Inativo.
-
-Nenhuma alteracao de codigo necessaria — o Kanban ja le dinamicamente da tabela.
+Nenhuma alteracao de codigo necessaria.
 
