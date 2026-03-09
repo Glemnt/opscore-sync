@@ -477,7 +477,7 @@ export function ClientDetailModal({ client, open, onClose }: ClientDetailModalPr
                   squads={squads}
                   appUsers={appUsers}
                   tasks={clientTasks}
-                  clientStatuses={clientStatuses}
+                  clientStatuses={squadStatuses}
                 />
               )}
 
