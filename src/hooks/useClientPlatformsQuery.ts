@@ -90,6 +90,7 @@ export function useUpdateClientPlatform() {
         platformAttributes: 'platform_attributes',
         qualityLevel: 'quality_level',
         healthColor: 'health_color',
+        revenueTier: 'revenue_tier',
         origin: 'origin',
         salesResponsible: 'sales_responsible',
       };

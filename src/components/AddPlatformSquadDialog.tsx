@@ -255,6 +255,27 @@ export function AddPlatformSquadDialog({ open, onClose, defaultSquadId }: AddPla
           </div>
 
           <div>
+            <Label className="text-xs">Faturamento</Label>
+            <div className="flex gap-2 mt-1.5">
+              {REVENUE_TIER_OPTIONS.map(opt => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setRevenueTier(opt.value)}
+                  className={cn(
+                    'flex-1 px-3 py-1.5 text-xs rounded-lg border transition-all font-medium',
+                    revenueTier === opt.value
+                      ? 'border-primary bg-primary/10 text-primary ring-1 ring-primary/30'
+                      : 'border-border bg-card text-muted-foreground hover:border-primary/40'
+                  )}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
             <Label className="text-xs">Saúde da Plataforma</Label>
             <div className="flex gap-2 mt-1.5">
               {HEALTH_OPTIONS.map(opt => (
