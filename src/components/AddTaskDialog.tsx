@@ -17,7 +17,7 @@ import { usePlatformsQuery } from '@/hooks/usePlatformsQuery';
 import { priorityConfig } from '@/lib/config';
 import { useTaskTypesQuery, useAddTaskType } from '@/hooks/useTaskTypesQuery';
 import { Task, TaskType, TaskStatus, Priority } from '@/types';
-import { cn } from '@/lib/utils';
+import { cn, hoursToHM, hmToHours } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
 
 interface AddTaskDialogProps {
