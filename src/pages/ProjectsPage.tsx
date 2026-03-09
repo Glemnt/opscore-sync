@@ -166,19 +166,20 @@ export function ProjectsPage() {
   { id: 'churned', label: 'Churned', status: 'churned' }]
   );
 
-  // Stable key to avoid infinite loop (clients array changes reference every render)
-  const clientStatusKey = clients.map(c => `${c.id}:${c.status}`).sort().join(',');
+  // Stable key based on platform phases for orphan detection in Squads kanban
+  const platformPhaseKey = clientPlatformsData.map(cp => `${cp.id}:${cp.phase}`).sort().join(',');
 
   // Sync kanban columns when dynamic statuses load
   useEffect(() => {
     if (clientStatuses.length > 0) {
       const baseCols = clientStatuses.map((s) => ({ id: s.key, label: s.label, status: s.key }));
       const knownKeys = new Set(baseCols.map(c => c.status));
-      const orphanStatuses = [...new Set(clients.map(c => c.status))].filter(s => !knownKeys.has(s));
+      // Usar phases de plataformas (contexto operacional do Kanban de Squads)
+      const orphanStatuses = [...new Set(clientPlatformsData.map(cp => cp.phase))].filter(s => s && !knownKeys.has(s));
       const extraCols = orphanStatuses.map(s => ({ id: s, label: s.charAt(0).toUpperCase() + s.slice(1).replace(/_/g, ' '), status: s }));
       setClientCols([...baseCols, ...extraCols]);
     }
-  }, [clientStatuses, clientStatusKey]);
+  }, [clientStatuses, platformPhaseKey]);
   const [dragOverClientCol, setDragOverClientCol] = useState<string | null>(null);
   const [editingColId, setEditingColId] = useState<string | null>(null);
   const [draggingClientColId, setDraggingClientColId] = useState<string | null>(null);
