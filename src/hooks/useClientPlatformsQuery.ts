@@ -57,7 +57,7 @@ export function useClientPlatformsQuery() {
 export function useAddClientPlatform() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (input: { clientId: string; platformSlug: string; phase?: string; responsible?: string; squadId?: string | null; startDate?: string; deadline?: string | null; qualityLevel?: string; healthColor?: string; origin?: string; salesResponsible?: string }) => {
+    mutationFn: async (input: { clientId: string; platformSlug: string; phase?: string; responsible?: string; squadId?: string | null; startDate?: string; deadline?: string | null; qualityLevel?: string; healthColor?: string; revenueTier?: string; origin?: string; salesResponsible?: string }) => {
       const { error } = await supabase.from('client_platforms').insert({
         client_id: input.clientId,
         platform_slug: input.platformSlug,
