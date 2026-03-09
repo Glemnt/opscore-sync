@@ -64,6 +64,7 @@ export function AddPlatformSquadDialog({ open, onClose, defaultSquadId }: AddPla
     setHealthColor('green');
     setStartDate(new Date());
     setOrigin('');
+    setRevenueTier('ate-30k');
     setSalesResponsible('');
   };
 
