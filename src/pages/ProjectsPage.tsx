@@ -441,10 +441,12 @@ export function ProjectsPage() {
       const matchResponsible = squadResponsibleFilter === 'all' || e.cp.responsible === squadResponsibleFilter;
       const matchHealth = squadHealthFilter === 'all' || (e.cp.healthColor ?? 'white') === squadHealthFilter;
       const matchPlatform = squadPlatformFilter === 'all' || e.cp.platformSlug === squadPlatformFilter;
+      const matchQuality = squadQualityFilter === 'all' || (e.cp.qualityLevel ?? '') === squadQualityFilter;
+      const matchPriority = squadPriorityFilter === 'all' || allTasksData.some((t) => t.clientId === e.client.id && (t.platform ?? []).includes(e.cp.platformSlug) && t.priority === squadPriorityFilter);
       const startDate = e.cp.startDate ?? e.client.startDate;
       const matchDateFrom = !squadDateFrom || startDate >= squadDateFrom;
       const matchDateTo = !squadDateTo || startDate <= squadDateTo;
-      return matchSearch && matchStatus && matchResponsible && matchHealth && matchPlatform && matchDateFrom && matchDateTo;
+      return matchSearch && matchStatus && matchResponsible && matchHealth && matchPlatform && matchQuality && matchPriority && matchDateFrom && matchDateTo;
     });
 
     const visibleCols = squadStatusFilter === 'all' ? clientCols : clientCols.filter((col) => col.status === squadStatusFilter);
