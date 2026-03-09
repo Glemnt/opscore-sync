@@ -249,7 +249,8 @@ export function ClientDetailModal({ client, open, onClose }: ClientDetailModalPr
   }, [client?.startDate, client?.contractType, client?.paymentDay, client?.contractDurationMonths]);
 
   const statusMap = useClientStatusesMap();
-  const { data: clientStatuses = [] } = useClientStatusesQuery();
+  const { data: clientStatuses = [] } = useClientStatusesQuery('clients');
+  const { data: squadStatuses = [] } = useClientStatusesQuery('squads');
 
   if (!client) return null;
 
@@ -476,7 +477,7 @@ export function ClientDetailModal({ client, open, onClose }: ClientDetailModalPr
                   squads={squads}
                   appUsers={appUsers}
                   tasks={clientTasks}
-                  clientStatuses={clientStatuses}
+                  clientStatuses={squadStatuses}
                 />
               )}
 
