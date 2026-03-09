@@ -1,0 +1,1 @@
+UPDATE client_platforms SET phase = 'active' WHERE phase = 'escala';
