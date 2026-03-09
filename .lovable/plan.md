@@ -1,33 +1,40 @@
 
 
-## Plano: Corrigir dialogs de Gerar Demandas e Transferir Plataforma
+## Plano: Garantir coluna Inativo visível no Kanban de Squads
 
-### Problema
-Os dialogs `GenerateDemandsDialog` e `TransferPlatformDialog` nunca aparecem porque estão renderizados no bloco `return` final do componente (linha 902-922), mas os botões que ativam o estado estão no bloco `return` do step 2.5 (linha 615-808). Como o step 2.5 faz um `return` antecipado, o código nunca chega à renderização dos dialogs.
+### Causa raiz
 
-### Solução
+A detecção de status órfãos na linha 177 do `ProjectsPage.tsx` usa `clients.map(c => c.status)` — que verifica o status estratégico do **cliente**, não o `phase` da **plataforma**. No contexto do Kanban de Squads, as colunas representam fases de plataformas, então a detecção deveria usar `clientPlatformsData.map(cp => cp.phase)`.
 
-**Arquivo: `src/pages/ProjectsPage.tsx`**
+Além disso, a coluna "Inativo" já existe no banco (`client_statuses` com board='squads'), então `baseCols` já a inclui. A coluna deveria renderizar mesmo sem cards — o código já suporta isso. Se não está aparecendo, pode ser um problema de timing com o `useEffect`.
 
-Mover os dois blocos de renderização condicional dos dialogs (`generateTarget` e `transferTarget`) para dentro do bloco `return` do step 2.5, logo antes do `</div>` final (linha ~807), envolvendo tudo em um fragment `<>...</>`:
+### Alteração
+
+**Arquivo:** `src/pages/ProjectsPage.tsx` (linhas 173-181)
+
+Corrigir a detecção de órfãos para usar fases de plataformas em vez de status de clientes:
 
 ```tsx
-// Antes do fechamento do return do step 2.5 (linha 808):
-return (
-  <>
-    <div className="p-6 animate-fade-in">
-      {/* ... conteúdo existente do step 2.5 ... */}
-    </div>
-
-    {generateTarget && (
-      <GenerateDemandsDialog ... />
-    )}
-    {transferTarget && (
-      <TransferPlatformDialog ... />
-    )}
-  </>
-);
+useEffect(() => {
+  if (clientStatuses.length > 0) {
+    const baseCols = clientStatuses.map((s) => ({ id: s.key, label: s.label, status: s.key }));
+    const knownKeys = new Set(baseCols.map(c => c.status));
+    // Corrigido: usar phases de plataformas, não status de clientes
+    const orphanStatuses = [...new Set(clientPlatformsData.map(cp => cp.phase))].filter(s => s && !knownKeys.has(s));
+    const extraCols = orphanStatuses.map(s => ({ id: s, label: s.charAt(0).toUpperCase() + s.slice(1).replace(/_/g, ' '), status: s }));
+    setClientCols([...baseCols, ...extraCols]);
+  }
+}, [clientStatuses, clientStatusKey]);
 ```
 
-Nenhuma outra mudança necessária. A renderização no bloco final (linha 902-922) pode ser mantida para cobrir o step 3, ou removida se não houver botões lá.
+Também atualizar a dependência do `useEffect` para incluir `clientPlatformsData` em vez de `clientStatusKey` (que é baseado em clientes):
+
+```tsx
+const platformPhaseKey = clientPlatformsData.map(cp => `${cp.id}:${cp.phase}`).sort().join(',');
+```
+
+Isso garante que:
+1. Todas as colunas do DB (incluindo "Inativo") sempre aparecem — mesmo sem cards
+2. Fases órfãs de plataformas são detectadas corretamente
+3. A detecção de órfãos corresponde ao contexto de plataformas do Kanban de Squads
 
