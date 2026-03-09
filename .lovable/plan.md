@@ -1,33 +1,33 @@
 
 
-## Plano: Calcular `current_load` automaticamente com base nas tarefas ativas
+## Plano: Corrigir dialogs de Gerar Demandas e Transferir Plataforma
 
-### Abordagem
+### Problema
+Os dialogs `GenerateDemandsDialog` e `TransferPlatformDialog` nunca aparecem porque estão renderizados no bloco `return` final do componente (linha 902-922), mas os botões que ativam o estado estão no bloco `return` do step 2.5 (linha 615-808). Como o step 2.5 faz um `return` antecipado, o código nunca chega à renderização dos dialogs.
 
-Em vez de depender do valor estático `current_load` salvo na tabela `team_members`, calcular dinamicamente no Dashboard a quantidade de tarefas ativas (status diferente de `done`) atribuídas a cada colaborador, usando o campo `responsible` da tabela `tasks`.
+### Solução
 
-### Alteracoes
+**Arquivo: `src/pages/ProjectsPage.tsx`**
 
-**1. `src/pages/DashboardPage.tsx`**
-
-No bloco que renderiza a "Carga da Equipe", cruzar `tasks` com `teamMembers` para calcular a carga real:
-
-- Criar um `useMemo` que conta tarefas ativas (status != `done`) agrupadas por `responsible` (nome do membro)
-- Na renderizacao, usar esse valor calculado em vez de `member.currentLoad`
+Mover os dois blocos de renderização condicional dos dialogs (`generateTarget` e `transferTarget`) para dentro do bloco `return` do step 2.5, logo antes do `</div>` final (linha ~807), envolvendo tudo em um fragment `<>...</>`:
 
 ```tsx
-const memberLoadMap = useMemo(() => {
-  const map: Record<string, number> = {};
-  tasks.forEach(t => {
-    if (t.status !== 'done' && t.responsible) {
-      map[t.responsible] = (map[t.responsible] || 0) + 1;
-    }
-  });
-  return map;
-}, [tasks]);
+// Antes do fechamento do return do step 2.5 (linha 808):
+return (
+  <>
+    <div className="p-6 animate-fade-in">
+      {/* ... conteúdo existente do step 2.5 ... */}
+    </div>
+
+    {generateTarget && (
+      <GenerateDemandsDialog ... />
+    )}
+    {transferTarget && (
+      <TransferPlatformDialog ... />
+    )}
+  </>
+);
 ```
 
-Na renderizacao, substituir `member.currentLoad` por `memberLoadMap[member.name] || 0`.
-
-**2. Nenhuma alteracao de banco necessaria** — o calculo sera feito no frontend com dados ja disponíveis.
+Nenhuma outra mudança necessária. A renderização no bloco final (linha 902-922) pode ser mantida para cobrir o step 3, ou removida se não houver botões lá.
 

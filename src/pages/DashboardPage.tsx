@@ -104,6 +104,17 @@ export function DashboardPage() {
   const visibleSquadIds = new Set(clients.map((c) => c.squadId).filter(Boolean));
   const teamMembers = allTeamMembers.filter((m) => !m.squadId || visibleSquadIds.has(m.squadId));
 
+  // Calculate current load dynamically from active tasks
+  const memberLoadMap = useMemo(() => {
+    const map: Record<string, number> = {};
+    tasks.forEach(t => {
+      if (t.status !== 'done' && t.responsible) {
+        map[t.responsible] = (map[t.responsible] || 0) + 1;
+      }
+    });
+    return map;
+  }, [tasks]);
+
   // Date filters
   const now = new Date();
   const [clientsStartDate, setClientsStartDate] = useState<Date | undefined>(startOfMonth(now));
@@ -410,8 +421,9 @@ export function DashboardPage() {
           </div>
           <div className="space-y-3">
             {teamMembers.slice(0, 6).map((member) => {
-              const pct = Math.min(100, (member.currentLoad / 10) * 100);
-              const isOverloaded = member.currentLoad >= 8;
+              const load = memberLoadMap[member.name] || 0;
+              const pct = Math.min(100, (load / 10) * 100);
+              const isOverloaded = load >= 8;
               return (
                 <div key={member.id}>
                   <div className="flex items-center justify-between mb-1">
@@ -421,7 +433,7 @@ export function DashboardPage() {
                     </div>
                     <div className="flex items-center gap-1">
                       {isOverloaded && <AlertTriangle className="w-3 h-3 text-warning" />}
-                      <span className={`text-xs font-semibold ${isOverloaded ? 'text-warning' : 'text-muted-foreground'}`}>{member.currentLoad}/10</span>
+                      <span className={`text-xs font-semibold ${isOverloaded ? 'text-warning' : 'text-muted-foreground'}`}>{load}/10</span>
                     </div>
                   </div>
                   <div className="h-1.5 bg-muted rounded-full overflow-hidden">
