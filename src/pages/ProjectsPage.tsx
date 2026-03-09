@@ -34,6 +34,7 @@ import { AddPlatformSquadDialog } from '@/components/AddPlatformSquadDialog';
 import { EditPlatformDialog } from '@/components/EditPlatformDialog';
 import { useTaskTypesMap } from '@/hooks/useTaskTypesQuery';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { PlatformDetailModal } from '@/components/PlatformDetailModal';
 
 type KanbanColumn = {id: string;label: string;status: ClientStatus | string;};
 type ProjectKanbanColumn = {id: string;label: string;status: ProjectStatus | string;};
@@ -109,6 +110,7 @@ export function ProjectsPage() {
   const [flowMode, setFlowMode] = useState<FlowDialogMode>('create');
   const [editingPlatform, setEditingPlatform] = useState<import('@/hooks/useClientPlatformsQuery').ClientPlatform | null>(null);
   const [deletingPlatform, setDeletingPlatform] = useState<{ id: string; slug: string; clientId: string } | null>(null);
+  const [expandedPlatformEntry, setExpandedPlatformEntry] = useState<{ cp: import('@/hooks/useClientPlatformsQuery').ClientPlatform; client: Client; platformName: string } | null>(null);
 
   // Squad management state
   const [squadDialogOpen, setSquadDialogOpen] = useState(false);
@@ -692,7 +694,7 @@ export function ProjectsPage() {
                           setDraggingClientId(cp.id);
                         }}
                         onDragEnd={() => setDraggingClientId(null)}
-                        onClick={() => { setSelectedClient(client); setSelectedPlatform(cp.platformSlug); }}
+                        onClick={() => { setExpandedPlatformEntry({ cp, client, platformName }); }}
                         className={cn(
                           'w-full bg-card rounded-xl border border-border p-4 shadow-sm-custom hover:shadow-md-custom hover:-translate-y-0.5 transition-all text-left group cursor-grab active:cursor-grabbing',
                           draggingClientId === cp.id && 'dragging-card'
@@ -874,6 +876,20 @@ export function ProjectsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      {expandedPlatformEntry && (
+        <PlatformDetailModal
+          open={!!expandedPlatformEntry}
+          onClose={() => setExpandedPlatformEntry(null)}
+          clientPlatform={expandedPlatformEntry.cp}
+          client={expandedPlatformEntry.client}
+          platformName={expandedPlatformEntry.platformName}
+          onViewDemands={() => {
+            setSelectedClient(expandedPlatformEntry.client);
+            setSelectedPlatform(expandedPlatformEntry.cp.platformSlug);
+            setExpandedPlatformEntry(null);
+          }}
+        />
+      )}
       </>);
 
   }
