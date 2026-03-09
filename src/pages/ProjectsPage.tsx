@@ -32,6 +32,7 @@ import { TransferPlatformDialog } from '@/components/TransferPlatformDialog';
 import { FlowManagerDialog, FlowDialogMode } from '@/components/FlowManagerDialog';
 import { AddPlatformSquadDialog } from '@/components/AddPlatformSquadDialog';
 import { EditPlatformDialog } from '@/components/EditPlatformDialog';
+import { useTaskTypesMap } from '@/hooks/useTaskTypesQuery';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 type KanbanColumn = {id: string;label: string;status: ClientStatus | string;};
@@ -1241,6 +1242,8 @@ function KanbanView({ filtered, clientId, clientName, squadMembers, platformSlug
 function DemandCard({ task, onClick, canDelete, onDelete }: {task: import('@/types').Task;onClick: () => void;canDelete: boolean;onDelete: () => void;}) {
   const subtasks = task.subtasks ?? [];
   const progress = subtasks.length > 0 ? Math.round(subtasks.filter((s) => s.done).length / subtasks.length * 100) : -1;
+  const taskTypeMap = useTaskTypesMap();
+  const typeConf = taskTypeMap[task.type] ?? { label: task.type, color: 'bg-muted text-muted-foreground' };
 
   const handleDragStart = (e: React.DragEvent) => {
     e.dataTransfer.setData('text/plain', task.id);
@@ -1256,6 +1259,9 @@ function DemandCard({ task, onClick, canDelete, onDelete }: {task: import('@/typ
       className="bg-card rounded-xl border border-border p-4 shadow-sm-custom hover:shadow-md-custom transition-all cursor-grab active:cursor-grabbing">
       
       <p className="text-sm font-semibold text-foreground line-clamp-2 leading-snug mb-2">{task.title}</p>
+      <span className={cn('text-xs px-1.5 py-0.5 rounded-md font-medium mb-2 inline-block', typeConf.color)}>
+        {typeConf.label}
+      </span>
       <div className="flex items-center gap-2 mb-2">
         <Avatar name={task.responsible} size="sm" />
         <span className="text-xs text-muted-foreground truncate">{task.responsible}</span>
