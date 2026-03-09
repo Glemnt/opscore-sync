@@ -133,7 +133,7 @@ export function AddTaskDialog({ open, onOpenChange, defaultStatus = 'backlog', d
       clientName: client.name,
       responsible,
       type,
-      estimatedTime: parseFloat(estimatedTime) || 0,
+      estimatedTime: hmToHours(estH, estM),
       deadline: deadline.toISOString().split('T')[0],
       status: defaultStatus,
       priority,
