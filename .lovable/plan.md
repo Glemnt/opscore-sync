@@ -1,30 +1,33 @@
 
 
-## Plano: Tornar cards de plataforma independentes no Kanban de Squads
+## Plano: Corrigir dialogs de Gerar Demandas e Transferir Plataforma
 
 ### Problema
-
-Ao arrastar um card no Kanban de Squads, todos os cards do mesmo cliente se movem juntos. Isso ocorre porque o drag-and-drop usa `client.id` e atualiza `client.status` — um campo compartilhado entre todas as plataformas do cliente.
+Os dialogs `GenerateDemandsDialog` e `TransferPlatformDialog` nunca aparecem porque estão renderizados no bloco `return` final do componente (linha 902-922), mas os botões que ativam o estado estão no bloco `return` do step 2.5 (linha 615-808). Como o step 2.5 faz um `return` antecipado, o código nunca chega à renderização dos dialogs.
 
 ### Solução
 
-Usar o campo `cp.phase` (já existente na tabela `client_platforms`) em vez de `client.status` para posicionar e mover os cards individualmente.
+**Arquivo: `src/pages/ProjectsPage.tsx`**
 
-### Alteracoes em `src/pages/ProjectsPage.tsx`
+Mover os dois blocos de renderização condicional dos dialogs (`generateTarget` e `transferTarget`) para dentro do bloco `return` do step 2.5, logo antes do `</div>` final (linha ~807), envolvendo tudo em um fragment `<>...</>`:
 
-**1. Drag: passar `cp.id` em vez de `client.id`**
-- Linha ~689: `e.dataTransfer.setData('text/plain', cp.id)` em vez de `client.id`
-- Linha ~691: `setDraggingClientId(cp.id)` em vez de `client.id`
-- Linha ~693: comparar com `cp.id`
-- Linha ~697: comparar com `cp.id`
+```tsx
+// Antes do fechamento do return do step 2.5 (linha 808):
+return (
+  <>
+    <div className="p-6 animate-fade-in">
+      {/* ... conteúdo existente do step 2.5 ... */}
+    </div>
 
-**2. Drop: atualizar `cp.phase` via `useUpdateClientPlatform`**
-- Linhas ~618-621 e ~671-674: trocar `updateClientField(clientId, 'status', col.status, 'Status')` por `updatePlatformMut.mutate({ id: cpId, updates: { phase: col.status } })`
-- Já existe `const updatePlatformMut = useUpdateClientPlatform()` importado no componente
+    {generateTarget && (
+      <GenerateDemandsDialog ... />
+    )}
+    {transferTarget && (
+      <TransferPlatformDialog ... />
+    )}
+  </>
+);
+```
 
-**3. Filtro de coluna: usar `cp.phase` em vez de `client.status`**
-- Linha ~594: `filteredPlatformEntries.filter((e) => e.cp.phase === col.status)` em vez de `e.client.status === col.status`
-- Linha ~440: filtro de status: `e.cp.phase === squadStatusFilter` em vez de `e.client.status`
-
-**4. Nenhuma alteracao de banco necessaria** — o campo `phase` já existe em `client_platforms`.
+Nenhuma outra mudança necessária. A renderização no bloco final (linha 902-922) pode ser mantida para cobrir o step 3, ou removida se não houver botões lá.
 

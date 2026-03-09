@@ -437,7 +437,7 @@ export function ProjectsPage() {
 
     const filteredPlatformEntries = squadPlatformEntries.filter((e) => {
       const matchSearch = e.client.name.toLowerCase().includes(search.toLowerCase()) || e.platformName.toLowerCase().includes(search.toLowerCase());
-      const matchStatus = squadStatusFilter === 'all' || e.client.status === squadStatusFilter;
+      const matchStatus = squadStatusFilter === 'all' || e.cp.phase === squadStatusFilter;
       const matchResponsible = squadResponsibleFilter === 'all' || e.cp.responsible === squadResponsibleFilter;
       const matchHealth = squadHealthFilter === 'all' || (e.cp.healthColor ?? 'white') === squadHealthFilter;
       const matchPlatform = squadPlatformFilter === 'all' || e.cp.platformSlug === squadPlatformFilter;
@@ -591,7 +591,7 @@ export function ProjectsPage() {
 
         <div className="flex gap-4 h-[calc(100vh-260px)] overflow-x-auto pb-4">
           {visibleCols.map((col) => {
-            const colEntries = filteredPlatformEntries.filter((e) => e.client.status === col.status);
+            const colEntries = filteredPlatformEntries.filter((e) => e.cp.phase === col.status);
             const conf = clientStatusMap[col.status as string];
             return (
               <div
@@ -615,9 +615,9 @@ export function ProjectsPage() {
                   } else {
                     e.preventDefault();
                     setDragOverClientCol(null);
-                    const clientId = e.dataTransfer.getData('text/plain');
-                    if (clientId) {
-                      updateClientField(clientId, 'status', col.status, 'Status');
+                    const cpId = e.dataTransfer.getData('text/plain');
+                    if (cpId) {
+                      updatePlatformMut.mutate({ id: cpId, updates: { phase: col.status } });
                     }
                   }
                 }}>
@@ -668,9 +668,9 @@ export function ProjectsPage() {
                   if (!draggingClientColId) {
                     e.preventDefault();
                     setDragOverClientCol(null);
-                    const clientId = e.dataTransfer.getData('text/plain');
-                    if (clientId) {
-                      updateClientField(clientId, 'status', col.status, 'Status');
+                    const cpId = e.dataTransfer.getData('text/plain');
+                    if (cpId) {
+                      updatePlatformMut.mutate({ id: cpId, updates: { phase: col.status } });
                     }
                   }
                 }}>
@@ -686,15 +686,15 @@ export function ProjectsPage() {
                         key={cp.id}
                         draggable
                         onDragStart={(e) => {
-                          e.dataTransfer.setData('text/plain', client.id);
+                          e.dataTransfer.setData('text/plain', cp.id);
                           e.dataTransfer.effectAllowed = 'move';
-                          setDraggingClientId(client.id);
+                          setDraggingClientId(cp.id);
                         }}
                         onDragEnd={() => setDraggingClientId(null)}
                         onClick={() => { setSelectedClient(client); setSelectedPlatform(cp.platformSlug); }}
                         className={cn(
                           'w-full bg-card rounded-xl border border-border p-4 shadow-sm-custom hover:shadow-md-custom hover:-translate-y-0.5 transition-all text-left group cursor-grab active:cursor-grabbing',
-                          draggingClientId === client.id && 'dragging-card'
+                          draggingClientId === cp.id && 'dragging-card'
                         )}>
                         
                         {/* Header: Client + Platform */}
