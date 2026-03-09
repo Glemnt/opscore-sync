@@ -53,6 +53,7 @@ export function AddPlatformSquadDialog({ open, onClose, defaultSquadId }: AddPla
   const [healthColor, setHealthColor] = useState('green');
   const [startDate, setStartDate] = useState<Date | undefined>(new Date());
   const [origin, setOrigin] = useState('');
+  const [revenueTier, setRevenueTier] = useState('ate-30k');
   const [salesResponsible, setSalesResponsible] = useState('');
 
   const resetForm = () => {
