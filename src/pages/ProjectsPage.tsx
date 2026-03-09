@@ -442,7 +442,7 @@ export function ProjectsPage() {
       const matchHealth = squadHealthFilter === 'all' || (e.cp.healthColor ?? 'white') === squadHealthFilter;
       const matchPlatform = squadPlatformFilter === 'all' || e.cp.platformSlug === squadPlatformFilter;
       const matchQuality = squadQualityFilter === 'all' || (e.cp.qualityLevel ?? '') === squadQualityFilter;
-      const matchPriority = squadPriorityFilter === 'all' || allTasksData.some((t) => t.clientId === e.client.id && (t.platform ?? []).includes(e.cp.platformSlug) && t.priority === squadPriorityFilter);
+      const matchPriority = squadPriorityFilter === 'all' || allTasksData.some((t) => t.clientId === e.client.id && (t.platforms ?? []).includes(e.cp.platformSlug) && t.priority === squadPriorityFilter);
       const startDate = e.cp.startDate ?? e.client.startDate;
       const matchDateFrom = !squadDateFrom || startDate >= squadDateFrom;
       const matchDateTo = !squadDateTo || startDate <= squadDateTo;
