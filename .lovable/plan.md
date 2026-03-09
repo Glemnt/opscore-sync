@@ -1,22 +1,30 @@
 
 
-## Plano: Adicionar status "Ativo" e "Inativo" na tabela client_statuses para o board "clients"
+## Plano: Tornar cards de plataforma independentes no Kanban de Squads
 
 ### Problema
 
-A tabela `client_statuses` com `board = 'clients'` contém apenas 3 registros: Onboarding (sort_order 2), Implementação (3) e Performance (4). Os status "Ativo" e "Inativo" não foram inseridos, por isso não aparecem como opções de filtro na página de Clientes.
+Ao arrastar um card no Kanban de Squads, todos os cards do mesmo cliente se movem juntos. Isso ocorre porque o drag-and-drop usa `client.id` e atualiza `client.status` — um campo compartilhado entre todas as plataformas do cliente.
 
 ### Solução
 
-Inserir os registros faltantes na tabela `client_statuses`:
+Usar o campo `cp.phase` (já existente na tabela `client_platforms`) em vez de `client.status` para posicionar e mover os cards individualmente.
 
-| key | label | class_name | board | sort_order |
-|-----|-------|------------|-------|------------|
-| active | Ativo | bg-success-light text-success border-success/20 | clients | 0 |
-| escala | Escala | bg-purple-100 text-purple-700 border-purple-200 | clients | 5 |
-| inativo | Inativo | bg-destructive/10 text-destructive border-destructive/20 | clients | 6 |
+### Alteracoes em `src/pages/ProjectsPage.tsx`
 
-Isso restaura a pipeline completa: Ativo → Onboarding → Implementação → Performance → Escala → Inativo.
+**1. Drag: passar `cp.id` em vez de `client.id`**
+- Linha ~689: `e.dataTransfer.setData('text/plain', cp.id)` em vez de `client.id`
+- Linha ~691: `setDraggingClientId(cp.id)` em vez de `client.id`
+- Linha ~693: comparar com `cp.id`
+- Linha ~697: comparar com `cp.id`
 
-Nenhuma alteração de código necessária — a página já lê dinamicamente da tabela.
+**2. Drop: atualizar `cp.phase` via `useUpdateClientPlatform`**
+- Linhas ~618-621 e ~671-674: trocar `updateClientField(clientId, 'status', col.status, 'Status')` por `updatePlatformMut.mutate({ id: cpId, updates: { phase: col.status } })`
+- Já existe `const updatePlatformMut = useUpdateClientPlatform()` importado no componente
+
+**3. Filtro de coluna: usar `cp.phase` em vez de `client.status`**
+- Linha ~594: `filteredPlatformEntries.filter((e) => e.cp.phase === col.status)` em vez de `e.client.status === col.status`
+- Linha ~440: filtro de status: `e.cp.phase === squadStatusFilter` em vez de `e.client.status`
+
+**4. Nenhuma alteracao de banco necessaria** — o campo `phase` já existe em `client_platforms`.
 
