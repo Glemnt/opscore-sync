@@ -110,6 +110,7 @@ export function ProjectsPage() {
   const [flowMode, setFlowMode] = useState<FlowDialogMode>('create');
   const [editingPlatform, setEditingPlatform] = useState<import('@/hooks/useClientPlatformsQuery').ClientPlatform | null>(null);
   const [deletingPlatform, setDeletingPlatform] = useState<{ id: string; slug: string; clientId: string } | null>(null);
+  const [expandedPlatformEntry, setExpandedPlatformEntry] = useState<{ cp: import('@/hooks/useClientPlatformsQuery').ClientPlatform; client: Client; platformName: string } | null>(null);
 
   // Squad management state
   const [squadDialogOpen, setSquadDialogOpen] = useState(false);
