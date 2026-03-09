@@ -591,7 +591,7 @@ export function ProjectsPage() {
 
         <div className="flex gap-4 h-[calc(100vh-260px)] overflow-x-auto pb-4">
           {visibleCols.map((col) => {
-            const colEntries = filteredPlatformEntries.filter((e) => e.client.status === col.status);
+            const colEntries = filteredPlatformEntries.filter((e) => e.cp.phase === col.status);
             const conf = clientStatusMap[col.status as string];
             return (
               <div
