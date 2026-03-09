@@ -80,6 +80,8 @@ export function ProjectsPage() {
   const [squadResponsibleFilter, setSquadResponsibleFilter] = useState('all');
   const [squadHealthFilter, setSquadHealthFilter] = useState('all');
   const [squadPlatformFilter, setSquadPlatformFilter] = useState('all');
+  const [squadQualityFilter, setSquadQualityFilter] = useState('all');
+  const [squadPriorityFilter, setSquadPriorityFilter] = useState('all');
   const [squadDateFrom, setSquadDateFrom] = useState('');
   const [squadDateTo, setSquadDateTo] = useState('');
   const [view, setView] = useState<'kanban' | 'list'>('kanban');
