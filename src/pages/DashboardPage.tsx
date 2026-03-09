@@ -273,9 +273,7 @@ export function DashboardPage() {
       <div className="bg-card rounded-xl border border-border p-4 shadow-sm-custom mb-6">
         <h3 className="text-xs font-semibold text-muted-foreground mb-3">Clientes por Etapa</h3>
         <div className="space-y-3">
-          {clientStatuses
-            .filter(s => ['onboarding', 'implementacao', 'performance', 'escala', 'inativo'].includes(s.key))
-            .map(status => {
+          {clientStatuses.map(status => {
             const count = clientsByStatus[status.key] || 0;
             const total = clients.length || 1;
             const pct = Math.round((count / total) * 100);

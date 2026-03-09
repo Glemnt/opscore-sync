@@ -1,14 +1,33 @@
 
 
-## Fix: Mostrar todas as etapas do Kanban em "Clientes por Etapa"
+## Plano: Corrigir dialogs de Gerar Demandas e Transferir Plataforma
 
-### Causa
+### Problema
+Os dialogs `GenerateDemandsDialog` e `TransferPlatformDialog` nunca aparecem porque estão renderizados no bloco `return` final do componente (linha 902-922), mas os botões que ativam o estado estão no bloco `return` do step 2.5 (linha 615-808). Como o step 2.5 faz um `return` antecipado, o código nunca chega à renderização dos dialogs.
 
-Linha 277 de `DashboardPage.tsx` filtra apenas `['onboarding', 'implementacao', 'performance', 'escala', 'inativo']` — keys que não existem mais no board `clients`. As keys atuais são `onboarding`, `reuniao_agendada`, `active`, `inativo`.
+### Solução
 
-### Correção
+**Arquivo: `src/pages/ProjectsPage.tsx`**
 
-Remover o `.filter()` da linha 277 para exibir todos os status retornados pela query (que já filtra por `board = 'clients'`). Os status já vêm ordenados por `sort_order`, então a ordem será: Onboarding → Reunião Agendada → Ativo → Inativo.
+Mover os dois blocos de renderização condicional dos dialogs (`generateTarget` e `transferTarget`) para dentro do bloco `return` do step 2.5, logo antes do `</div>` final (linha ~807), envolvendo tudo em um fragment `<>...</>`:
 
-Alteração em uma única linha no arquivo `src/pages/DashboardPage.tsx`.
+```tsx
+// Antes do fechamento do return do step 2.5 (linha 808):
+return (
+  <>
+    <div className="p-6 animate-fade-in">
+      {/* ... conteúdo existente do step 2.5 ... */}
+    </div>
+
+    {generateTarget && (
+      <GenerateDemandsDialog ... />
+    )}
+    {transferTarget && (
+      <TransferPlatformDialog ... />
+    )}
+  </>
+);
+```
+
+Nenhuma outra mudança necessária. A renderização no bloco final (linha 902-922) pode ser mantida para cobrir o step 3, ou removida se não houver botões lá.
 
