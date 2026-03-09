@@ -68,6 +68,7 @@ export function useAddClientPlatform() {
         deadline: input.deadline ?? null,
         quality_level: input.qualityLevel ?? null,
         health_color: input.healthColor ?? null,
+        revenue_tier: input.revenueTier ?? null,
         origin: input.origin ?? '',
         sales_responsible: input.salesResponsible ?? '',
       } as any);
