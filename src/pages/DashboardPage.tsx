@@ -433,7 +433,7 @@ export function DashboardPage() {
                     </div>
                     <div className="flex items-center gap-1">
                       {isOverloaded && <AlertTriangle className="w-3 h-3 text-warning" />}
-                      <span className={`text-xs font-semibold ${isOverloaded ? 'text-warning' : 'text-muted-foreground'}`}>{member.currentLoad}/10</span>
+                      <span className={`text-xs font-semibold ${isOverloaded ? 'text-warning' : 'text-muted-foreground'}`}>{load}/10</span>
                     </div>
                   </div>
                   <div className="h-1.5 bg-muted rounded-full overflow-hidden">
