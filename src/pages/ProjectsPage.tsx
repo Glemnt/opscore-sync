@@ -615,9 +615,9 @@ export function ProjectsPage() {
                   } else {
                     e.preventDefault();
                     setDragOverClientCol(null);
-                    const clientId = e.dataTransfer.getData('text/plain');
-                    if (clientId) {
-                      updateClientField(clientId, 'status', col.status, 'Status');
+                    const cpId = e.dataTransfer.getData('text/plain');
+                    if (cpId) {
+                      updatePlatformMut.mutate({ id: cpId, updates: { phase: col.status } });
                     }
                   }
                 }}>
