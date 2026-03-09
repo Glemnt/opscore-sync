@@ -14,6 +14,7 @@ export interface ClientPlatform {
   platformAttributes: Record<string, any>;
   qualityLevel: string | null;
   healthColor: string | null;
+  revenueTier: string | null;
   origin: string;
   salesResponsible: string;
   createdAt: string;

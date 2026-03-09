@@ -1,0 +1,1 @@
+ALTER TABLE public.client_platforms ADD COLUMN revenue_tier text DEFAULT NULL;

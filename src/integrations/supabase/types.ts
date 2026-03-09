@@ -164,6 +164,7 @@ export type Database = {
           platform_slug: string
           quality_level: string | null
           responsible: string
+          revenue_tier: string | null
           sales_responsible: string
           squad_id: string | null
           start_date: string | null
@@ -182,6 +183,7 @@ export type Database = {
           platform_slug: string
           quality_level?: string | null
           responsible?: string
+          revenue_tier?: string | null
           sales_responsible?: string
           squad_id?: string | null
           start_date?: string | null
@@ -200,6 +202,7 @@ export type Database = {
           platform_slug?: string
           quality_level?: string | null
           responsible?: string
+          revenue_tier?: string | null
           sales_responsible?: string
           squad_id?: string | null
           start_date?: string | null
