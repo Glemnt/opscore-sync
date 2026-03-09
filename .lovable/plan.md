@@ -1,33 +1,34 @@
 
 
-## Plano: Corrigir dialogs de Gerar Demandas e Transferir Plataforma
+## Plano: Corrigir duplicatas no dropdown de status do ClientDetailModal
 
-### Problema
-Os dialogs `GenerateDemandsDialog` e `TransferPlatformDialog` nunca aparecem porque estão renderizados no bloco `return` final do componente (linha 902-922), mas os botões que ativam o estado estão no bloco `return` do step 2.5 (linha 615-808). Como o step 2.5 faz um `return` antecipado, o código nunca chega à renderização dos dialogs.
+### Causa raiz
 
-### Solução
+A tabela `client_statuses` agora tem registros com o mesmo `key` em boards diferentes:
 
-**Arquivo: `src/pages/ProjectsPage.tsx`**
+| key | board |
+|-----|-------|
+| active | clients |
+| active | squads |
+| onboarding | clients |
+| onboarding | squads |
+| inativo | clients |
+| inativo | squads |
 
-Mover os dois blocos de renderização condicional dos dialogs (`generateTarget` e `transferTarget`) para dentro do bloco `return` do step 2.5, logo antes do `</div>` final (linha ~807), envolvendo tudo em um fragment `<>...</>`:
+O `ClientDetailModal` chama `useClientStatusesQuery()` sem filtro de board, retornando todos os registros. Como o dropdown itera sobre todos, os status duplicados aparecem.
 
-```tsx
-// Antes do fechamento do return do step 2.5 (linha 808):
-return (
-  <>
-    <div className="p-6 animate-fade-in">
-      {/* ... conteúdo existente do step 2.5 ... */}
-    </div>
+### Solucao
 
-    {generateTarget && (
-      <GenerateDemandsDialog ... />
-    )}
-    {transferTarget && (
-      <TransferPlatformDialog ... />
-    )}
-  </>
-);
-```
+Duas correções no `ClientDetailModal.tsx`:
 
-Nenhuma outra mudança necessária. A renderização no bloco final (linha 902-922) pode ser mantida para cobrir o step 3, ou removida se não houver botões lá.
+1. **Dropdown de status do cliente (linha 252)**: Filtrar por board `'clients'` — esse dropdown controla o status estratégico do cliente, não o operacional de squads.
+
+2. **Dropdown de phase na plataforma (linha 111)**: Já recebe `clientStatuses` como prop — o componente pai deve passar os status filtrados por `'squads'` para esse contexto operacional.
+
+### Alteracoes
+
+- `src/components/ClientDetailModal.tsx`:
+  - Linha 252: Trocar `useClientStatusesQuery()` para `useClientStatusesQuery('clients')` para o dropdown de status do cliente
+  - Adicionar uma segunda query `useClientStatusesQuery('squads')` para passar ao `PlatformOperationalPanel`
+  - Linha 479: Passar os status de squads em vez dos de clients
 
