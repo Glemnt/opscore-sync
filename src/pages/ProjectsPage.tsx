@@ -80,6 +80,8 @@ export function ProjectsPage() {
   const [squadResponsibleFilter, setSquadResponsibleFilter] = useState('all');
   const [squadHealthFilter, setSquadHealthFilter] = useState('all');
   const [squadPlatformFilter, setSquadPlatformFilter] = useState('all');
+  const [squadQualityFilter, setSquadQualityFilter] = useState('all');
+  const [squadPriorityFilter, setSquadPriorityFilter] = useState('all');
   const [squadDateFrom, setSquadDateFrom] = useState('');
   const [squadDateTo, setSquadDateTo] = useState('');
   const [view, setView] = useState<'kanban' | 'list'>('kanban');
@@ -439,10 +441,12 @@ export function ProjectsPage() {
       const matchResponsible = squadResponsibleFilter === 'all' || e.cp.responsible === squadResponsibleFilter;
       const matchHealth = squadHealthFilter === 'all' || (e.cp.healthColor ?? 'white') === squadHealthFilter;
       const matchPlatform = squadPlatformFilter === 'all' || e.cp.platformSlug === squadPlatformFilter;
+      const matchQuality = squadQualityFilter === 'all' || (e.cp.qualityLevel ?? '') === squadQualityFilter;
+      const matchPriority = squadPriorityFilter === 'all' || allTasksData.some((t) => t.clientId === e.client.id && (t.platforms ?? []).includes(e.cp.platformSlug) && t.priority === squadPriorityFilter);
       const startDate = e.cp.startDate ?? e.client.startDate;
       const matchDateFrom = !squadDateFrom || startDate >= squadDateFrom;
       const matchDateTo = !squadDateTo || startDate <= squadDateTo;
-      return matchSearch && matchStatus && matchResponsible && matchHealth && matchPlatform && matchDateFrom && matchDateTo;
+      return matchSearch && matchStatus && matchResponsible && matchHealth && matchPlatform && matchQuality && matchPriority && matchDateFrom && matchDateTo;
     });
 
     const visibleCols = squadStatusFilter === 'all' ? clientCols : clientCols.filter((col) => col.status === squadStatusFilter);
@@ -509,6 +513,25 @@ export function ProjectsPage() {
             
             <option value="all">Plataforma</option>
             {platformOptions.map((p) => <option key={p.slug} value={p.slug}>{p.name}</option>)}
+          </select>
+
+          <select
+            value={squadQualityFilter}
+            onChange={(e) => setSquadQualityFilter(e.target.value)}
+            className="px-3 py-2 text-sm bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition text-foreground">
+            <option value="all">Tipo Cliente</option>
+            <option value="Seller">🛒 Seller</option>
+            <option value="Lojista">🏪 Lojista</option>
+          </select>
+
+          <select
+            value={squadPriorityFilter}
+            onChange={(e) => setSquadPriorityFilter(e.target.value)}
+            className="px-3 py-2 text-sm bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition text-foreground">
+            <option value="all">Prioridade</option>
+            <option value="high">🔴 Alta</option>
+            <option value="medium">🟡 Média</option>
+            <option value="low">🟢 Baixa</option>
           </select>
 
           <div className="flex items-center gap-2">
