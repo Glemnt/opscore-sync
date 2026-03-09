@@ -1,33 +1,22 @@
 
 
-## Plano: Corrigir dialogs de Gerar Demandas e Transferir Plataforma
+## Plano: Filtrar "Clientes por Etapa" no Dashboard
 
-### Problema
-Os dialogs `GenerateDemandsDialog` e `TransferPlatformDialog` nunca aparecem porque estão renderizados no bloco `return` final do componente (linha 902-922), mas os botões que ativam o estado estão no bloco `return` do step 2.5 (linha 615-808). Como o step 2.5 faz um `return` antecipado, o código nunca chega à renderização dos dialogs.
+### Alteracao
 
-### Solução
+**`src/pages/DashboardPage.tsx` — linha 265**
 
-**Arquivo: `src/pages/ProjectsPage.tsx`**
-
-Mover os dois blocos de renderização condicional dos dialogs (`generateTarget` e `transferTarget`) para dentro do bloco `return` do step 2.5, logo antes do `</div>` final (linha ~807), envolvendo tudo em um fragment `<>...</>`:
+Filtrar `clientStatuses` para exibir apenas os 5 status solicitados antes do `.map()`:
 
 ```tsx
-// Antes do fechamento do return do step 2.5 (linha 808):
-return (
-  <>
-    <div className="p-6 animate-fade-in">
-      {/* ... conteúdo existente do step 2.5 ... */}
-    </div>
+// De:
+{clientStatuses.map(status => {
 
-    {generateTarget && (
-      <GenerateDemandsDialog ... />
-    )}
-    {transferTarget && (
-      <TransferPlatformDialog ... />
-    )}
-  </>
-);
+// Para:
+{clientStatuses
+  .filter(s => ['onboarding', 'implementacao', 'performance', 'escala', 'inativo'].includes(s.key))
+  .map(status => {
 ```
 
-Nenhuma outra mudança necessária. A renderização no bloco final (linha 902-922) pode ser mantida para cobrir o step 3, ou removida se não houver botões lá.
+Isso garante que apenas Onboarding, Implementacao, Performance, Escala e Inativos aparecem na secao "Clientes por Etapa", sem alterar nenhum calculo ou dado.
 
