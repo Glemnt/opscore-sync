@@ -421,8 +421,9 @@ export function DashboardPage() {
           </div>
           <div className="space-y-3">
             {teamMembers.slice(0, 6).map((member) => {
-              const pct = Math.min(100, (member.currentLoad / 10) * 100);
-              const isOverloaded = member.currentLoad >= 8;
+              const load = memberLoadMap[member.name] || 0;
+              const pct = Math.min(100, (load / 10) * 100);
+              const isOverloaded = load >= 8;
               return (
                 <div key={member.id}>
                   <div className="flex items-center justify-between mb-1">
