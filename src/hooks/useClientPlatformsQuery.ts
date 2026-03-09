@@ -35,6 +35,7 @@ function mapRow(row: any): ClientPlatform {
     platformAttributes: row.platform_attributes ?? {},
     qualityLevel: row.quality_level ?? null,
     healthColor: row.health_color ?? null,
+    revenueTier: row.revenue_tier ?? null,
     origin: row.origin ?? '',
     salesResponsible: row.sales_responsible ?? '',
     createdAt: row.created_at,
