@@ -1,25 +1,33 @@
 
 
-## Plano: Adicionar campo "Faturamento" no formulário Nova Plataforma
+## Plano: Corrigir dialogs de Gerar Demandas e Transferir Plataforma
 
-### Contexto
-O formulário `AddPlatformSquadDialog` nao possui campo de faturamento. O `AddClientSquadDialog` ja possui esse campo, armazenando na tabela `clients.monthly_revenue`. Para plataformas, o valor deve ser armazenado em `client_platforms`.
+### Problema
+Os dialogs `GenerateDemandsDialog` e `TransferPlatformDialog` nunca aparecem porque estão renderizados no bloco `return` final do componente (linha 902-922), mas os botões que ativam o estado estão no bloco `return` do step 2.5 (linha 615-808). Como o step 2.5 faz um `return` antecipado, o código nunca chega à renderização dos dialogs.
 
-### Alteracoes
+### Solução
 
-**1. Migracao de banco — adicionar coluna `revenue_tier` em `client_platforms`**
-- Nova coluna `revenue_tier text` (nullable, default null)
-- Valores possiveis: `'ate-30k'`, `'30k-100k'`, `'100k-plus'`
+**Arquivo: `src/pages/ProjectsPage.tsx`**
 
-**2. `src/components/AddPlatformSquadDialog.tsx`**
-- Adicionar estado `revenueTier` (default `'ate-30k'`)
-- Adicionar secao visual com 3 botoes de selecao (mesmo padrao dos botoes de Tipo de Cliente e Saude): "Até 30k", "30k - 100k", "100k+"
-- Posicionar antes de "Saude da Plataforma"
-- Passar `revenueTier` no `addClientPlatformMut.mutate()`
-- Resetar no `resetForm()`
+Mover os dois blocos de renderização condicional dos dialogs (`generateTarget` e `transferTarget`) para dentro do bloco `return` do step 2.5, logo antes do `</div>` final (linha ~807), envolvendo tudo em um fragment `<>...</>`:
 
-**3. `src/hooks/useClientPlatformsQuery.ts`**
-- Adicionar `revenueTier` ao tipo `ClientPlatform`
-- Mapear `revenue_tier` no `mapRow`
-- Aceitar `revenueTier` no `useAddClientPlatform` e no `useUpdateClientPlatform`
+```tsx
+// Antes do fechamento do return do step 2.5 (linha 808):
+return (
+  <>
+    <div className="p-6 animate-fade-in">
+      {/* ... conteúdo existente do step 2.5 ... */}
+    </div>
+
+    {generateTarget && (
+      <GenerateDemandsDialog ... />
+    )}
+    {transferTarget && (
+      <TransferPlatformDialog ... />
+    )}
+  </>
+);
+```
+
+Nenhuma outra mudança necessária. A renderização no bloco final (linha 902-922) pode ser mantida para cobrir o step 3, ou removida se não houver botões lá.
 

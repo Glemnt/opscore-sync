@@ -32,6 +32,12 @@ const HEALTH_OPTIONS: { value: string; label: string; color: string }[] = [
   { value: 'red', label: '🔴 Crítico', color: 'border-red-500 bg-red-500/10 text-red-700' },
 ];
 
+const REVENUE_TIER_OPTIONS = [
+  { value: 'ate-30k', label: 'Até 30k' },
+  { value: '30k-100k', label: '30k - 100k' },
+  { value: '100k-plus', label: '100k +' },
+];
+
 export function AddPlatformSquadDialog({ open, onClose, defaultSquadId }: AddPlatformSquadDialogProps) {
   const { squads } = useSquads();
   const { data: platformOptions = [] } = usePlatformsQuery();
@@ -47,6 +53,7 @@ export function AddPlatformSquadDialog({ open, onClose, defaultSquadId }: AddPla
   const [healthColor, setHealthColor] = useState('green');
   const [startDate, setStartDate] = useState<Date | undefined>(new Date());
   const [origin, setOrigin] = useState('');
+  const [revenueTier, setRevenueTier] = useState('ate-30k');
   const [salesResponsible, setSalesResponsible] = useState('');
 
   const resetForm = () => {
@@ -57,6 +64,7 @@ export function AddPlatformSquadDialog({ open, onClose, defaultSquadId }: AddPla
     setHealthColor('green');
     setStartDate(new Date());
     setOrigin('');
+    setRevenueTier('ate-30k');
     setSalesResponsible('');
   };
 
@@ -83,6 +91,7 @@ export function AddPlatformSquadDialog({ open, onClose, defaultSquadId }: AddPla
         responsible,
         startDate: startDate ? format(startDate, 'yyyy-MM-dd') : undefined,
         origin,
+        revenueTier,
         salesResponsible,
       },
       {
@@ -242,6 +251,27 @@ export function AddPlatformSquadDialog({ open, onClose, defaultSquadId }: AddPla
               >
                 {squads.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
               </select>
+            </div>
+          </div>
+
+          <div>
+            <Label className="text-xs">Faturamento</Label>
+            <div className="flex gap-2 mt-1.5">
+              {REVENUE_TIER_OPTIONS.map(opt => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setRevenueTier(opt.value)}
+                  className={cn(
+                    'flex-1 px-3 py-1.5 text-xs rounded-lg border transition-all font-medium',
+                    revenueTier === opt.value
+                      ? 'border-primary bg-primary/10 text-primary ring-1 ring-primary/30'
+                      : 'border-border bg-card text-muted-foreground hover:border-primary/40'
+                  )}
+                >
+                  {opt.label}
+                </button>
+              ))}
             </div>
           </div>
 

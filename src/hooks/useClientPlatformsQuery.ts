@@ -14,6 +14,7 @@ export interface ClientPlatform {
   platformAttributes: Record<string, any>;
   qualityLevel: string | null;
   healthColor: string | null;
+  revenueTier: string | null;
   origin: string;
   salesResponsible: string;
   createdAt: string;
@@ -34,6 +35,7 @@ function mapRow(row: any): ClientPlatform {
     platformAttributes: row.platform_attributes ?? {},
     qualityLevel: row.quality_level ?? null,
     healthColor: row.health_color ?? null,
+    revenueTier: row.revenue_tier ?? null,
     origin: row.origin ?? '',
     salesResponsible: row.sales_responsible ?? '',
     createdAt: row.created_at,
@@ -55,7 +57,7 @@ export function useClientPlatformsQuery() {
 export function useAddClientPlatform() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (input: { clientId: string; platformSlug: string; phase?: string; responsible?: string; squadId?: string | null; startDate?: string; deadline?: string | null; qualityLevel?: string; healthColor?: string; origin?: string; salesResponsible?: string }) => {
+    mutationFn: async (input: { clientId: string; platformSlug: string; phase?: string; responsible?: string; squadId?: string | null; startDate?: string; deadline?: string | null; qualityLevel?: string; healthColor?: string; revenueTier?: string; origin?: string; salesResponsible?: string }) => {
       const { error } = await supabase.from('client_platforms').insert({
         client_id: input.clientId,
         platform_slug: input.platformSlug,
@@ -66,6 +68,7 @@ export function useAddClientPlatform() {
         deadline: input.deadline ?? null,
         quality_level: input.qualityLevel ?? null,
         health_color: input.healthColor ?? null,
+        revenue_tier: input.revenueTier ?? null,
         origin: input.origin ?? '',
         sales_responsible: input.salesResponsible ?? '',
       } as any);
@@ -87,6 +90,7 @@ export function useUpdateClientPlatform() {
         platformAttributes: 'platform_attributes',
         qualityLevel: 'quality_level',
         healthColor: 'health_color',
+        revenueTier: 'revenue_tier',
         origin: 'origin',
         salesResponsible: 'sales_responsible',
       };
