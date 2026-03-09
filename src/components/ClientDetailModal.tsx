@@ -191,6 +191,7 @@ function PlatformOperationalPanel({ client, platformOptions, squads, appUsers, t
                       updatePlatform.mutate({ id: cp.id, updates: { platformAttributes: newAttrs } });
                     }}
                   />
+                  <PlatformDetailSections cp={cp} tasks={platTasks} />
                 </div>
               )}
             </div>
