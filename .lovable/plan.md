@@ -1,33 +1,27 @@
 
 
-## Plano: Corrigir dialogs de Gerar Demandas e Transferir Plataforma
+## Plano: Exibir tipo da demanda nos cards
 
 ### Problema
-Os dialogs `GenerateDemandsDialog` e `TransferPlatformDialog` nunca aparecem porque estão renderizados no bloco `return` final do componente (linha 902-922), mas os botões que ativam o estado estão no bloco `return` do step 2.5 (linha 615-808). Como o step 2.5 faz um `return` antecipado, o código nunca chega à renderização dos dialogs.
+O `DemandCard` em `ProjectsPage.tsx` (usado no Kanban de squads) nao exibe o tipo da demanda. O `TaskCard` em `TasksPage.tsx` ja exibe corretamente com um badge colorido.
 
-### Solução
+### Alteracao
 
-**Arquivo: `src/pages/ProjectsPage.tsx`**
-
-Mover os dois blocos de renderização condicional dos dialogs (`generateTarget` e `transferTarget`) para dentro do bloco `return` do step 2.5, logo antes do `</div>` final (linha ~807), envolvendo tudo em um fragment `<>...</>`:
+**`src/pages/ProjectsPage.tsx` — componente `DemandCard` (~linha 1241)**
+- Importar `useTaskTypesMap` de `@/hooks/useTaskTypesQuery`
+- Dentro do `DemandCard`, obter `typeConf` a partir de `task.type` (mesmo padrao do `TaskCard`)
+- Adicionar o badge colorido com o label do tipo logo abaixo do titulo, antes do responsavel:
 
 ```tsx
-// Antes do fechamento do return do step 2.5 (linha 808):
-return (
-  <>
-    <div className="p-6 animate-fade-in">
-      {/* ... conteúdo existente do step 2.5 ... */}
-    </div>
-
-    {generateTarget && (
-      <GenerateDemandsDialog ... />
-    )}
-    {transferTarget && (
-      <TransferPlatformDialog ... />
-    )}
-  </>
-);
+const taskTypeMap = useTaskTypesMap();
+const typeConf = taskTypeMap[task.type] ?? { label: task.type, color: 'bg-gray-100 text-gray-700' };
 ```
 
-Nenhuma outra mudança necessária. A renderização no bloco final (linha 902-922) pode ser mantida para cobrir o step 3, ou removida se não houver botões lá.
+```tsx
+<span className={cn('text-xs px-1.5 py-0.5 rounded-md font-medium', typeConf.color)}>
+  {typeConf.label}
+</span>
+```
+
+Nenhuma alteracao necessaria em `TasksPage.tsx` — ja possui o badge.
 
