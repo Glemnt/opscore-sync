@@ -10,7 +10,7 @@ import { useTaskTypesMap } from '@/hooks/useTaskTypesQuery';
 import { usePlatformsQuery } from '@/hooks/usePlatformsQuery';
 import { useTaskStatusesQuery, useAddTaskStatus, useDeleteTaskStatus, useUpdateTaskStatus, useReorderTaskStatuses } from '@/hooks/useTaskStatusesQuery';
 import { Task, TaskStatus } from '@/types';
-import { cn } from '@/lib/utils';
+import { cn, formatTime } from '@/lib/utils';
 import { TaskDetailModal } from '@/components/TaskDetailModal';
 import { AddTaskDialog } from '@/components/AddTaskDialog';
 import { FlowManagerDialog, FlowDialogMode } from '@/components/FlowManagerDialog';

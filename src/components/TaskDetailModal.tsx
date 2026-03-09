@@ -15,7 +15,7 @@ import { useAppUsersQuery } from '@/hooks/useAppUsersQuery';
 import { usePlatformsQuery } from '@/hooks/usePlatformsQuery';
 import { priorityConfig } from '@/lib/config';
 import { useTaskTypesQuery, useTaskTypesMap } from '@/hooks/useTaskTypesQuery';
-import { cn } from '@/lib/utils';
+import { cn, hoursToHM, hmToHours } from '@/lib/utils';
 import { Send, Clock, User, CalendarDays, Flag, MessageSquare, Trash2, Tag, Briefcase, ShoppingBag, Workflow } from 'lucide-react';
 import { Avatar } from '@/components/ui/shared';
 import { supabase } from '@/integrations/supabase/client';

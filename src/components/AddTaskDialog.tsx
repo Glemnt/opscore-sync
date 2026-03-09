@@ -111,7 +111,8 @@ export function AddTaskDialog({ open, onOpenChange, defaultStatus = 'backlog', d
     setDeadline(undefined);
     setResponsible('');
     setPriority('medium');
-    setEstimatedTime('');
+    setEstH(0);
+    setEstM(0);
     setComments('');
     setSubtaskInput('');
     setSubtasks([]);

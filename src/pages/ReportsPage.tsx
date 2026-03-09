@@ -7,7 +7,7 @@ import { useSquads } from '@/contexts/SquadsContext';
 import { useTeamMembersQuery } from '@/hooks/useTeamMembersQuery';
 import { useProjectsQuery } from '@/hooks/useProjectsQuery';
 import { teamRoleConfig, taskTypeConfig } from '@/lib/config';
-import { cn } from '@/lib/utils';
+import { cn, formatTime } from '@/lib/utils';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
