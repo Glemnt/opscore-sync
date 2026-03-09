@@ -91,6 +91,7 @@ export function AddPlatformSquadDialog({ open, onClose, defaultSquadId }: AddPla
         responsible,
         startDate: startDate ? format(startDate, 'yyyy-MM-dd') : undefined,
         origin,
+        revenueTier,
         salesResponsible,
       },
       {
