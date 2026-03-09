@@ -32,6 +32,12 @@ const HEALTH_OPTIONS: { value: string; label: string; color: string }[] = [
   { value: 'red', label: '🔴 Crítico', color: 'border-red-500 bg-red-500/10 text-red-700' },
 ];
 
+const REVENUE_TIER_OPTIONS = [
+  { value: 'ate-30k', label: 'Até 30k' },
+  { value: '30k-100k', label: '30k - 100k' },
+  { value: '100k-plus', label: '100k +' },
+];
+
 export function AddPlatformSquadDialog({ open, onClose, defaultSquadId }: AddPlatformSquadDialogProps) {
   const { squads } = useSquads();
   const { data: platformOptions = [] } = usePlatformsQuery();
