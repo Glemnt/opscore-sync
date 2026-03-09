@@ -876,6 +876,20 @@ export function ProjectsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      {expandedPlatformEntry && (
+        <PlatformDetailModal
+          open={!!expandedPlatformEntry}
+          onClose={() => setExpandedPlatformEntry(null)}
+          clientPlatform={expandedPlatformEntry.cp}
+          client={expandedPlatformEntry.client}
+          platformName={expandedPlatformEntry.platformName}
+          onViewDemands={() => {
+            setSelectedClient(expandedPlatformEntry.client);
+            setSelectedPlatform(expandedPlatformEntry.cp.platformSlug);
+            setExpandedPlatformEntry(null);
+          }}
+        />
+      )}
       </>);
 
   }
