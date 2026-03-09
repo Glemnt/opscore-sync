@@ -34,6 +34,7 @@ import { AddPlatformSquadDialog } from '@/components/AddPlatformSquadDialog';
 import { EditPlatformDialog } from '@/components/EditPlatformDialog';
 import { useTaskTypesMap } from '@/hooks/useTaskTypesQuery';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { PlatformDetailModal } from '@/components/PlatformDetailModal';
 
 type KanbanColumn = {id: string;label: string;status: ClientStatus | string;};
 type ProjectKanbanColumn = {id: string;label: string;status: ProjectStatus | string;};
