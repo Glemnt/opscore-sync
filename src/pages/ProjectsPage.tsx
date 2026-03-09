@@ -686,9 +686,9 @@ export function ProjectsPage() {
                         key={cp.id}
                         draggable
                         onDragStart={(e) => {
-                          e.dataTransfer.setData('text/plain', client.id);
+                          e.dataTransfer.setData('text/plain', cp.id);
                           e.dataTransfer.effectAllowed = 'move';
-                          setDraggingClientId(client.id);
+                          setDraggingClientId(cp.id);
                         }}
                         onDragEnd={() => setDraggingClientId(null)}
                         onClick={() => { setSelectedClient(client); setSelectedPlatform(cp.platformSlug); }}
