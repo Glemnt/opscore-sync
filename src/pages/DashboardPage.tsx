@@ -90,7 +90,7 @@ export function DashboardPage() {
   }, [platformsList]);
   const { tasks: allTasks } = useTasks();
   const { data: allTeamMembers = [] } = useTeamMembersQuery();
-  const { data: clientStatuses = [] } = useClientStatusesQuery();
+  const { data: clientStatuses = [] } = useClientStatusesQuery('clients');
   const churnKeys = useMemo(() => {
     return new Set(
       clientStatuses
