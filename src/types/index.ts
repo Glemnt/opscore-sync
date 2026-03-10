@@ -44,6 +44,7 @@ export interface Client {
   platform?: Platform;
   platforms?: Platform[];
   healthColor?: 'green' | 'yellow' | 'red' | 'white';
+  phase?: string;
   setupFee?: number;
   phone?: string;
   cnpj?: string;

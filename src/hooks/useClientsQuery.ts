@@ -76,6 +76,7 @@ export function useUpdateClient() {
         paymentDay: 'payment_day', contractDurationMonths: 'contract_duration_months',
         healthColor: 'health_color',
         setupFee: 'setup_fee',
+        phase: 'phase',
         phone: 'phone',
         cnpj: 'cnpj',
         email: 'email',

@@ -301,7 +301,7 @@ export function ClientDetailModal({ client, open, onClose }: ClientDetailModalPr
                 {client.contractType === 'mrr' ? 'MRR' : 'TCV'} {client.contractDurationMonths ? `${client.contractDurationMonths}m` : ''}
               </span>
               <button
-                onClick={() => { setEditMode(true); setEditData({ name: client.name, companyName: client.companyName, segment: client.segment, status: client.status, platforms: client.platforms ?? (client.platform ? [client.platform] : []), contractType: client.contractType, paymentDay: client.paymentDay, contractDurationMonths: client.contractDurationMonths, notes: client.notes, monthlyRevenue: client.monthlyRevenue, responsible: client.responsible, setupFee: client.setupFee, phone: client.phone, cnpj: client.cnpj, email: client.email, healthColor: client.healthColor ?? 'white', squadId: client.squadId, startDate: client.startDate }); }}
+                onClick={() => { setEditMode(true); setEditData({ name: client.name, companyName: client.companyName, segment: client.segment, status: client.status, phase: (client as any).phase ?? 'onboarding', platforms: client.platforms ?? (client.platform ? [client.platform] : []), contractType: client.contractType, paymentDay: client.paymentDay, contractDurationMonths: client.contractDurationMonths, notes: client.notes, monthlyRevenue: client.monthlyRevenue, responsible: client.responsible, setupFee: client.setupFee, phone: client.phone, cnpj: client.cnpj, email: client.email, healthColor: client.healthColor ?? 'white', squadId: client.squadId, startDate: client.startDate }); }}
                 className="p-1.5 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
                 title="Editar cliente"
               >
@@ -354,9 +354,15 @@ export function ClientDetailModal({ client, open, onClose }: ClientDetailModalPr
                 <div>
                   <Label className="text-xs">Status</Label>
                   <select value={editData.status ?? 'active'} onChange={e => setEditData(p => ({ ...p, status: e.target.value as ClientStatus }))} className="w-full h-8 px-2 text-sm bg-background border border-input rounded-md text-foreground">
-                    {clientStatuses.map(s => (
-                      <option key={s.key} value={s.key}>{s.label}</option>
-                    ))}
+                    <option value="active">Ativo</option>
+                    <option value="inativo">Inativo</option>
+                  </select>
+                </div>
+                <div>
+                  <Label className="text-xs">Fase</Label>
+                  <select value={(editData as any).phase ?? 'onboarding'} onChange={e => setEditData(p => ({ ...p, phase: e.target.value }))} className="w-full h-8 px-2 text-sm bg-background border border-input rounded-md text-foreground">
+                    <option value="onboarding">Onboarding</option>
+                    <option value="reuniao_agendada">Reunião Agendada</option>
                   </select>
                 </div>
                 <div>

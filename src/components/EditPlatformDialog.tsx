@@ -55,6 +55,7 @@ export function EditPlatformDialog({ open, onClose, platform }: EditPlatformDial
   const [segment, setSegment] = useState('');
   const [clientResponsible, setClientResponsible] = useState('');
   const [status, setStatus] = useState('active');
+  const [clientPhase, setClientPhase] = useState('onboarding');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [contractDuration, setContractDuration] = useState<number>(6);
@@ -77,6 +78,7 @@ export function EditPlatformDialog({ open, onClose, platform }: EditPlatformDial
       setSegment(client.segment || '');
       setClientResponsible(client.responsible || '');
       setStatus(client.status || 'active');
+      setClientPhase((client as any).phase || 'onboarding');
       setPhone(client.phone || '');
       setEmail(client.email || '');
       setContractDuration(client.contractDurationMonths ?? 6);
@@ -137,6 +139,7 @@ export function EditPlatformDialog({ open, onClose, platform }: EditPlatformDial
             segment,
             responsible: clientResponsible,
             status,
+            phase: clientPhase,
             phone,
             email,
             contractDurationMonths: contractDuration,
@@ -193,7 +196,15 @@ export function EditPlatformDialog({ open, onClose, platform }: EditPlatformDial
               <div>
                 <Label className="text-xs">Status</Label>
                 <select value={status} onChange={e => setStatus(e.target.value)} className={selectClass}>
-                  {clientStatuses.map(s => <option key={s.key} value={s.key}>{s.label}</option>)}
+                  <option value="active">Ativo</option>
+                  <option value="inativo">Inativo</option>
+                </select>
+              </div>
+              <div>
+                <Label className="text-xs">Fase</Label>
+                <select value={clientPhase} onChange={e => setClientPhase(e.target.value)} className={selectClass}>
+                  <option value="onboarding">Onboarding</option>
+                  <option value="reuniao_agendada">Reunião Agendada</option>
                 </select>
               </div>
               <div>
