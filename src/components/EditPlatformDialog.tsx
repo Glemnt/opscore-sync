@@ -196,7 +196,15 @@ export function EditPlatformDialog({ open, onClose, platform }: EditPlatformDial
               <div>
                 <Label className="text-xs">Status</Label>
                 <select value={status} onChange={e => setStatus(e.target.value)} className={selectClass}>
-                  {clientStatuses.map(s => <option key={s.key} value={s.key}>{s.label}</option>)}
+                  <option value="active">Ativo</option>
+                  <option value="inativo">Inativo</option>
+                </select>
+              </div>
+              <div>
+                <Label className="text-xs">Fase</Label>
+                <select value={clientPhase} onChange={e => setClientPhase(e.target.value)} className={selectClass}>
+                  <option value="onboarding">Onboarding</option>
+                  <option value="reuniao_agendada">Reunião Agendada</option>
                 </select>
               </div>
               <div>

@@ -354,9 +354,15 @@ export function ClientDetailModal({ client, open, onClose }: ClientDetailModalPr
                 <div>
                   <Label className="text-xs">Status</Label>
                   <select value={editData.status ?? 'active'} onChange={e => setEditData(p => ({ ...p, status: e.target.value as ClientStatus }))} className="w-full h-8 px-2 text-sm bg-background border border-input rounded-md text-foreground">
-                    {clientStatuses.map(s => (
-                      <option key={s.key} value={s.key}>{s.label}</option>
-                    ))}
+                    <option value="active">Ativo</option>
+                    <option value="inativo">Inativo</option>
+                  </select>
+                </div>
+                <div>
+                  <Label className="text-xs">Fase</Label>
+                  <select value={(editData as any).phase ?? 'onboarding'} onChange={e => setEditData(p => ({ ...p, phase: e.target.value }))} className="w-full h-8 px-2 text-sm bg-background border border-input rounded-md text-foreground">
+                    <option value="onboarding">Onboarding</option>
+                    <option value="reuniao_agendada">Reunião Agendada</option>
                   </select>
                 </div>
                 <div>
