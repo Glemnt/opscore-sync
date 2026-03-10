@@ -15,7 +15,7 @@ import { usePlatformsQuery } from '@/hooks/usePlatformsQuery';
 import { useSquads } from '@/contexts/SquadsContext';
 import { cn } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
-import type { ContractType } from '@/types';
+
 
 interface EditPlatformDialogProps {
   open: boolean;
@@ -47,7 +47,7 @@ export function EditPlatformDialog({ open, onClose, platform }: EditPlatformDial
 
   // Platform fields
   const [clientType, setClientType] = useState(platform.qualityLevel || 'Seller');
-  const [responsible, setResponsible] = useState(platform.responsible || '');
+  
   const [healthColor, setHealthColor] = useState(platform.healthColor || 'green');
   const [startDate, setStartDate] = useState<Date | undefined>(
     platform.startDate ? new Date(platform.startDate + 'T00:00:00') : undefined
@@ -56,18 +56,12 @@ export function EditPlatformDialog({ open, onClose, platform }: EditPlatformDial
   const [salesResponsible, setSalesResponsible] = useState(platform.salesResponsible || '');
 
   // Client fields
-  const [name, setName] = useState('');
   const [companyName, setCompanyName] = useState('');
   const [segment, setSegment] = useState('');
   const [clientResponsible, setClientResponsible] = useState('');
   const [status, setStatus] = useState('active');
-  const [monthlyRevenue, setMonthlyRevenue] = useState<number | ''>('');
-  const [setupFee, setSetupFee] = useState<number | ''>('');
-  const [cnpj, setCnpj] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
-  const [contractType, setContractType] = useState<ContractType>('mrr');
-  const [paymentDay, setPaymentDay] = useState(1);
   const [contractDuration, setContractDuration] = useState<number>(6);
   const [squadId, setSquadId] = useState('');
   const [clientStartDate, setClientStartDate] = useState('');
@@ -78,25 +72,19 @@ export function EditPlatformDialog({ open, onClose, platform }: EditPlatformDial
   useEffect(() => {
     // Platform
     setClientType(platform.qualityLevel || 'Seller');
-    setResponsible(platform.responsible || '');
+    
     setHealthColor(platform.healthColor || 'green');
     setStartDate(platform.startDate ? new Date(platform.startDate + 'T00:00:00') : undefined);
     setOrigin(platform.origin || '');
     setSalesResponsible(platform.salesResponsible || '');
     // Client
     if (client) {
-      setName(client.name || '');
       setCompanyName(client.companyName || '');
       setSegment(client.segment || '');
       setClientResponsible(client.responsible || '');
       setStatus(client.status || 'active');
-      setMonthlyRevenue(client.monthlyRevenue ?? '');
-      setSetupFee(client.setupFee ?? '');
-      setCnpj(client.cnpj || '');
       setPhone(client.phone || '');
       setEmail(client.email || '');
-      setContractType(client.contractType || 'mrr');
-      setPaymentDay(client.paymentDay ?? 1);
       setContractDuration(client.contractDurationMonths ?? 6);
       setSquadId(client.squadId || '');
       setClientStartDate(client.startDate || '');
@@ -113,7 +101,7 @@ export function EditPlatformDialog({ open, onClose, platform }: EditPlatformDial
         id: platform.id,
         updates: {
           qualityLevel: clientType,
-          responsible,
+          
           healthColor,
           startDate: startDate ? format(startDate, 'yyyy-MM-dd') : null,
           origin,
@@ -131,18 +119,12 @@ export function EditPlatformDialog({ open, onClose, platform }: EditPlatformDial
         {
           id: client.id,
           updates: {
-            name,
             companyName,
             segment,
             responsible: clientResponsible,
             status,
-            monthlyRevenue: monthlyRevenue === '' ? null : Number(monthlyRevenue),
-            setupFee: setupFee === '' ? null : Number(setupFee),
-            cnpj,
             phone,
             email,
-            contractType,
-            paymentDay,
             contractDurationMonths: contractDuration,
             squadId: squadId || null,
             startDate: clientStartDate,
@@ -180,10 +162,6 @@ export function EditPlatformDialog({ open, onClose, platform }: EditPlatformDial
             <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Dados do Cliente</h4>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label className="text-xs">Nome</Label>
-                <Input value={name} onChange={e => setName(e.target.value)} className="h-8 text-sm" />
-              </div>
-              <div>
                 <Label className="text-xs">Empresa</Label>
                 <Input value={companyName} onChange={e => setCompanyName(e.target.value)} className="h-8 text-sm" />
               </div>
@@ -203,37 +181,6 @@ export function EditPlatformDialog({ open, onClose, platform }: EditPlatformDial
                 <select value={status} onChange={e => setStatus(e.target.value)} className={selectClass}>
                   {clientStatuses.map(s => <option key={s.key} value={s.key}>{s.label}</option>)}
                 </select>
-              </div>
-              <div>
-                <Label className="text-xs">Mensalidade (R$)</Label>
-                <Input type="number" value={monthlyRevenue} onChange={e => setMonthlyRevenue(e.target.value === '' ? '' : Number(e.target.value))} className="h-8 text-sm" />
-              </div>
-              <div>
-                <Label className="text-xs">Setup Pago (R$)</Label>
-                <Input type="number" value={setupFee} onChange={e => setSetupFee(e.target.value === '' ? '' : Number(e.target.value))} className="h-8 text-sm" />
-              </div>
-              <div>
-                <Label className="text-xs">CNPJ</Label>
-                <Input value={cnpj} onChange={e => setCnpj(e.target.value)} placeholder="00.000.000/0000-00" className="h-8 text-sm" />
-              </div>
-              <div>
-                <Label className="text-xs">Telefone</Label>
-                <Input value={phone} onChange={e => setPhone(e.target.value)} placeholder="(11) 99999-9999" className="h-8 text-sm" />
-              </div>
-              <div>
-                <Label className="text-xs">Email</Label>
-                <Input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="cliente@empresa.com" className="h-8 text-sm" />
-              </div>
-              <div>
-                <Label className="text-xs">Tipo de Contrato</Label>
-                <select value={contractType} onChange={e => setContractType(e.target.value as ContractType)} className={selectClass}>
-                  <option value="mrr">MRR</option>
-                  <option value="tcv">TCV</option>
-                </select>
-              </div>
-              <div>
-                <Label className="text-xs">Dia de Pagamento</Label>
-                <Input type="number" min={1} max={31} value={paymentDay} onChange={e => setPaymentDay(Number(e.target.value))} className="h-8 text-sm" />
               </div>
               <div>
                 <Label className="text-xs">Duração do Contrato</Label>
@@ -352,21 +299,12 @@ export function EditPlatformDialog({ open, onClose, platform }: EditPlatformDial
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label className="text-xs">Responsável pelo Onboarding</Label>
-                  <select value={responsible} onChange={e => setResponsible(e.target.value)} className={selectClass}>
-                    <option value="">Selecione...</option>
-                    {appUsers.map(u => <option key={u.id} value={u.name}>{u.name}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <Label className="text-xs">Vendedor Responsável</Label>
-                  <select value={salesResponsible} onChange={e => setSalesResponsible(e.target.value)} className={selectClass}>
-                    <option value="">Selecione...</option>
-                    {appUsers.map(u => <option key={u.id} value={u.name}>{u.name}</option>)}
-                  </select>
-                </div>
+              <div>
+                <Label className="text-xs">Vendedor Responsável</Label>
+                <select value={salesResponsible} onChange={e => setSalesResponsible(e.target.value)} className={selectClass}>
+                  <option value="">Selecione...</option>
+                  {appUsers.map(u => <option key={u.id} value={u.name}>{u.name}</option>)}
+                </select>
               </div>
 
               <div>
