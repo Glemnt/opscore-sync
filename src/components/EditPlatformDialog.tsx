@@ -95,9 +95,7 @@ export function EditPlatformDialog({ open, onClose, platform }: EditPlatformDial
         id: platform.id,
         updates: {
           qualityLevel: clientType,
-          
           healthColor,
-          startDate: startDate ? format(startDate, 'yyyy-MM-dd') : null,
           origin,
           salesResponsible,
         },
