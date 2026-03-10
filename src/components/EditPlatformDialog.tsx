@@ -42,6 +42,9 @@ export function EditPlatformDialog({ open, onClose, platform }: EditPlatformDial
   const { squads } = useSquads();
   const updatePlatformMut = useUpdateClientPlatform();
   const updateClientMut = useUpdateClient();
+  const addClientPlatformMut = useAddClientPlatform();
+  const deleteClientPlatformMut = useDeleteClientPlatform();
+  const { data: allClientPlatforms = [] } = useClientPlatformsQuery();
 
   const client = clients.find(c => c.id === platform.clientId);
 
