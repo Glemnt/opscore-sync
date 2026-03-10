@@ -116,8 +116,30 @@ export function EditPlatformDialog({ open, onClose, platform }: EditPlatformDial
       }
     );
 
-    // Update client
+    // Sync client_platforms when platforms change
     if (client) {
+      const oldPlatforms = client.platforms ?? [];
+      const added = platforms.filter(p => !oldPlatforms.includes(p));
+      const removed = oldPlatforms.filter(p => !platforms.includes(p));
+
+      added.forEach(slug => {
+        addClientPlatformMut.mutate({
+          clientId: client.id,
+          platformSlug: slug,
+          squadId: squadId || null,
+        });
+      });
+
+      removed.forEach(slug => {
+        const record = allClientPlatforms.find(
+          cp => cp.clientId === client.id && cp.platformSlug === slug
+        );
+        if (record) {
+          deleteClientPlatformMut.mutate(record.id);
+        }
+      });
+
+      // Update client
       updateClientMut.mutate(
         {
           id: client.id,
