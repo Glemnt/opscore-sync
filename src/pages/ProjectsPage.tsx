@@ -733,9 +733,57 @@ export function ProjectsPage() {
                           </div>
                         </div>
 
-                        {/* Attribute badges */}
-                        {summaryBadges.length > 0 && (
-                          <div className="flex flex-wrap gap-1 mb-2.5 pt-2 border-t border-border/50">
+                        {/* Health badge */}
+                        <div className="flex flex-wrap items-center gap-1.5 mb-2.5 pt-2 border-t border-border/50">
+                          {(() => {
+                            const hMap: Record<string, { emoji: string; label: string; cls: string }> = {
+                              green: { emoji: '🟢', label: 'Excelente', cls: 'bg-success/15 text-success border-success/30' },
+                              orange: { emoji: '🟠', label: 'Mediano', cls: 'bg-warning/15 text-warning border-warning/30' },
+                              red: { emoji: '🔴', label: 'Ruim', cls: 'bg-destructive/15 text-destructive border-destructive/30' },
+                            };
+                            const h = cp.healthColor ? hMap[cp.healthColor] : null;
+                            return (
+                              <span className={cn('inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-semibold border', h ? h.cls : 'bg-muted text-muted-foreground border-border/50')}>
+                                {h ? `${h.emoji} ${h.label}` : '— Saúde'}
+                              </span>
+                            );
+                          })()}
+
+                          {/* Platform badge */}
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-primary/10 text-[10px] font-semibold text-primary border border-primary/20">
+                            {platformName}
+                          </span>
+                        </div>
+
+                        {/* Full / Flex / Turbo badges (Mercado Livre only) */}
+                        {cp.platformSlug === 'mercado_livre' && (
+                          <div className="flex flex-wrap gap-1 mb-2.5">
+                            {[
+                              { key: 'envios_full', label: 'Full' },
+                              { key: 'envios_flex', label: 'Flex' },
+                              { key: 'envios_turbo', label: 'Turbo' },
+                            ].map((item) => {
+                              const active = !!attrs[item.key];
+                              return (
+                                <span
+                                  key={item.key}
+                                  className={cn(
+                                    'inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-semibold border',
+                                    active
+                                      ? 'bg-success/15 text-success border-success/30'
+                                      : 'bg-muted text-muted-foreground border-border/50'
+                                  )}
+                                >
+                                  {active ? '✓' : '✗'} {item.label}
+                                </span>
+                              );
+                            })}
+                          </div>
+                        )}
+
+                        {/* Other attribute badges (non-ML) */}
+                        {cp.platformSlug !== 'mercado_livre' && summaryBadges.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mb-2.5">
                             {summaryBadges.map((badge, i) => (
                               <span key={i} className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-secondary text-[10px] font-medium text-secondary-foreground border border-border/50">
                                 {badge}
