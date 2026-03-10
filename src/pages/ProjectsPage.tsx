@@ -718,10 +718,6 @@ export function ProjectsPage() {
                               const q = qMap[cp.qualityLevel];
                               return <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-accent text-[10px] font-semibold text-accent-foreground">{q ? `${q.emoji} ${q.label}` : cp.qualityLevel}</span>;
                             })()}
-                            {cp.healthColor && (() => {
-                              const hMap: Record<string, string> = { green: 'bg-success', yellow: 'bg-warning', red: 'bg-destructive' };
-                              return <span className={cn('w-2.5 h-2.5 rounded-full shrink-0', hMap[cp.healthColor] ?? 'bg-border')} title={cp.healthColor} />;
-                            })()}
                           </div>
                         </div>
 
