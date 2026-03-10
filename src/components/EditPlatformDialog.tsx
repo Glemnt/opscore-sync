@@ -60,7 +60,7 @@ export function EditPlatformDialog({ open, onClose, platform }: EditPlatformDial
   const [contractDuration, setContractDuration] = useState<number>(6);
   const [squadId, setSquadId] = useState('');
   const [clientStartDate, setClientStartDate] = useState('');
-  const [clientHealthColor, setClientHealthColor] = useState('white');
+  const [clientPotential, setClientPotential] = useState('medium');
   const [platforms, setPlatforms] = useState<string[]>([]);
   const [notes, setNotes] = useState('');
 
