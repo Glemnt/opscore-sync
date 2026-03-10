@@ -215,12 +215,11 @@ export function EditPlatformDialog({ open, onClose, platform }: EditPlatformDial
                 <Input type="date" value={clientStartDate} onChange={e => setClientStartDate(e.target.value)} className="h-8 text-sm" />
               </div>
               <div>
-                <Label className="text-xs">Saúde do Cliente</Label>
-                <select value={clientHealthColor} onChange={e => setClientHealthColor(e.target.value)} className={selectClass}>
-                  <option value="green">🟢 Saudável</option>
-                  <option value="yellow">🟡 Atenção</option>
-                  <option value="red">🔴 Crítico</option>
-                  <option value="white">⚪ Não avaliado</option>
+                <Label className="text-xs">Potencial do Cliente</Label>
+                <select value={clientPotential} onChange={e => setClientPotential(e.target.value)} className={selectClass}>
+                  <option value="high">Alto</option>
+                  <option value="medium">Médio</option>
+                  <option value="low">Baixo</option>
                 </select>
               </div>
             </div>
