@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { useAppUsersQuery } from '@/hooks/useAppUsersQuery';
-import { useUpdateClientPlatform, ClientPlatform } from '@/hooks/useClientPlatformsQuery';
+import { useUpdateClientPlatform, useAddClientPlatform, useDeleteClientPlatform, useClientPlatformsQuery, ClientPlatform } from '@/hooks/useClientPlatformsQuery';
 import { useClientsQuery, useUpdateClient } from '@/hooks/useClientsQuery';
 import { useClientStatusesQuery } from '@/hooks/useClientStatusesQuery';
 import { usePlatformsQuery } from '@/hooks/usePlatformsQuery';
@@ -42,6 +42,9 @@ export function EditPlatformDialog({ open, onClose, platform }: EditPlatformDial
   const { squads } = useSquads();
   const updatePlatformMut = useUpdateClientPlatform();
   const updateClientMut = useUpdateClient();
+  const addClientPlatformMut = useAddClientPlatform();
+  const deleteClientPlatformMut = useDeleteClientPlatform();
+  const { data: allClientPlatforms = [] } = useClientPlatformsQuery();
 
   const client = clients.find(c => c.id === platform.clientId);
 
@@ -113,8 +116,30 @@ export function EditPlatformDialog({ open, onClose, platform }: EditPlatformDial
       }
     );
 
-    // Update client
+    // Sync client_platforms when platforms change
     if (client) {
+      const oldPlatforms = client.platforms ?? [];
+      const added = platforms.filter(p => !oldPlatforms.includes(p));
+      const removed = oldPlatforms.filter(p => !platforms.includes(p));
+
+      added.forEach(slug => {
+        addClientPlatformMut.mutate({
+          clientId: client.id,
+          platformSlug: slug,
+          squadId: squadId || null,
+        });
+      });
+
+      removed.forEach(slug => {
+        const record = allClientPlatforms.find(
+          cp => cp.clientId === client.id && cp.platformSlug === slug
+        );
+        if (record) {
+          deleteClientPlatformMut.mutate(record.id);
+        }
+      });
+
+      // Update client
       updateClientMut.mutate(
         {
           id: client.id,
