@@ -1,29 +1,33 @@
 
 
-## Plano: Equiparar campos de edição do card de plataforma (Squads) com o card de cliente (Clientes)
+## Plano: Corrigir dialogs de Gerar Demandas e Transferir Plataforma
 
-### Situação atual
+### Problema
+Os dialogs `GenerateDemandsDialog` e `TransferPlatformDialog` nunca aparecem porque estão renderizados no bloco `return` final do componente (linha 902-922), mas os botões que ativam o estado estão no bloco `return` do step 2.5 (linha 615-808). Como o step 2.5 faz um `return` antecipado, o código nunca chega à renderização dos dialogs.
 
-**Edição do cliente (ClientDetailModal)** tem 18 campos:
-Nome, Empresa, Segmento, Responsável, Status, Mensalidade, Setup Pago, CNPJ, Telefone, Email, Tipo de Contrato, Dia de Pagamento, Duração do Contrato, Squad, Data de Entrada, Saúde, Plataformas, Observações.
+### Solução
 
-**Edição da plataforma (EditPlatformDialog)** tem apenas 6 campos:
-Tipo de Cliente, Data de Onboarding, Origem, Responsável, Vendedor Responsável, Saúde.
+**Arquivo: `src/pages/ProjectsPage.tsx`**
 
-### Abordagem
+Mover os dois blocos de renderização condicional dos dialogs (`generateTarget` e `transferTarget`) para dentro do bloco `return` do step 2.5, logo antes do `</div>` final (linha ~807), envolvendo tudo em um fragment `<>...</>`:
 
-O `EditPlatformDialog` será expandido para editar **tanto dados da plataforma quanto dados do cliente associado**. Ao abrir o dialog, ele buscará o cliente vinculado e permitirá editar os mesmos campos que existem na página de Clientes.
+```tsx
+// Antes do fechamento do return do step 2.5 (linha 808):
+return (
+  <>
+    <div className="p-6 animate-fade-in">
+      {/* ... conteúdo existente do step 2.5 ... */}
+    </div>
 
-### Alterações
+    {generateTarget && (
+      <GenerateDemandsDialog ... />
+    )}
+    {transferTarget && (
+      <TransferPlatformDialog ... />
+    )}
+  </>
+);
+```
 
-**1. `EditPlatformDialog.tsx`** — Reescrever o componente para:
-- Receber o `clientId` da plataforma e buscar os dados do cliente via `useClientsQuery`
-- Adicionar todos os campos do cliente que faltam: Nome, Empresa, Segmento, Status, Mensalidade, Setup Pago, CNPJ, Telefone, Email, Tipo de Contrato, Dia de Pagamento, Duração do Contrato, Squad, Observações
-- Organizar em duas seções visuais: "Dados do Cliente" e "Dados da Plataforma"
-- No submit, chamar tanto `useUpdateClientPlatform` (para campos da plataforma) quanto `useUpdateClient` do contexto (para campos do cliente)
-- Adicionar imports necessários: `useClients`, `useSquads`, `useClientStatusesQuery`, `usePlatformsQuery`
-
-**2. `useClientPlatformsQuery.ts`** — Adicionar `deadline` e `notes` ao `keyMap` do `useUpdateClientPlatform` para garantir que campos como notas e prazo da plataforma sejam salvos corretamente.
-
-Nenhuma alteração no banco de dados — todos os campos já existem nas tabelas `clients` e `client_platforms`.
+Nenhuma outra mudança necessária. A renderização no bloco final (linha 902-922) pode ser mantida para cobrir o step 3, ou removida se não houver botões lá.
 

@@ -93,6 +93,8 @@ export function useUpdateClientPlatform() {
         revenueTier: 'revenue_tier',
         origin: 'origin',
         salesResponsible: 'sales_responsible',
+        deadline: 'deadline',
+        notes: 'notes',
       };
       for (const [k, v] of Object.entries(updates)) {
         dbUpdates[keyMap[k] ?? k] = v;
