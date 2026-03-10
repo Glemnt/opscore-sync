@@ -69,7 +69,6 @@ export function EditPlatformDialog({ open, onClose, platform }: EditPlatformDial
     setClientType(platform.qualityLevel || 'Seller');
     
     setHealthColor(platform.healthColor || 'green');
-    setStartDate(platform.startDate ? new Date(platform.startDate + 'T00:00:00') : undefined);
     setOrigin(platform.origin || '');
     setSalesResponsible(platform.salesResponsible || '');
     // Client
