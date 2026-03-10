@@ -306,14 +306,6 @@ export function EditPlatformDialog({ open, onClose, platform }: EditPlatformDial
                   {appUsers.map(u => <option key={u.id} value={u.name}>{u.name}</option>)}
                 </select>
               </div>
-                <div>
-                  <Label className="text-xs">Vendedor Responsável</Label>
-                  <select value={salesResponsible} onChange={e => setSalesResponsible(e.target.value)} className={selectClass}>
-                    <option value="">Selecione...</option>
-                    {appUsers.map(u => <option key={u.id} value={u.name}>{u.name}</option>)}
-                  </select>
-                </div>
-              </div>
 
               <div>
                 <Label className="text-xs">Saúde da Plataforma</Label>
