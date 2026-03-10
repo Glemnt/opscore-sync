@@ -56,7 +56,6 @@ export function EditPlatformDialog({ open, onClose, platform }: EditPlatformDial
   const [salesResponsible, setSalesResponsible] = useState(platform.salesResponsible || '');
 
   // Client fields
-  const [name, setName] = useState('');
   const [companyName, setCompanyName] = useState('');
   const [segment, setSegment] = useState('');
   const [clientResponsible, setClientResponsible] = useState('');
