@@ -60,7 +60,7 @@ export function EditPlatformDialog({ open, onClose, platform }: EditPlatformDial
   const [contractDuration, setContractDuration] = useState<number>(6);
   const [squadId, setSquadId] = useState('');
   const [clientStartDate, setClientStartDate] = useState('');
-  const [clientHealthColor, setClientHealthColor] = useState('white');
+  const [clientPotential, setClientPotential] = useState('medium');
   const [platforms, setPlatforms] = useState<string[]>([]);
   const [notes, setNotes] = useState('');
 
@@ -82,7 +82,7 @@ export function EditPlatformDialog({ open, onClose, platform }: EditPlatformDial
       setContractDuration(client.contractDurationMonths ?? 6);
       setSquadId(client.squadId || '');
       setClientStartDate(client.startDate || '');
-      setClientHealthColor(client.healthColor ?? 'white');
+      setClientPotential(client.healthColor ?? 'medium');
       setPlatforms(client.platforms ?? []);
       setNotes(client.notes || '');
     }
@@ -142,7 +142,7 @@ export function EditPlatformDialog({ open, onClose, platform }: EditPlatformDial
             contractDurationMonths: contractDuration,
             squadId: squadId || null,
             startDate: clientStartDate,
-            healthColor: clientHealthColor,
+            healthColor: clientPotential,
             platforms,
             notes,
           },
@@ -215,12 +215,11 @@ export function EditPlatformDialog({ open, onClose, platform }: EditPlatformDial
                 <Input type="date" value={clientStartDate} onChange={e => setClientStartDate(e.target.value)} className="h-8 text-sm" />
               </div>
               <div>
-                <Label className="text-xs">Saúde do Cliente</Label>
-                <select value={clientHealthColor} onChange={e => setClientHealthColor(e.target.value)} className={selectClass}>
-                  <option value="green">🟢 Saudável</option>
-                  <option value="yellow">🟡 Atenção</option>
-                  <option value="red">🔴 Crítico</option>
-                  <option value="white">⚪ Não avaliado</option>
+                <Label className="text-xs">Potencial do Cliente</Label>
+                <select value={clientPotential} onChange={e => setClientPotential(e.target.value)} className={selectClass}>
+                  <option value="high">Alto</option>
+                  <option value="medium">Médio</option>
+                  <option value="low">Baixo</option>
                 </select>
               </div>
             </div>
