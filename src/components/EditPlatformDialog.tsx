@@ -183,37 +183,6 @@ export function EditPlatformDialog({ open, onClose, platform }: EditPlatformDial
                 </select>
               </div>
               <div>
-                <Label className="text-xs">Mensalidade (R$)</Label>
-                <Input type="number" value={monthlyRevenue} onChange={e => setMonthlyRevenue(e.target.value === '' ? '' : Number(e.target.value))} className="h-8 text-sm" />
-              </div>
-              <div>
-                <Label className="text-xs">Setup Pago (R$)</Label>
-                <Input type="number" value={setupFee} onChange={e => setSetupFee(e.target.value === '' ? '' : Number(e.target.value))} className="h-8 text-sm" />
-              </div>
-              <div>
-                <Label className="text-xs">CNPJ</Label>
-                <Input value={cnpj} onChange={e => setCnpj(e.target.value)} placeholder="00.000.000/0000-00" className="h-8 text-sm" />
-              </div>
-              <div>
-                <Label className="text-xs">Telefone</Label>
-                <Input value={phone} onChange={e => setPhone(e.target.value)} placeholder="(11) 99999-9999" className="h-8 text-sm" />
-              </div>
-              <div>
-                <Label className="text-xs">Email</Label>
-                <Input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="cliente@empresa.com" className="h-8 text-sm" />
-              </div>
-              <div>
-                <Label className="text-xs">Tipo de Contrato</Label>
-                <select value={contractType} onChange={e => setContractType(e.target.value as ContractType)} className={selectClass}>
-                  <option value="mrr">MRR</option>
-                  <option value="tcv">TCV</option>
-                </select>
-              </div>
-              <div>
-                <Label className="text-xs">Dia de Pagamento</Label>
-                <Input type="number" min={1} max={31} value={paymentDay} onChange={e => setPaymentDay(Number(e.target.value))} className="h-8 text-sm" />
-              </div>
-              <div>
                 <Label className="text-xs">Duração do Contrato</Label>
                 <select value={contractDuration} onChange={e => setContractDuration(Number(e.target.value))} className={selectClass}>
                   <option value={6}>6 meses</option>
