@@ -60,9 +60,6 @@ export function EditPlatformDialog({ open, onClose, platform }: EditPlatformDial
   const [segment, setSegment] = useState('');
   const [clientResponsible, setClientResponsible] = useState('');
   const [status, setStatus] = useState('active');
-  const [monthlyRevenue, setMonthlyRevenue] = useState<number | ''>('');
-  const [setupFee, setSetupFee] = useState<number | ''>('');
-  const [cnpj, setCnpj] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [contractType, setContractType] = useState<ContractType>('mrr');
