@@ -1,16 +1,22 @@
 import { useState, useRef } from 'react';
-import { Brain, Send, History, Upload, Eye, Trash2, FileText, User, ShoppingBag, Star, Clock, ListChecks, TrendingUp, MessageCircle, Loader2 } from 'lucide-react';
+import { Brain, Send, History, Upload, Eye, Trash2, FileText, User, ShoppingBag, Star, Clock, ListChecks, TrendingUp, MessageCircle, Loader2, Settings2 } from 'lucide-react';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { Client } from '@/types';
 import type { ClientPlatform } from '@/hooks/useClientPlatformsQuery';
+import { useUpdateClientPlatform } from '@/hooks/useClientPlatformsQuery';
 import { usePlatformChatNotesQuery, useAddPlatformChatNote } from '@/hooks/usePlatformChatNotesQuery';
 import { usePlatformChangeLogsQuery } from '@/hooks/usePlatformChangeLogsQuery';
 import { usePlatformDocumentsQuery, useUploadPlatformDocument, useDeletePlatformDocument, getPlatformDocumentUrl } from '@/hooks/usePlatformDocumentsQuery';
+import { usePlatformPhaseStatusesQuery } from '@/hooks/usePlatformPhaseStatusesQuery';
+import { useAppUsersQuery } from '@/hooks/useAppUsersQuery';
+import { useSquads } from '@/contexts/SquadsContext';
+import { useTasks } from '@/contexts/TasksContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { PlatformAttributesEditor } from '@/components/PlatformAttributesEditor';
 
 interface PlatformDetailModalProps {
   open: boolean;
@@ -62,6 +68,11 @@ export function PlatformDetailModal({ open, onClose, clientPlatform, client, pla
   const { data: documents = [] } = usePlatformDocumentsQuery(cp.id);
   const uploadDocMut = useUploadPlatformDocument();
   const deleteDocMut = useDeletePlatformDocument();
+  const updatePlatform = useUpdateClientPlatform();
+  const { data: phaseStatuses = [] } = usePlatformPhaseStatusesQuery();
+  const { data: appUsers = [] } = useAppUsersQuery();
+  const { squads } = useSquads();
+  const { tasks } = useTasks();
 
   // Local state
   const [noteMessage, setNoteMessage] = useState('');
@@ -150,6 +161,117 @@ export function PlatformDetailModal({ open, onClose, clientPlatform, client, pla
               </Button>
             </div>
           </div>
+
+          {/* Platform Operational Details */}
+          {(() => {
+            const platTasks = tasks.filter(t => t.platforms?.includes(cp.platformSlug) && t.clientId === client.id);
+            const pendingCount = platTasks.filter(t => t.status !== 'done').length;
+            const platSquad = squads.find(s => s.id === cp.squadId);
+
+            return (
+              <div className="px-6 py-4 border-b border-border">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-6 h-6 rounded-md bg-primary/10 flex items-center justify-center">
+                    <Settings2 className="w-3.5 h-3.5 text-primary" />
+                  </div>
+                  <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Detalhes da Plataforma</h4>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="text-[10px] text-muted-foreground uppercase">Fase</label>
+                    <select
+                      value={cp.phase}
+                      onChange={e => updatePlatform.mutate({ id: cp.id, updates: { phase: e.target.value } })}
+                      className="w-full h-8 px-2 text-xs bg-background border border-input rounded-md text-foreground"
+                    >
+                      {phaseStatuses.map(s => <option key={s.key} value={s.key}>{s.label}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-muted-foreground uppercase">Squad Operacional</label>
+                    <select
+                      value={cp.squadId ?? ''}
+                      onChange={e => updatePlatform.mutate({ id: cp.id, updates: { squad_id: e.target.value || null } })}
+                      className="w-full h-8 px-2 text-xs bg-background border border-input rounded-md text-foreground"
+                    >
+                      <option value="">—</option>
+                      {squads.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-muted-foreground uppercase">Responsável</label>
+                    <select
+                      value={cp.responsible}
+                      onChange={e => updatePlatform.mutate({ id: cp.id, updates: { responsible: e.target.value } })}
+                      className="w-full h-8 px-2 text-xs bg-background border border-input rounded-md text-foreground"
+                    >
+                      <option value="">—</option>
+                      {appUsers.map(u => <option key={u.id} value={u.name}>{u.name}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-muted-foreground uppercase">Tempo de Contrato</label>
+                    <select
+                      value={cp.platformAttributes?.tempo_contrato ?? ''}
+                      onChange={e => updatePlatform.mutate({ id: cp.id, updates: { platformAttributes: { ...cp.platformAttributes, tempo_contrato: e.target.value || '' } } })}
+                      className="w-full h-8 px-2 text-xs bg-background border border-input rounded-md text-foreground"
+                    >
+                      <option value="">—</option>
+                      <option value="6">6 meses</option>
+                      <option value="12">12 meses</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-muted-foreground uppercase">Nível de Qualidade</label>
+                    <select
+                      value={cp.qualityLevel ?? ''}
+                      onChange={e => updatePlatform.mutate({ id: cp.id, updates: { qualityLevel: e.target.value || null } })}
+                      className="w-full h-8 px-2 text-xs bg-background border border-input rounded-md text-foreground"
+                    >
+                      <option value="">—</option>
+                      <option value="seller">Seller</option>
+                      <option value="lojista">Lojista</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-muted-foreground uppercase">Saúde da Plataforma</label>
+                    <select
+                      value={cp.healthColor ?? ''}
+                      onChange={e => updatePlatform.mutate({ id: cp.id, updates: { healthColor: e.target.value || null } })}
+                      className="w-full h-8 px-2 text-xs bg-background border border-input rounded-md text-foreground"
+                    >
+                      <option value="">—</option>
+                      <option value="green">🟢 Excelente</option>
+                      <option value="orange">🟠 Mediano</option>
+                      <option value="red">🔴 Ruim</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 text-xs text-muted-foreground pt-2">
+                  <span>{platTasks.length} demandas</span>
+                  <span>•</span>
+                  <span>{pendingCount} pendentes</span>
+                  {platSquad && (
+                    <>
+                      <span>•</span>
+                      <span className="text-primary font-medium">Squad: {platSquad.name}</span>
+                    </>
+                  )}
+                </div>
+
+                <PlatformAttributesEditor
+                  platformSlug={cp.platformSlug}
+                  attributes={cp.platformAttributes ?? {}}
+                  onChange={(key, value) => {
+                    const newAttrs = { ...cp.platformAttributes, [key]: value };
+                    updatePlatform.mutate({ id: cp.id, updates: { platformAttributes: newAttrs } });
+                  }}
+                />
+              </div>
+            );
+          })()}
 
           {/* AI Analysis Section */}
           <div className="px-6 py-4 border-b border-border">
