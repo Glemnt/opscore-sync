@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { useAppUsersQuery } from '@/hooks/useAppUsersQuery';
-import { useUpdateClientPlatform, ClientPlatform } from '@/hooks/useClientPlatformsQuery';
+import { useUpdateClientPlatform, useAddClientPlatform, useDeleteClientPlatform, useClientPlatformsQuery, ClientPlatform } from '@/hooks/useClientPlatformsQuery';
 import { useClientsQuery, useUpdateClient } from '@/hooks/useClientsQuery';
 import { useClientStatusesQuery } from '@/hooks/useClientStatusesQuery';
 import { usePlatformsQuery } from '@/hooks/usePlatformsQuery';
