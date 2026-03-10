@@ -1,12 +1,7 @@
 import { useState, useEffect } from 'react';
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
-import { CalendarIcon } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Calendar } from '@/components/ui/calendar';
 import { useAppUsersQuery } from '@/hooks/useAppUsersQuery';
 import { useUpdateClientPlatform, useAddClientPlatform, useDeleteClientPlatform, useClientPlatformsQuery, ClientPlatform } from '@/hooks/useClientPlatformsQuery';
 import { useClientsQuery, useUpdateClient } from '@/hooks/useClientsQuery';
@@ -52,9 +47,6 @@ export function EditPlatformDialog({ open, onClose, platform }: EditPlatformDial
   const [clientType, setClientType] = useState(platform.qualityLevel || 'Seller');
   
   const [healthColor, setHealthColor] = useState(platform.healthColor || 'green');
-  const [startDate, setStartDate] = useState<Date | undefined>(
-    platform.startDate ? new Date(platform.startDate + 'T00:00:00') : undefined
-  );
   const [origin, setOrigin] = useState(platform.origin || '');
   const [salesResponsible, setSalesResponsible] = useState(platform.salesResponsible || '');
 
@@ -77,7 +69,6 @@ export function EditPlatformDialog({ open, onClose, platform }: EditPlatformDial
     setClientType(platform.qualityLevel || 'Seller');
     
     setHealthColor(platform.healthColor || 'green');
-    setStartDate(platform.startDate ? new Date(platform.startDate + 'T00:00:00') : undefined);
     setOrigin(platform.origin || '');
     setSalesResponsible(platform.salesResponsible || '');
     // Client
@@ -104,9 +95,7 @@ export function EditPlatformDialog({ open, onClose, platform }: EditPlatformDial
         id: platform.id,
         updates: {
           qualityLevel: clientType,
-          
           healthColor,
-          startDate: startDate ? format(startDate, 'yyyy-MM-dd') : null,
           origin,
           salesResponsible,
         },
@@ -291,27 +280,6 @@ export function EditPlatformDialog({ open, onClose, platform }: EditPlatformDial
                     </button>
                   ))}
                 </div>
-              </div>
-
-              <div>
-                <Label className="text-xs">Data de Onboarding</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <button
-                      type="button"
-                      className={cn(
-                        'w-full h-8 px-2 text-sm bg-background border border-input rounded-md flex items-center justify-between text-foreground',
-                        !startDate && 'text-muted-foreground'
-                      )}
-                    >
-                      {startDate ? format(startDate, 'dd/MM/yyyy', { locale: ptBR }) : 'Selecione...'}
-                      <CalendarIcon className="h-4 w-4 text-muted-foreground" />
-                    </button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar mode="single" selected={startDate} onSelect={setStartDate} locale={ptBR} initialFocus />
-                  </PopoverContent>
-                </Popover>
               </div>
 
               <div>
