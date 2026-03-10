@@ -15,7 +15,7 @@ import { usePlatformsQuery } from '@/hooks/usePlatformsQuery';
 import { useSquads } from '@/contexts/SquadsContext';
 import { cn } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
-import type { ContractType } from '@/types';
+
 
 interface EditPlatformDialogProps {
   open: boolean;
