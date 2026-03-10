@@ -1,33 +1,31 @@
 
 
-## Plano: Corrigir dialogs de Gerar Demandas e Transferir Plataforma
+## Plano: Adicionar detalhes operacionais da plataforma no PlatformDetailModal
 
-### Problema
-Os dialogs `GenerateDemandsDialog` e `TransferPlatformDialog` nunca aparecem porque estão renderizados no bloco `return` final do componente (linha 902-922), mas os botões que ativam o estado estão no bloco `return` do step 2.5 (linha 615-808). Como o step 2.5 faz um `return` antecipado, o código nunca chega à renderização dos dialogs.
+### Objetivo
+Ao clicar no card de plataforma no Kanban de Squads, o modal de detalhes (`PlatformDetailModal`) passará a exibir uma seção editável com os mesmos campos operacionais que existem na página de Clientes (`ClientDetailModal`, linhas 102-193).
 
-### Solução
+### O que será adicionado
+Uma nova seção "Detalhes da Plataforma" no modal, entre o header e a seção de Análise por IA, contendo:
 
-**Arquivo: `src/pages/ProjectsPage.tsx`**
+1. **Grid de dropdowns editáveis (2 colunas):**
+   - Fase (usando `platform_phase_statuses`)
+   - Squad Operacional
+   - Responsável
+   - Tempo de Contrato (6/12 meses)
+   - Nível de Qualidade (Seller/Lojista)
+   - Saúde da Plataforma (Excelente/Mediano/Ruim)
 
-Mover os dois blocos de renderização condicional dos dialogs (`generateTarget` e `transferTarget`) para dentro do bloco `return` do step 2.5, logo antes do `</div>` final (linha ~807), envolvendo tudo em um fragment `<>...</>`:
+2. **Contagem de demandas** (X demandas, Y pendentes)
 
-```tsx
-// Antes do fechamento do return do step 2.5 (linha 808):
-return (
-  <>
-    <div className="p-6 animate-fade-in">
-      {/* ... conteúdo existente do step 2.5 ... */}
-    </div>
+3. **Atributos Operacionais** via `PlatformAttributesEditor` — renderiza automaticamente os campos corretos por plataforma (Mercado Livre: Reputação, Medalha, Full, Flex, Turbo; Shopee: Indicado, Express, etc.; Shein: Reputação L1-L5)
 
-    {generateTarget && (
-      <GenerateDemandsDialog ... />
-    )}
-    {transferTarget && (
-      <TransferPlatformDialog ... />
-    )}
-  </>
-);
-```
+### Alteração
 
-Nenhuma outra mudança necessária. A renderização no bloco final (linha 902-922) pode ser mantida para cobrir o step 3, ou removida se não houver botões lá.
+**`src/components/PlatformDetailModal.tsx`**
+1. Importar hooks: `useUpdateClientPlatform`, `usePlatformPhaseStatusesQuery`, `useAppUsersQuery`, `useSquads`, `useTasks`, `PlatformAttributesEditor`
+2. Adicionar nova seção editável após o header (antes da Análise por IA), replicando o layout da `ClientDetailModal` (linhas 102-193)
+3. Cada dropdown chama `updatePlatform.mutate(...)` no `onChange`, igual ao padrão existente
+
+Nenhuma alteração no banco de dados.
 
