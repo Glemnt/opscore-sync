@@ -1,33 +1,16 @@
 
 
-## Plano: Corrigir dialogs de Gerar Demandas e Transferir Plataforma
+## Plano: Remover campos do EditPlatformDialog
 
-### Problema
-Os dialogs `GenerateDemandsDialog` e `TransferPlatformDialog` nunca aparecem porque estão renderizados no bloco `return` final do componente (linha 902-922), mas os botões que ativam o estado estão no bloco `return` do step 2.5 (linha 615-808). Como o step 2.5 faz um `return` antecipado, o código nunca chega à renderização dos dialogs.
+Remover os seguintes 7 campos do `src/components/EditPlatformDialog.tsx`:
 
-### Solução
+1. **Setup Pago (R$)** — `setupFee`
+2. **Mensalidade (R$)** — `monthlyRevenue`
+3. **Tipo de Contrato** — `contractType`
+4. **Dia de Pagamento** — `paymentDay`
+5. **Responsável pelo Onboarding** — `responsible` (seção Dados da Plataforma)
+6. **Nome** — `name`
+7. **CNPJ** — `cnpj`
 
-**Arquivo: `src/pages/ProjectsPage.tsx`**
-
-Mover os dois blocos de renderização condicional dos dialogs (`generateTarget` e `transferTarget`) para dentro do bloco `return` do step 2.5, logo antes do `</div>` final (linha ~807), envolvendo tudo em um fragment `<>...</>`:
-
-```tsx
-// Antes do fechamento do return do step 2.5 (linha 808):
-return (
-  <>
-    <div className="p-6 animate-fade-in">
-      {/* ... conteúdo existente do step 2.5 ... */}
-    </div>
-
-    {generateTarget && (
-      <GenerateDemandsDialog ... />
-    )}
-    {transferTarget && (
-      <TransferPlatformDialog ... />
-    )}
-  </>
-);
-```
-
-Nenhuma outra mudança necessária. A renderização no bloco final (linha 902-922) pode ser mantida para cobrir o step 3, ou removida se não houver botões lá.
+Remover os inputs, states e referências no `handleSubmit` correspondentes. Nenhuma alteração no banco.
 
