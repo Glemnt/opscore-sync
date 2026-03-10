@@ -68,6 +68,11 @@ export function PlatformDetailModal({ open, onClose, clientPlatform, client, pla
   const { data: documents = [] } = usePlatformDocumentsQuery(cp.id);
   const uploadDocMut = useUploadPlatformDocument();
   const deleteDocMut = useDeletePlatformDocument();
+  const updatePlatform = useUpdateClientPlatform();
+  const { data: phaseStatuses = [] } = usePlatformPhaseStatusesQuery();
+  const { data: appUsers = [] } = useAppUsersQuery();
+  const { squads } = useSquads();
+  const { tasks } = useTasks();
 
   // Local state
   const [noteMessage, setNoteMessage] = useState('');
