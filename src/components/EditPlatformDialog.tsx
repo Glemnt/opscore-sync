@@ -283,27 +283,6 @@ export function EditPlatformDialog({ open, onClose, platform }: EditPlatformDial
               </div>
 
               <div>
-                <Label className="text-xs">Data de Onboarding</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <button
-                      type="button"
-                      className={cn(
-                        'w-full h-8 px-2 text-sm bg-background border border-input rounded-md flex items-center justify-between text-foreground',
-                        !startDate && 'text-muted-foreground'
-                      )}
-                    >
-                      {startDate ? format(startDate, 'dd/MM/yyyy', { locale: ptBR }) : 'Selecione...'}
-                      <CalendarIcon className="h-4 w-4 text-muted-foreground" />
-                    </button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar mode="single" selected={startDate} onSelect={setStartDate} locale={ptBR} initialFocus />
-                  </PopoverContent>
-                </Popover>
-              </div>
-
-              <div>
                 <Label className="text-xs">Origem</Label>
                 <Input
                   value={origin}
