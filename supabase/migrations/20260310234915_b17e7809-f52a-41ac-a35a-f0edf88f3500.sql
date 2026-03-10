@@ -1,0 +1,1 @@
+ALTER TABLE public.clients ADD COLUMN phase text NOT NULL DEFAULT 'onboarding';

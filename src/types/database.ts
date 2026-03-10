@@ -47,6 +47,7 @@ export function mapDbClient(
     contractDurationMonths: row.contract_duration_months ?? undefined,
     platforms: (row.platforms as any) ?? undefined,
     healthColor: row.health_color ?? undefined,
+    phase: (row as any).phase ?? 'onboarding',
     setupFee: (row as any).setup_fee ?? undefined,
     phone: (row as any).phone ?? undefined,
     cnpj: (row as any).cnpj ?? undefined,

@@ -273,6 +273,7 @@ export type Database = {
           origin: string
           payment_day: number
           pending_tasks: number
+          phase: string
           phone: string
           platforms: string[] | null
           responsible: string
@@ -300,6 +301,7 @@ export type Database = {
           origin?: string
           payment_day?: number
           pending_tasks?: number
+          phase?: string
           phone?: string
           platforms?: string[] | null
           responsible?: string
@@ -327,6 +329,7 @@ export type Database = {
           origin?: string
           payment_day?: number
           pending_tasks?: number
+          phase?: string
           phone?: string
           platforms?: string[] | null
           responsible?: string
