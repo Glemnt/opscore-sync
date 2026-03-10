@@ -119,18 +119,12 @@ export function EditPlatformDialog({ open, onClose, platform }: EditPlatformDial
         {
           id: client.id,
           updates: {
-            name,
             companyName,
             segment,
             responsible: clientResponsible,
             status,
-            monthlyRevenue: monthlyRevenue === '' ? null : Number(monthlyRevenue),
-            setupFee: setupFee === '' ? null : Number(setupFee),
-            cnpj,
             phone,
             email,
-            contractType,
-            paymentDay,
             contractDurationMonths: contractDuration,
             squadId: squadId || null,
             startDate: clientStartDate,
