@@ -139,6 +139,7 @@ export function EditPlatformDialog({ open, onClose, platform }: EditPlatformDial
             segment,
             responsible: clientResponsible,
             status,
+            phase: clientPhase,
             phone,
             email,
             contractDurationMonths: contractDuration,
