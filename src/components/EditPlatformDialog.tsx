@@ -79,18 +79,12 @@ export function EditPlatformDialog({ open, onClose, platform }: EditPlatformDial
     setSalesResponsible(platform.salesResponsible || '');
     // Client
     if (client) {
-      setName(client.name || '');
       setCompanyName(client.companyName || '');
       setSegment(client.segment || '');
       setClientResponsible(client.responsible || '');
       setStatus(client.status || 'active');
-      setMonthlyRevenue(client.monthlyRevenue ?? '');
-      setSetupFee(client.setupFee ?? '');
-      setCnpj(client.cnpj || '');
       setPhone(client.phone || '');
       setEmail(client.email || '');
-      setContractType(client.contractType || 'mrr');
-      setPaymentDay(client.paymentDay ?? 1);
       setContractDuration(client.contractDurationMonths ?? 6);
       setSquadId(client.squadId || '');
       setClientStartDate(client.startDate || '');
