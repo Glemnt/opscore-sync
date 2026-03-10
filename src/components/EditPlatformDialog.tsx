@@ -47,9 +47,6 @@ export function EditPlatformDialog({ open, onClose, platform }: EditPlatformDial
   const [clientType, setClientType] = useState(platform.qualityLevel || 'Seller');
   
   const [healthColor, setHealthColor] = useState(platform.healthColor || 'green');
-  const [startDate, setStartDate] = useState<Date | undefined>(
-    platform.startDate ? new Date(platform.startDate + 'T00:00:00') : undefined
-  );
   const [origin, setOrigin] = useState(platform.origin || '');
   const [salesResponsible, setSalesResponsible] = useState(platform.salesResponsible || '');
 
