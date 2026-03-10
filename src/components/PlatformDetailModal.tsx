@@ -177,63 +177,7 @@ export function PlatformDetailModal({ open, onClose, clientPlatform, client, pla
                   <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Detalhes da Plataforma</h4>
                 </div>
 
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className="text-[10px] text-muted-foreground uppercase">Fase</label>
-                    <select
-                      value={cp.phase}
-                      onChange={e => updatePlatform.mutate({ id: cp.id, updates: { phase: e.target.value } })}
-                      className="w-full h-8 px-2 text-xs bg-background border border-input rounded-md text-foreground"
-                    >
-                      {phaseStatuses.map(s => <option key={s.key} value={s.key}>{s.label}</option>)}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="text-[10px] text-muted-foreground uppercase">Squad Operacional</label>
-                    <select
-                      value={cp.squadId ?? ''}
-                      onChange={e => updatePlatform.mutate({ id: cp.id, updates: { squad_id: e.target.value || null } })}
-                      className="w-full h-8 px-2 text-xs bg-background border border-input rounded-md text-foreground"
-                    >
-                      <option value="">—</option>
-                      {squads.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="text-[10px] text-muted-foreground uppercase">Responsável</label>
-                    <select
-                      value={cp.responsible}
-                      onChange={e => updatePlatform.mutate({ id: cp.id, updates: { responsible: e.target.value } })}
-                      className="w-full h-8 px-2 text-xs bg-background border border-input rounded-md text-foreground"
-                    >
-                      <option value="">—</option>
-                      {appUsers.map(u => <option key={u.id} value={u.name}>{u.name}</option>)}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="text-[10px] text-muted-foreground uppercase">Tempo de Contrato</label>
-                    <select
-                      value={cp.platformAttributes?.tempo_contrato ?? ''}
-                      onChange={e => updatePlatform.mutate({ id: cp.id, updates: { platformAttributes: { ...cp.platformAttributes, tempo_contrato: e.target.value || '' } } })}
-                      className="w-full h-8 px-2 text-xs bg-background border border-input rounded-md text-foreground"
-                    >
-                      <option value="">—</option>
-                      <option value="6">6 meses</option>
-                      <option value="12">12 meses</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="text-[10px] text-muted-foreground uppercase">Nível de Qualidade</label>
-                    <select
-                      value={cp.qualityLevel ?? ''}
-                      onChange={e => updatePlatform.mutate({ id: cp.id, updates: { qualityLevel: e.target.value || null } })}
-                      className="w-full h-8 px-2 text-xs bg-background border border-input rounded-md text-foreground"
-                    >
-                      <option value="">—</option>
-                      <option value="seller">Seller</option>
-                      <option value="lojista">Lojista</option>
-                    </select>
-                  </div>
+                <div className="space-y-2">
                   <div>
                     <label className="text-[10px] text-muted-foreground uppercase">Saúde da Plataforma</label>
                     <select

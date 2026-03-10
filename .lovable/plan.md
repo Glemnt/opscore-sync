@@ -1,21 +1,33 @@
 
 
-## Plano: Remover campos desnecessários dos Detalhes da Plataforma
+## Plano: Corrigir dialogs de Gerar Demandas e Transferir Plataforma
 
-### Alteração
+### Problema
+Os dialogs `GenerateDemandsDialog` e `TransferPlatformDialog` nunca aparecem porque estão renderizados no bloco `return` final do componente (linha 902-922), mas os botões que ativam o estado estão no bloco `return` do step 2.5 (linha 615-808). Como o step 2.5 faz um `return` antecipado, o código nunca chega à renderização dos dialogs.
 
-**`src/components/PlatformDetailModal.tsx`** (linhas 180-250)
+### Solução
 
-Remover os seguintes dropdowns do grid:
-- Fase (linhas 181-190)
-- Squad Operacional (linhas 191-201)
-- Responsável (linhas 202-212)
-- Tempo de Contrato (linhas 213-224)
-- Nível de Qualidade (linhas 225-236)
+**Arquivo: `src/pages/ProjectsPage.tsx`**
 
-Manter apenas:
-- Saúde da Plataforma (linhas 237-249)
-- Atributos operacionais via `PlatformAttributesEditor` (Reputação, Medalha, Full, Flex, Turbo — já existente abaixo do grid)
+Mover os dois blocos de renderização condicional dos dialogs (`generateTarget` e `transferTarget`) para dentro do bloco `return` do step 2.5, logo antes do `</div>` final (linha ~807), envolvendo tudo em um fragment `<>...</>`:
 
-O grid passará a ter apenas 1 item, então será ajustado para `grid-cols-1` ou substituído por um `div` simples.
+```tsx
+// Antes do fechamento do return do step 2.5 (linha 808):
+return (
+  <>
+    <div className="p-6 animate-fade-in">
+      {/* ... conteúdo existente do step 2.5 ... */}
+    </div>
+
+    {generateTarget && (
+      <GenerateDemandsDialog ... />
+    )}
+    {transferTarget && (
+      <TransferPlatformDialog ... />
+    )}
+  </>
+);
+```
+
+Nenhuma outra mudança necessária. A renderização no bloco final (linha 902-922) pode ser mantida para cobrir o step 3, ou removida se não houver botões lá.
 
