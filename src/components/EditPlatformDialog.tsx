@@ -142,7 +142,7 @@ export function EditPlatformDialog({ open, onClose, platform }: EditPlatformDial
             contractDurationMonths: contractDuration,
             squadId: squadId || null,
             startDate: clientStartDate,
-            healthColor: clientHealthColor,
+            healthColor: clientPotential,
             platforms,
             notes,
           },
