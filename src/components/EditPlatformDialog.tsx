@@ -55,6 +55,7 @@ export function EditPlatformDialog({ open, onClose, platform }: EditPlatformDial
   const [segment, setSegment] = useState('');
   const [clientResponsible, setClientResponsible] = useState('');
   const [status, setStatus] = useState('active');
+  const [clientPhase, setClientPhase] = useState('onboarding');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [contractDuration, setContractDuration] = useState<number>(6);
