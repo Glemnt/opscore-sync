@@ -299,14 +299,13 @@ export function EditPlatformDialog({ open, onClose, platform }: EditPlatformDial
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label className="text-xs">Responsável pelo Onboarding</Label>
-                  <select value={responsible} onChange={e => setResponsible(e.target.value)} className={selectClass}>
-                    <option value="">Selecione...</option>
-                    {appUsers.map(u => <option key={u.id} value={u.name}>{u.name}</option>)}
-                  </select>
-                </div>
+              <div>
+                <Label className="text-xs">Vendedor Responsável</Label>
+                <select value={salesResponsible} onChange={e => setSalesResponsible(e.target.value)} className={selectClass}>
+                  <option value="">Selecione...</option>
+                  {appUsers.map(u => <option key={u.id} value={u.name}>{u.name}</option>)}
+                </select>
+              </div>
                 <div>
                   <Label className="text-xs">Vendedor Responsável</Label>
                   <select value={salesResponsible} onChange={e => setSalesResponsible(e.target.value)} className={selectClass}>
