@@ -62,8 +62,6 @@ export function EditPlatformDialog({ open, onClose, platform }: EditPlatformDial
   const [status, setStatus] = useState('active');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
-  const [contractType, setContractType] = useState<ContractType>('mrr');
-  const [paymentDay, setPaymentDay] = useState(1);
   const [contractDuration, setContractDuration] = useState<number>(6);
   const [squadId, setSquadId] = useState('');
   const [clientStartDate, setClientStartDate] = useState('');
