@@ -1,16 +1,22 @@
 import { useState, useRef } from 'react';
-import { Brain, Send, History, Upload, Eye, Trash2, FileText, User, ShoppingBag, Star, Clock, ListChecks, TrendingUp, MessageCircle, Loader2 } from 'lucide-react';
+import { Brain, Send, History, Upload, Eye, Trash2, FileText, User, ShoppingBag, Star, Clock, ListChecks, TrendingUp, MessageCircle, Loader2, Settings2 } from 'lucide-react';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { Client } from '@/types';
 import type { ClientPlatform } from '@/hooks/useClientPlatformsQuery';
+import { useUpdateClientPlatform } from '@/hooks/useClientPlatformsQuery';
 import { usePlatformChatNotesQuery, useAddPlatformChatNote } from '@/hooks/usePlatformChatNotesQuery';
 import { usePlatformChangeLogsQuery } from '@/hooks/usePlatformChangeLogsQuery';
 import { usePlatformDocumentsQuery, useUploadPlatformDocument, useDeletePlatformDocument, getPlatformDocumentUrl } from '@/hooks/usePlatformDocumentsQuery';
+import { usePlatformPhaseStatusesQuery } from '@/hooks/usePlatformPhaseStatusesQuery';
+import { useAppUsersQuery } from '@/hooks/useAppUsersQuery';
+import { useSquads } from '@/contexts/SquadsContext';
+import { useTasks } from '@/contexts/TasksContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { PlatformAttributesEditor } from '@/components/PlatformAttributesEditor';
 
 interface PlatformDetailModalProps {
   open: boolean;
