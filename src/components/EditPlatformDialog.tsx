@@ -162,10 +162,6 @@ export function EditPlatformDialog({ open, onClose, platform }: EditPlatformDial
             <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Dados do Cliente</h4>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label className="text-xs">Nome</Label>
-                <Input value={name} onChange={e => setName(e.target.value)} className="h-8 text-sm" />
-              </div>
-              <div>
                 <Label className="text-xs">Empresa</Label>
                 <Input value={companyName} onChange={e => setCompanyName(e.target.value)} className="h-8 text-sm" />
               </div>
