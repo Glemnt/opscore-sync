@@ -1,12 +1,7 @@
 import { useState, useEffect } from 'react';
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
-import { CalendarIcon } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Calendar } from '@/components/ui/calendar';
 import { useAppUsersQuery } from '@/hooks/useAppUsersQuery';
 import { useUpdateClientPlatform, useAddClientPlatform, useDeleteClientPlatform, useClientPlatformsQuery, ClientPlatform } from '@/hooks/useClientPlatformsQuery';
 import { useClientsQuery, useUpdateClient } from '@/hooks/useClientsQuery';
