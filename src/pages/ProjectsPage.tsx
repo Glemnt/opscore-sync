@@ -183,9 +183,6 @@ export function ProjectsPage() {
     }
   }, [clientStatuses, platformPhaseKey]);
   const [dragOverClientCol, setDragOverClientCol] = useState<string | null>(null);
-  const [editingColId, setEditingColId] = useState<string | null>(null);
-  const [draggingClientColId, setDraggingClientColId] = useState<string | null>(null);
-  const [clientColDropTarget, setClientColDropTarget] = useState<string | null>(null);
 
   const isAdmin = currentUser?.accessLevel === 3;
   const visibleSquads = isAdmin ? squads : squads.filter((s) => currentUser?.squadIds.includes(s.id));
@@ -358,7 +355,6 @@ export function ProjectsPage() {
       if (col) {
         updateStatusMut.mutate({ key: col.status as string, label: newLabel });
       }
-      setEditingColId(null);
     };
 
     const handleRemoveCol = (id: string) => {
@@ -388,44 +384,6 @@ export function ProjectsPage() {
       setAddColDialogOpen(false);
     };
 
-    const handleClientColDragStart = (e: React.DragEvent, colId: string) => {
-      e.dataTransfer.setData('column-key', colId);
-      e.dataTransfer.effectAllowed = 'move';
-      setDraggingClientColId(colId);
-    };
-
-    const handleClientColDragOver = (e: React.DragEvent, colId: string) => {
-      e.preventDefault();
-      if (draggingClientColId && draggingClientColId !== colId) {
-        setClientColDropTarget(colId);
-      }
-    };
-
-    const handleClientColDrop = (e: React.DragEvent, targetId: string) => {
-      e.preventDefault();
-      const sourceId = e.dataTransfer.getData('column-key');
-      if (!sourceId || sourceId === targetId) {
-        setDraggingClientColId(null);
-        setClientColDropTarget(null);
-        return;
-      }
-      const currentIds = clientCols.map((c) => c.id);
-      const sourceIdx = currentIds.indexOf(sourceId);
-      const targetIdx = currentIds.indexOf(targetId);
-      if (sourceIdx === -1 || targetIdx === -1) return;
-      const newIds = [...currentIds];
-      newIds.splice(sourceIdx, 1);
-      newIds.splice(targetIdx, 0, sourceId);
-      const reorderItems = newIds.map((id, i) => ({ key: id, sort_order: i }));
-      reorderClientMut.mutate(reorderItems);
-      setDraggingClientColId(null);
-      setClientColDropTarget(null);
-    };
-
-    const handleClientColDragEnd = () => {
-      setDraggingClientColId(null);
-      setClientColDropTarget(null);
-    };
 
     const phaseLabels: Record<string, string> = {
       onboarding: 'Onboarding',
@@ -452,7 +410,7 @@ export function ProjectsPage() {
       return matchSearch && matchStatus && matchResponsible && matchHealth && matchPlatform && matchQuality && matchPriority && matchDateFrom && matchDateTo;
     });
 
-    const visibleCols = squadStatusFilter === 'all' ? clientCols : clientCols.filter((col) => col.status === squadStatusFilter);
+    
 
     return (
       <>
@@ -549,135 +507,56 @@ export function ProjectsPage() {
           </div>
         </div>
 
-        {/* Row 2: Status pipeline tabs */}
-        
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        
-
-        <div className="flex gap-4 h-[calc(100vh-260px)] overflow-x-auto pb-4">
-          {visibleCols.map((col) => {
-            const colEntries = filteredPlatformEntries.filter((e) => e.cp.phase === col.status);
+        {/* Row 2: Phase filter tabs */}
+        <div className="flex flex-wrap items-center gap-2 mb-4">
+          <button
+            onClick={() => setSquadStatusFilter('all')}
+            className={cn(
+              'px-3 py-1.5 rounded-lg text-sm font-medium border transition-colors',
+              squadStatusFilter === 'all'
+                ? 'bg-primary text-primary-foreground border-primary'
+                : 'bg-card text-muted-foreground border-border hover:border-primary/40 hover:text-foreground'
+            )}>
+            Todos
+            <span className="ml-1.5 text-xs opacity-70">({squadPlatformEntries.length})</span>
+          </button>
+          {clientCols.map((col) => {
+            const count = filteredPlatformEntries.filter(e => e.cp.phase === col.status).length;
             const conf = clientStatusMap[col.status as string];
             return (
-              <div
-                key={col.id}
-                className={cn(
-                  'flex-shrink-0 w-80 group/col relative flex flex-col h-full',
-                  draggingClientColId === col.id && 'opacity-50'
-                )}
-                onDragOver={(e) => {
-                  e.preventDefault();
-                  if (draggingClientColId) {
-                    handleClientColDragOver(e, col.id);
-                  } else {
-                    setDragOverClientCol(col.id);
-                  }
-                }}
-                onDragLeave={() => {setDragOverClientCol(null);setClientColDropTarget(null);}}
-                onDrop={(e) => {
-                  if (draggingClientColId) {
-                    handleClientColDrop(e, col.id);
-                  } else {
-                    e.preventDefault();
-                    setDragOverClientCol(null);
-                    const cpId = e.dataTransfer.getData('text/plain');
-                    if (cpId) {
-                      updatePlatformMut.mutate({ id: cpId, updates: { phase: col.status } });
-                    }
-                  }
-                }}>
-                
-                {clientColDropTarget === col.id && draggingClientColId &&
-                <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary rounded-full z-10" />
-                }
-                <div
-                  draggable
-                  onDragStart={(e) => handleClientColDragStart(e, col.id)}
-                  onDragEnd={handleClientColDragEnd}
-                  className="flex items-center gap-2 mb-3 cursor-grab active:cursor-grabbing">
-                  
-                  {editingColId === col.id ?
-                  <EditableColInput
-                    value={col.label}
-                    onSave={(v) => handleRenameCol(col.id, v)}
-                    onCancel={() => setEditingColId(null)} /> :
-                  <button
-                    onClick={() => setEditingColId(col.id)}
-                    className="cursor-text">
-                      <StatusBadge className={conf?.className ?? 'bg-muted text-muted-foreground border-border'}>
-                        {col.label}
-                      </StatusBadge>
-                    </button>
-                  }
-                  <span className="text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded-full font-medium">
-                    {colEntries.length}
-                  </span>
-                  <button
-                    onClick={() => handleRemoveCol(col.id)}
-                    className="ml-auto opacity-0 group-hover/col:opacity-100 transition-opacity p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
-                    title="Remover coluna">
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-                <div className={cn(
-                  'space-y-3 min-h-0 rounded-xl transition-all duration-200 p-1 flex-1 overflow-y-auto',
-                  dragOverClientCol === col.id && 'drop-zone-highlight'
-                )}
-                onDragOver={(e) => {
-                  e.preventDefault();
-                  if (!draggingClientColId) {
-                    setDragOverClientCol(col.id);
-                  }
-                }}
-                onDrop={(e) => {
-                  if (!draggingClientColId) {
-                    e.preventDefault();
-                    setDragOverClientCol(null);
-                    const cpId = e.dataTransfer.getData('text/plain');
-                    if (cpId) {
-                      updatePlatformMut.mutate({ id: cpId, updates: { phase: col.status } });
-                    }
-                  }
-                }}>
-                  {colEntries.map((entry) => {
+              <div key={col.id} className="relative group/tab">
+                <button
+                  onClick={() => setSquadStatusFilter(col.status as string)}
+                  className={cn(
+                    'px-3 py-1.5 rounded-lg text-sm font-medium border transition-colors',
+                    squadStatusFilter === col.status
+                      ? 'bg-primary text-primary-foreground border-primary'
+                      : 'bg-card text-muted-foreground border-border hover:border-primary/40 hover:text-foreground'
+                  )}>
+                  {col.label}
+                  <span className="ml-1.5 text-xs opacity-70">({count})</span>
+                </button>
+                <button
+                  onClick={() => handleRemoveCol(col.id)}
+                  className="absolute -top-1.5 -right-1.5 opacity-0 group-hover/tab:opacity-100 transition-opacity p-0.5 rounded-full bg-destructive/10 text-destructive hover:bg-destructive/20"
+                  title="Remover fase">
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
+            );
+          })}
+          <button
+            onClick={handleAddCol}
+            className="px-3 py-1.5 rounded-lg text-sm font-medium border border-dashed border-border text-muted-foreground hover:border-primary/40 hover:text-primary transition-colors flex items-center gap-1">
+            <Plus className="w-3.5 h-3.5" />
+          </button>
+        </div>
+
+
+        
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 overflow-y-auto pb-4">
+          {filteredPlatformEntries.map((entry) => {
                     const { client, cp, platformName } = entry;
                     const cpSquad = cp.squadId ? squads.find((s) => s.id === cp.squadId) : null;
                     const displaySquad = cpSquad ?? (client.squadId ? squads.find((s) => s.id === client.squadId) : null);
@@ -687,18 +566,8 @@ export function ProjectsPage() {
                     return (
                       <div
                         key={cp.id}
-                        draggable
-                        onDragStart={(e) => {
-                          e.dataTransfer.setData('text/plain', cp.id);
-                          e.dataTransfer.effectAllowed = 'move';
-                          setDraggingClientId(cp.id);
-                        }}
-                        onDragEnd={() => setDraggingClientId(null)}
                         onClick={() => { setExpandedPlatformEntry({ cp, client, platformName }); }}
-                        className={cn(
-                          'w-full bg-card rounded-xl border border-border p-4 shadow-sm-custom hover:shadow-md-custom hover:-translate-y-0.5 transition-all text-left group cursor-grab active:cursor-grabbing',
-                          draggingClientId === cp.id && 'dragging-card'
-                        )}>
+                        className="w-full bg-card rounded-xl border border-border p-4 shadow-sm-custom hover:shadow-md-custom hover:-translate-y-0.5 transition-all text-left group cursor-pointer">
                         
                         {/* Header: Client + Platform */}
                         <div className="flex items-start justify-between mb-2.5">
@@ -812,20 +681,7 @@ export function ProjectsPage() {
                         </div>
                       </div>
                     );
-                  })}
-                </div>
-              </div>
-            );
           })}
-          {/* Add new column button */}
-          <div className="flex-shrink-0 w-80">
-            <button
-              onClick={handleAddCol}
-              className="w-full py-3 border-2 border-dashed border-border rounded-xl text-sm text-muted-foreground hover:border-primary/40 hover:text-primary transition-colors flex items-center justify-center gap-2">
-              <Plus className="w-4 h-4" />
-              Nova Coluna
-            </button>
-          </div>
         </div>
 
         {/* Add Column Dialog */}
