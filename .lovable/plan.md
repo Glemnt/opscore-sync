@@ -1,33 +1,17 @@
 
 
-## Plano: Corrigir dialogs de Gerar Demandas e Transferir Plataforma
+## Plano: Replicar estrutura de abas da página Clientes na página Squads
 
-### Problema
-Os dialogs `GenerateDemandsDialog` e `TransferPlatformDialog` nunca aparecem porque estão renderizados no bloco `return` final do componente (linha 902-922), mas os botões que ativam o estado estão no bloco `return` do step 2.5 (linha 615-808). Como o step 2.5 faz um `return` antecipado, o código nunca chega à renderização dos dialogs.
+### Alteração em `src/pages/ProjectsPage.tsx` (linhas 511-553)
 
-### Solução
+Substituir o bloco atual de filtro de fases pelo mesmo padrão visual da ClientsPage:
 
-**Arquivo: `src/pages/ProjectsPage.tsx`**
+- Container: `flex items-center gap-1.5 bg-card border border-border rounded-lg p-1 mb-5` (em vez de `flex flex-wrap items-center gap-2 mb-4`)
+- Botões: `px-3 py-1.5 rounded-md text-xs font-medium` (em vez de `rounded-lg text-sm border`)
+- Ativo: `bg-primary text-primary-foreground shadow-sm` (sem border explícito)
+- Inativo: `text-muted-foreground hover:text-foreground hover:bg-muted` (sem border/bg-card)
+- Botão de excluir: usar `ml-0.5 p-0.5 rounded ... opacity-0 group-hover:opacity-100` inline ao lado do label (em vez de posição absoluta `-top-1.5 -right-1.5`)
+- Botão "+": `px-2 py-1.5 rounded-md text-xs text-muted-foreground hover:text-primary hover:bg-primary/10` (sem border dashed)
 
-Mover os dois blocos de renderização condicional dos dialogs (`generateTarget` e `transferTarget`) para dentro do bloco `return` do step 2.5, logo antes do `</div>` final (linha ~807), envolvendo tudo em um fragment `<>...</>`:
-
-```tsx
-// Antes do fechamento do return do step 2.5 (linha 808):
-return (
-  <>
-    <div className="p-6 animate-fade-in">
-      {/* ... conteúdo existente do step 2.5 ... */}
-    </div>
-
-    {generateTarget && (
-      <GenerateDemandsDialog ... />
-    )}
-    {transferTarget && (
-      <TransferPlatformDialog ... />
-    )}
-  </>
-);
-```
-
-Nenhuma outra mudança necessária. A renderização no bloco final (linha 902-922) pode ser mantida para cobrir o step 3, ou removida se não houver botões lá.
+Sem alterações de lógica ou banco de dados.
 
