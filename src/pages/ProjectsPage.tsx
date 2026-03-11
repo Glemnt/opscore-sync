@@ -385,44 +385,6 @@ export function ProjectsPage() {
       setAddColDialogOpen(false);
     };
 
-    const handleClientColDragStart = (e: React.DragEvent, colId: string) => {
-      e.dataTransfer.setData('column-key', colId);
-      e.dataTransfer.effectAllowed = 'move';
-      setDraggingClientColId(colId);
-    };
-
-    const handleClientColDragOver = (e: React.DragEvent, colId: string) => {
-      e.preventDefault();
-      if (draggingClientColId && draggingClientColId !== colId) {
-        setClientColDropTarget(colId);
-      }
-    };
-
-    const handleClientColDrop = (e: React.DragEvent, targetId: string) => {
-      e.preventDefault();
-      const sourceId = e.dataTransfer.getData('column-key');
-      if (!sourceId || sourceId === targetId) {
-        setDraggingClientColId(null);
-        setClientColDropTarget(null);
-        return;
-      }
-      const currentIds = clientCols.map((c) => c.id);
-      const sourceIdx = currentIds.indexOf(sourceId);
-      const targetIdx = currentIds.indexOf(targetId);
-      if (sourceIdx === -1 || targetIdx === -1) return;
-      const newIds = [...currentIds];
-      newIds.splice(sourceIdx, 1);
-      newIds.splice(targetIdx, 0, sourceId);
-      const reorderItems = newIds.map((id, i) => ({ key: id, sort_order: i }));
-      reorderClientMut.mutate(reorderItems);
-      setDraggingClientColId(null);
-      setClientColDropTarget(null);
-    };
-
-    const handleClientColDragEnd = () => {
-      setDraggingClientColId(null);
-      setClientColDropTarget(null);
-    };
 
     const phaseLabels: Record<string, string> = {
       onboarding: 'Onboarding',
