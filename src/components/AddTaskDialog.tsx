@@ -213,20 +213,48 @@ export function AddTaskDialog({ open, onOpenChange, defaultStatus = 'backlog', d
                 </Button>
               </div>
             ) : (
-              <Select value={type} onValueChange={(v) => {
-                if (v === '__new__') { setShowNewType(true); return; }
-                handleTypeChange(v as TaskType);
-              }}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {Object.entries(allTypes).map(([key, conf]) => (
-                    <SelectItem key={key} value={key}>{conf.label}</SelectItem>
-                  ))}
-                  <SelectItem value="__new__" className="text-primary font-medium">
-                    + Criar novo tipo
-                  </SelectItem>
-                </SelectContent>
-              </Select>
+              <Popover open={typePopoverOpen} onOpenChange={setTypePopoverOpen}>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" role="combobox" aria-expanded={typePopoverOpen} className="w-full justify-between font-normal">
+                    {allTypes[type]?.label ?? type}
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                  <Command>
+                    <CommandInput placeholder="Buscar tipo..." />
+                    <CommandList>
+                      <CommandEmpty>Nenhum tipo encontrado.</CommandEmpty>
+                      <CommandGroup>
+                        {Object.entries(allTypes).map(([key, conf]) => (
+                          <CommandItem
+                            key={key}
+                            value={conf.label}
+                            onSelect={() => {
+                              handleTypeChange(key as TaskType);
+                              setTypePopoverOpen(false);
+                            }}
+                          >
+                            <Check className={cn('mr-2 h-4 w-4', type === key ? 'opacity-100' : 'opacity-0')} />
+                            {conf.label}
+                          </CommandItem>
+                        ))}
+                        <CommandItem
+                          value="__criar_novo_tipo__"
+                          onSelect={() => {
+                            setShowNewType(true);
+                            setTypePopoverOpen(false);
+                          }}
+                          className="text-primary font-medium"
+                        >
+                          <Plus className="mr-2 h-4 w-4" />
+                          Criar novo tipo
+                        </CommandItem>
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
             )}
           </div>
 
