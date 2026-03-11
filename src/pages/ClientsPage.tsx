@@ -190,6 +190,14 @@ export function ClientsPage() {
               )}
             >
               {f.label}
+              <span className={cn(
+                'ml-1.5 text-[10px]',
+                statusFilter === f.value ? 'bg-primary-foreground/20 rounded-full px-1.5' : 'opacity-70'
+              )}>
+                {f.value === 'all'
+                  ? clients.filter(c => c.status !== 'inactive').length
+                  : clients.filter(c => c.status === f.value).length}
+              </span>
             </button>
             {f.value !== 'all' && (
               <button
