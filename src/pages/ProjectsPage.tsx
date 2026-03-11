@@ -708,7 +708,7 @@ export function ProjectsPage() {
                             </div>
                             <div className="min-w-0">
                               <h3 className="text-sm font-bold text-foreground group-hover:text-primary transition-colors truncate">
-                                {client.name} - {platformName}
+                                {client.name}
                               </h3>
                             </div>
                           </div>
