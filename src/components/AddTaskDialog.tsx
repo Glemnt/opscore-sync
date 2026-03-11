@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { format } from 'date-fns';
-import { CalendarIcon, Plus, X } from 'lucide-react';
+import { CalendarIcon, Check, ChevronsUpDown, Plus, X } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Command, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem } from '@/components/ui/command';
 import { Label } from '@/components/ui/label';
 import { useTasks } from '@/contexts/TasksContext';
 import { useClients } from '@/contexts/ClientsContext';
@@ -39,6 +40,7 @@ export function AddTaskDialog({ open, onOpenChange, defaultStatus = 'backlog', d
   const addTaskTypeMut = useAddTaskType();
   const [showNewType, setShowNewType] = useState(false);
   const [newTypeLabel, setNewTypeLabel] = useState('');
+  const [typePopoverOpen, setTypePopoverOpen] = useState(false);
 
   const [clientId, setClientId] = useState(defaultClientId ?? '');
   
@@ -211,20 +213,48 @@ export function AddTaskDialog({ open, onOpenChange, defaultStatus = 'backlog', d
                 </Button>
               </div>
             ) : (
-              <Select value={type} onValueChange={(v) => {
-                if (v === '__new__') { setShowNewType(true); return; }
-                handleTypeChange(v as TaskType);
-              }}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {Object.entries(allTypes).map(([key, conf]) => (
-                    <SelectItem key={key} value={key}>{conf.label}</SelectItem>
-                  ))}
-                  <SelectItem value="__new__" className="text-primary font-medium">
-                    + Criar novo tipo
-                  </SelectItem>
-                </SelectContent>
-              </Select>
+              <Popover open={typePopoverOpen} onOpenChange={setTypePopoverOpen}>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" role="combobox" aria-expanded={typePopoverOpen} className="w-full justify-between font-normal">
+                    {allTypes[type]?.label ?? type}
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                  <Command>
+                    <CommandInput placeholder="Buscar tipo..." />
+                    <CommandList>
+                      <CommandEmpty>Nenhum tipo encontrado.</CommandEmpty>
+                      <CommandGroup>
+                        {Object.entries(allTypes).map(([key, conf]) => (
+                          <CommandItem
+                            key={key}
+                            value={conf.label}
+                            onSelect={() => {
+                              handleTypeChange(key as TaskType);
+                              setTypePopoverOpen(false);
+                            }}
+                          >
+                            <Check className={cn('mr-2 h-4 w-4', type === key ? 'opacity-100' : 'opacity-0')} />
+                            {conf.label}
+                          </CommandItem>
+                        ))}
+                        <CommandItem
+                          value="__criar_novo_tipo__"
+                          onSelect={() => {
+                            setShowNewType(true);
+                            setTypePopoverOpen(false);
+                          }}
+                          className="text-primary font-medium"
+                        >
+                          <Plus className="mr-2 h-4 w-4" />
+                          Criar novo tipo
+                        </CommandItem>
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
             )}
           </div>
 
