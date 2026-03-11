@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { format } from 'date-fns';
-import { CalendarIcon, Plus, X } from 'lucide-react';
+import { CalendarIcon, Check, ChevronsUpDown, Plus, X } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
