@@ -508,45 +508,50 @@ export function ProjectsPage() {
           </div>
         </div>
 
-        {/* Row 2: Status pipeline tabs */}
-        
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+        {/* Row 2: Phase filter tabs */}
+        <div className="flex flex-wrap items-center gap-2 mb-4">
+          <button
+            onClick={() => setSquadStatusFilter('all')}
+            className={cn(
+              'px-3 py-1.5 rounded-lg text-sm font-medium border transition-colors',
+              squadStatusFilter === 'all'
+                ? 'bg-primary text-primary-foreground border-primary'
+                : 'bg-card text-muted-foreground border-border hover:border-primary/40 hover:text-foreground'
+            )}>
+            Todos
+            <span className="ml-1.5 text-xs opacity-70">({squadPlatformEntries.length})</span>
+          </button>
+          {clientCols.map((col) => {
+            const count = filteredPlatformEntries.filter(e => e.cp.phase === col.status).length;
+            const conf = clientStatusMap[col.status as string];
+            return (
+              <div key={col.id} className="relative group/tab">
+                <button
+                  onClick={() => setSquadStatusFilter(col.status as string)}
+                  className={cn(
+                    'px-3 py-1.5 rounded-lg text-sm font-medium border transition-colors',
+                    squadStatusFilter === col.status
+                      ? 'bg-primary text-primary-foreground border-primary'
+                      : 'bg-card text-muted-foreground border-border hover:border-primary/40 hover:text-foreground'
+                  )}>
+                  {col.label}
+                  <span className="ml-1.5 text-xs opacity-70">({count})</span>
+                </button>
+                <button
+                  onClick={() => handleRemoveCol(col.id)}
+                  className="absolute -top-1.5 -right-1.5 opacity-0 group-hover/tab:opacity-100 transition-opacity p-0.5 rounded-full bg-destructive/10 text-destructive hover:bg-destructive/20"
+                  title="Remover fase">
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
+            );
+          })}
+          <button
+            onClick={handleAddCol}
+            className="px-3 py-1.5 rounded-lg text-sm font-medium border border-dashed border-border text-muted-foreground hover:border-primary/40 hover:text-primary transition-colors flex items-center gap-1">
+            <Plus className="w-3.5 h-3.5" />
+          </button>
+        </div>
 
 
         
