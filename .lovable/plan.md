@@ -1,33 +1,23 @@
 
 
-## Plano: Corrigir dialogs de Gerar Demandas e Transferir Plataforma
+## Plano: Adicionar campo de pesquisa no dropdown "Tipo de demanda"
 
 ### Problema
-Os dialogs `GenerateDemandsDialog` e `TransferPlatformDialog` nunca aparecem porque estão renderizados no bloco `return` final do componente (linha 902-922), mas os botões que ativam o estado estão no bloco `return` do step 2.5 (linha 615-808). Como o step 2.5 faz um `return` antecipado, o código nunca chega à renderização dos dialogs.
+O Select atual não possui busca, dificultando encontrar tipos quando há muitos cadastrados.
 
 ### Solução
+Substituir o `Select` por um Combobox usando `Popover` + `Command` (cmdk), com campo de busca integrado.
 
-**Arquivo: `src/pages/ProjectsPage.tsx`**
+### Alteração em `src/components/AddTaskDialog.tsx`
 
-Mover os dois blocos de renderização condicional dos dialogs (`generateTarget` e `transferTarget`) para dentro do bloco `return` do step 2.5, logo antes do `</div>` final (linha ~807), envolvendo tudo em um fragment `<>...</>`:
+1. Importar `Command`, `CommandInput`, `CommandList`, `CommandEmpty`, `CommandGroup`, `CommandItem` de `@/components/ui/command`
+2. Importar `Check`, `ChevronsUpDown` de `lucide-react`
+3. Substituir o bloco do Select de tipo (linhas ~161-180) por um Popover+Command:
+   - Botão trigger mostrando o label do tipo selecionado
+   - Campo de busca no topo do dropdown
+   - Lista filtrada de tipos
+   - Item "+ Criar novo tipo" no final
+   - Check icon no item selecionado
 
-```tsx
-// Antes do fechamento do return do step 2.5 (linha 808):
-return (
-  <>
-    <div className="p-6 animate-fade-in">
-      {/* ... conteúdo existente do step 2.5 ... */}
-    </div>
-
-    {generateTarget && (
-      <GenerateDemandsDialog ... />
-    )}
-    {transferTarget && (
-      <TransferPlatformDialog ... />
-    )}
-  </>
-);
-```
-
-Nenhuma outra mudança necessária. A renderização no bloco final (linha 902-922) pode ser mantida para cobrir o step 3, ou removida se não houver botões lá.
+Sem alterações no banco de dados.
 
