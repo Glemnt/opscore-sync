@@ -183,9 +183,6 @@ export function ProjectsPage() {
     }
   }, [clientStatuses, platformPhaseKey]);
   const [dragOverClientCol, setDragOverClientCol] = useState<string | null>(null);
-  const [editingColId, setEditingColId] = useState<string | null>(null);
-  const [draggingClientColId, setDraggingClientColId] = useState<string | null>(null);
-  const [clientColDropTarget, setClientColDropTarget] = useState<string | null>(null);
 
   const isAdmin = currentUser?.accessLevel === 3;
   const visibleSquads = isAdmin ? squads : squads.filter((s) => currentUser?.squadIds.includes(s.id));
