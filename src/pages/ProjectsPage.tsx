@@ -516,6 +516,7 @@ export function ProjectsPage() {
               squadStatusFilter === 'all' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground hover:bg-muted'
             )}>
             Todos
+            <span className={cn('ml-1.5 text-[10px]', squadStatusFilter === 'all' ? 'bg-primary-foreground/20 rounded-full px-1.5' : 'opacity-70')}>{squadPlatformEntries.length}</span>
           </button>
           {clientCols.map((col) => (
             <div key={col.id} className="relative group flex items-center">
