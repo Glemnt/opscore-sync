@@ -1,31 +1,33 @@
 
 
-## Plano: Melhorar visualização de Full/Turbo/Flex, Saúde, Squad e Plataforma nos cards
+## Plano: Corrigir dialogs de Gerar Demandas e Transferir Plataforma
 
-### Situação atual
-O card já possui Squad, Plataforma (no header), Saúde (bolinha pequena) e badges de atributos (Full/Flex/Turbo). Porém alguns são pouco visíveis ou só aparecem quando preenchidos.
+### Problema
+Os dialogs `GenerateDemandsDialog` e `TransferPlatformDialog` nunca aparecem porque estão renderizados no bloco `return` final do componente (linha 902-922), mas os botões que ativam o estado estão no bloco `return` do step 2.5 (linha 615-808). Como o step 2.5 faz um `return` antecipado, o código nunca chega à renderização dos dialogs.
 
-### Alterações em `src/pages/ProjectsPage.tsx` (linhas 688-769)
+### Solução
 
-1. **Plataforma** — Adicionar badge destacado com o nome da plataforma ao lado do nome do cliente no header (ex: badge colorido "Mercado Livre")
+**Arquivo: `src/pages/ProjectsPage.tsx`**
 
-2. **Squad** — Já visível, manter como está
+Mover os dois blocos de renderização condicional dos dialogs (`generateTarget` e `transferTarget`) para dentro do bloco `return` do step 2.5, logo antes do `</div>` final (linha ~807), envolvendo tudo em um fragment `<>...</>`:
 
-3. **Saúde da Plataforma** — Trocar a bolinha pequena (2.5x2.5) por um badge com texto legível (🟢 Excelente / 🟠 Mediano / 🔴 Ruim). Mostrar "—" quando não definida
+```tsx
+// Antes do fechamento do return do step 2.5 (linha 808):
+return (
+  <>
+    <div className="p-6 animate-fade-in">
+      {/* ... conteúdo existente do step 2.5 ... */}
+    </div>
 
-4. **Full / Turbo / Flex** — Exibir sempre os 3 toggles como badges fixos com estado visual (verde/ativo vs cinza/inativo), em vez de só aparecerem quando ativos. Aplicável apenas quando `platformSlug === 'mercado_livre'`
-
-### Layout resultante do card
-```text
-┌─────────────────────────────────────┐
-│ [icon] Cliente - Plataforma  [Seller]│
-│         badge "Mercado Livre"        │
-│ 👥 Squad Name    👤 Responsável      │
-│ 🟢 Excelente                         │
-│ [Full ✓] [Flex ✗] [Turbo ✗]         │
-│ fase              [✏️] [↔️] [🗑️]     │
-└─────────────────────────────────────┘
+    {generateTarget && (
+      <GenerateDemandsDialog ... />
+    )}
+    {transferTarget && (
+      <TransferPlatformDialog ... />
+    )}
+  </>
+);
 ```
 
-Sem alterações no banco de dados.
+Nenhuma outra mudança necessária. A renderização no bloco final (linha 902-922) pode ser mantida para cobrir o step 3, ou removida se não houver botões lá.
 
