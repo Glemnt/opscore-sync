@@ -355,7 +355,6 @@ export function ProjectsPage() {
       if (col) {
         updateStatusMut.mutate({ key: col.status as string, label: newLabel });
       }
-      setEditingColId(null);
     };
 
     const handleRemoveCol = (id: string) => {
