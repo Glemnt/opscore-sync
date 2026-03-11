@@ -411,7 +411,7 @@ export function ProjectsPage() {
       return matchSearch && matchStatus && matchResponsible && matchHealth && matchPlatform && matchQuality && matchPriority && matchDateFrom && matchDateTo;
     });
 
-    const visibleCols = squadStatusFilter === 'all' ? clientCols : clientCols.filter((col) => col.status === squadStatusFilter);
+    
 
     return (
       <>
