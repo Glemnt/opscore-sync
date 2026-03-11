@@ -40,6 +40,7 @@ export function AddTaskDialog({ open, onOpenChange, defaultStatus = 'backlog', d
   const addTaskTypeMut = useAddTaskType();
   const [showNewType, setShowNewType] = useState(false);
   const [newTypeLabel, setNewTypeLabel] = useState('');
+  const [typePopoverOpen, setTypePopoverOpen] = useState(false);
 
   const [clientId, setClientId] = useState(defaultClientId ?? '');
   
