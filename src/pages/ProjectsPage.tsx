@@ -556,92 +556,8 @@ export function ProjectsPage() {
 
         
 
-        <div className="flex gap-4 h-[calc(100vh-260px)] overflow-x-auto pb-4">
-          {visibleCols.map((col) => {
-            const colEntries = filteredPlatformEntries.filter((e) => e.cp.phase === col.status);
-            const conf = clientStatusMap[col.status as string];
-            return (
-              <div
-                key={col.id}
-                className={cn(
-                  'flex-shrink-0 w-80 group/col relative flex flex-col h-full',
-                  draggingClientColId === col.id && 'opacity-50'
-                )}
-                onDragOver={(e) => {
-                  e.preventDefault();
-                  if (draggingClientColId) {
-                    handleClientColDragOver(e, col.id);
-                  } else {
-                    setDragOverClientCol(col.id);
-                  }
-                }}
-                onDragLeave={() => {setDragOverClientCol(null);setClientColDropTarget(null);}}
-                onDrop={(e) => {
-                  if (draggingClientColId) {
-                    handleClientColDrop(e, col.id);
-                  } else {
-                    e.preventDefault();
-                    setDragOverClientCol(null);
-                    const cpId = e.dataTransfer.getData('text/plain');
-                    if (cpId) {
-                      updatePlatformMut.mutate({ id: cpId, updates: { phase: col.status } });
-                    }
-                  }
-                }}>
-                
-                {clientColDropTarget === col.id && draggingClientColId &&
-                <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary rounded-full z-10" />
-                }
-                <div
-                  draggable
-                  onDragStart={(e) => handleClientColDragStart(e, col.id)}
-                  onDragEnd={handleClientColDragEnd}
-                  className="flex items-center gap-2 mb-3 cursor-grab active:cursor-grabbing">
-                  
-                  {editingColId === col.id ?
-                  <EditableColInput
-                    value={col.label}
-                    onSave={(v) => handleRenameCol(col.id, v)}
-                    onCancel={() => setEditingColId(null)} /> :
-                  <button
-                    onClick={() => setEditingColId(col.id)}
-                    className="cursor-text">
-                      <StatusBadge className={conf?.className ?? 'bg-muted text-muted-foreground border-border'}>
-                        {col.label}
-                      </StatusBadge>
-                    </button>
-                  }
-                  <span className="text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded-full font-medium">
-                    {colEntries.length}
-                  </span>
-                  <button
-                    onClick={() => handleRemoveCol(col.id)}
-                    className="ml-auto opacity-0 group-hover/col:opacity-100 transition-opacity p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
-                    title="Remover coluna">
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-                <div className={cn(
-                  'space-y-3 min-h-0 rounded-xl transition-all duration-200 p-1 flex-1 overflow-y-auto',
-                  dragOverClientCol === col.id && 'drop-zone-highlight'
-                )}
-                onDragOver={(e) => {
-                  e.preventDefault();
-                  if (!draggingClientColId) {
-                    setDragOverClientCol(col.id);
-                  }
-                }}
-                onDrop={(e) => {
-                  if (!draggingClientColId) {
-                    e.preventDefault();
-                    setDragOverClientCol(null);
-                    const cpId = e.dataTransfer.getData('text/plain');
-                    if (cpId) {
-                      updatePlatformMut.mutate({ id: cpId, updates: { phase: col.status } });
-                    }
-                  }
-                }}>
-                  {colEntries.map((entry) => {
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 overflow-y-auto pb-4">
+          {filteredPlatformEntries.map((entry) => {
                     const { client, cp, platformName } = entry;
                     const cpSquad = cp.squadId ? squads.find((s) => s.id === cp.squadId) : null;
                     const displaySquad = cpSquad ?? (client.squadId ? squads.find((s) => s.id === client.squadId) : null);
@@ -651,18 +567,8 @@ export function ProjectsPage() {
                     return (
                       <div
                         key={cp.id}
-                        draggable
-                        onDragStart={(e) => {
-                          e.dataTransfer.setData('text/plain', cp.id);
-                          e.dataTransfer.effectAllowed = 'move';
-                          setDraggingClientId(cp.id);
-                        }}
-                        onDragEnd={() => setDraggingClientId(null)}
                         onClick={() => { setExpandedPlatformEntry({ cp, client, platformName }); }}
-                        className={cn(
-                          'w-full bg-card rounded-xl border border-border p-4 shadow-sm-custom hover:shadow-md-custom hover:-translate-y-0.5 transition-all text-left group cursor-grab active:cursor-grabbing',
-                          draggingClientId === cp.id && 'dragging-card'
-                        )}>
+                        className="w-full bg-card rounded-xl border border-border p-4 shadow-sm-custom hover:shadow-md-custom hover:-translate-y-0.5 transition-all text-left group cursor-pointer">
                         
                         {/* Header: Client + Platform */}
                         <div className="flex items-start justify-between mb-2.5">
@@ -776,20 +682,7 @@ export function ProjectsPage() {
                         </div>
                       </div>
                     );
-                  })}
-                </div>
-              </div>
-            );
           })}
-          {/* Add new column button */}
-          <div className="flex-shrink-0 w-80">
-            <button
-              onClick={handleAddCol}
-              className="w-full py-3 border-2 border-dashed border-border rounded-xl text-sm text-muted-foreground hover:border-primary/40 hover:text-primary transition-colors flex items-center justify-center gap-2">
-              <Plus className="w-4 h-4" />
-              Nova Coluna
-            </button>
-          </div>
         </div>
 
         {/* Add Column Dialog */}
