@@ -26,6 +26,8 @@ interface CreateUserInput {
   role: TeamRole;
   accessLevel: AccessLevel;
   squadIds: string[];
+  hireDate?: string | null;
+  birthday?: string | null;
 }
 
 export function useCreateAppUser() {
