@@ -320,7 +320,7 @@ export function ClientsPage() {
   );
 }
 
-function ClientCard({ client, statusMap, clientFlows, onClick }: { client: Client; statusMap: Record<string, { label: string; className: string }>; clientFlows: { flowId: string; flowName: string }[]; onClick: () => void }) {
+function ClientCard({ client, statusMap, clientFlows, onClick, isAdmin }: { client: Client; statusMap: Record<string, { label: string; className: string }>; clientFlows: { flowId: string; flowName: string }[]; onClick: () => void; isAdmin: boolean }) {
   const statusConf = statusMap[client.status] ?? { label: client.status, className: 'bg-muted text-muted-foreground border-border' };
   const { squads } = useSquads();
   const { tasks } = useTasks();
