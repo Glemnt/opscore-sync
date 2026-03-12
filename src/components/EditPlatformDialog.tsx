@@ -78,7 +78,7 @@ export function EditPlatformDialog({ open, onClose, platform }: EditPlatformDial
   useEffect(() => {
     // Platform
     setClientType(platform.qualityLevel || 'Seller');
-    
+    setPlatformPhase(platform.phase || 'onboarding');
     setHealthColor(platform.healthColor || 'green');
     setOrigin(platform.origin || '');
     setSalesResponsible(platform.salesResponsible || '');
