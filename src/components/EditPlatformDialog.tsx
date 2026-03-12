@@ -58,6 +58,7 @@ export function EditPlatformDialog({ open, onClose, platform }: EditPlatformDial
   const [platformPhase, setPlatformPhase] = useState(platform.phase || 'onboarding');
   const [healthColor, setHealthColor] = useState(platform.healthColor || 'green');
   const [origin, setOrigin] = useState(platform.origin || '');
+  const [responsible, setResponsible] = useState(platform.responsible || '');
   const [salesResponsible, setSalesResponsible] = useState(platform.salesResponsible || '');
 
   // Client fields
