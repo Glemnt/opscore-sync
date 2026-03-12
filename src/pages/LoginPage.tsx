@@ -37,9 +37,7 @@ export function LoginPage() {
         <div className="flex flex-col items-center mb-8">
           <img src={logoGrupoTG} alt="Grupo TG" className="w-16 h-16 rounded-2xl object-cover shadow-primary mb-4" />
           <h1 className="text-xl font-bold text-foreground">Grupo TG</h1>
-          <p className="text-sm text-muted-foreground">
-            {isSignup ? 'Crie sua conta para acessar o sistema' : 'Faça login para acessar o sistema'}
-          </p>
+          <p className="text-sm text-muted-foreground">Faça login para acessar o sistema</p>
         </div>
 
         <form onSubmit={handleSubmit} className="bg-card border border-border rounded-xl p-6 shadow-sm space-y-4">
