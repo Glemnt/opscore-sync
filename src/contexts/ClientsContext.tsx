@@ -32,6 +32,7 @@ const ClientsContext = createContext<ClientsContextType | undefined>(undefined);
 export function ClientsProvider({ children }: { children: ReactNode }) {
   const { currentUser } = useAuth();
   const { data: clients = [], isLoading } = useClientsQuery();
+  const { data: squads = [] } = useSquadsQuery();
   const addClientMut = useAddClient();
   const updateClientMut = useUpdateClient();
   const deleteClientMut = useDeleteClient();
