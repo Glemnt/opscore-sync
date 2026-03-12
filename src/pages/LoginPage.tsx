@@ -16,29 +16,15 @@ export function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    setMessage('');
     if (!email.trim() || !password.trim()) {
       setError('Preencha todos os campos.');
       return;
     }
-    if (isSignup && !name.trim()) {
-      setError('Preencha seu nome.');
-      return;
-    }
     setLoading(true);
     try {
-      if (isSignup) {
-        const result = await signup(email.trim(), password, name.trim());
-        if (result.error) {
-          setError(result.error);
-        } else {
-          setMessage('Conta criada! Verifique seu e-mail para confirmar.');
-        }
-      } else {
-        const success = await login(email.trim(), password);
-        if (!success) {
-          setError('E-mail ou senha inválidos.');
-        }
+      const success = await login(email.trim(), password);
+      if (!success) {
+        setError('E-mail ou senha inválidos.');
       }
     } finally {
       setLoading(false);
