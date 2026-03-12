@@ -345,13 +345,6 @@ export function ClientDetailModal({ client, open, onClose }: ClientDetailModalPr
                   <Input value={editData.segment ?? ''} onChange={e => setEditData(p => ({ ...p, segment: e.target.value }))} className="h-8 text-sm" />
                 </div>
                 <div>
-                  <Label className="text-xs">Responsável</Label>
-                  <select value={editData.responsible ?? ''} onChange={e => setEditData(p => ({ ...p, responsible: e.target.value }))} className="w-full h-8 px-2 text-sm bg-background border border-input rounded-md text-foreground">
-                    <option value="">Selecione...</option>
-                    {appUsers.map(u => <option key={u.id} value={u.name}>{u.name}</option>)}
-                  </select>
-                </div>
-                <div>
                   <Label className="text-xs">Status</Label>
                   <select value={editData.status ?? 'active'} onChange={e => setEditData(p => ({ ...p, status: e.target.value as ClientStatus }))} className="w-full h-8 px-2 text-sm bg-background border border-input rounded-md text-foreground">
                     <option value="active">Ativo</option>
