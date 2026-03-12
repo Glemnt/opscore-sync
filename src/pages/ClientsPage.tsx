@@ -137,7 +137,10 @@ export function ClientsPage() {
           className="px-3 py-2 text-sm bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition text-foreground"
         >
           <option value="all">Responsável</option>
-          {uniqueResponsibles.map((r) => <option key={r} value={r}>{r}</option>)}
+          {uniqueResponsibles.map((r) => {
+            const count = allClientPlatforms.filter(cp => cp.responsible === r).length;
+            return <option key={r} value={r}>{r} ({count})</option>;
+          })}
         </select>
 
         <select
