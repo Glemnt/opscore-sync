@@ -26,6 +26,7 @@ import { useFlowsQuery } from '@/hooks/useFlowsQuery';
 import { useClientPlatformsQuery, useAddClientPlatform, useUpdateClientPlatform, useDeleteClientPlatform } from '@/hooks/useClientPlatformsQuery';
 import type { ClientPlatform } from '@/hooks/useClientPlatformsQuery';
 import { PlatformAttributesEditor } from '@/components/PlatformAttributesEditor';
+import { useAuth } from '@/contexts/AuthContext';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
