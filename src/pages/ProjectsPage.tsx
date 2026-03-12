@@ -336,6 +336,24 @@ export function ProjectsPage() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* Delete Squad Confirmation */}
+        <AlertDialog open={!!deleteSquadId} onOpenChange={(open) => { if (!open) setDeleteSquadId(null); }}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Excluir Squad</AlertDialogTitle>
+              <AlertDialogDescription>
+                Tem certeza que deseja excluir este squad? Esta ação não pode ser desfeita.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction onClick={confirmDeleteSquad} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                Excluir
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>);
 
   }
