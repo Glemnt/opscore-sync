@@ -208,8 +208,15 @@ export function EditPlatformDialog({ open, onClose, platform }: EditPlatformDial
               </div>
               <div>
                 <Label className="text-xs">Fase</Label>
-                <select value={clientPhase} onChange={e => setClientPhase(e.target.value)} className={selectClass}>
+                <select value={platformPhase} onChange={e => setPlatformPhase(e.target.value)} className={selectClass}>
                   {PHASE_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                </select>
+              </div>
+              <div>
+                <Label className="text-xs">Responsável</Label>
+                <select value={responsible} onChange={e => setResponsible(e.target.value)} className={selectClass}>
+                  <option value="">Selecione...</option>
+                  {appUsers.map(u => <option key={u.id} value={u.name}>{u.name}</option>)}
                 </select>
               </div>
               <div>
