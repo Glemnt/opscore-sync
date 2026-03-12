@@ -107,6 +107,7 @@ export function EditPlatformDialog({ open, onClose, platform }: EditPlatformDial
         id: platform.id,
         updates: {
           qualityLevel: clientType,
+          phase: platformPhase,
           healthColor,
           origin,
           salesResponsible,
