@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { format, parseISO, isWithinInterval, startOfMonth, endOfMonth, subMonths, isAfter, isBefore, startOfDay, endOfDay } from 'date-fns';
+import { format, parseISO, isWithinInterval, startOfMonth, endOfMonth, subMonths, isAfter, isBefore, startOfDay, endOfDay, startOfWeek, endOfWeek, getDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import {
   Users, AlertTriangle, TrendingUp, Activity, DollarSign, UserMinus, UserPlus, CalendarIcon
@@ -18,24 +18,7 @@ import { cn } from '@/lib/utils';
 import { usePlatformsQuery } from '@/hooks/usePlatformsQuery';
 import { useClientStatusesQuery } from '@/hooks/useClientStatusesQuery';
 import { useAuth } from '@/contexts/AuthContext';
-
-const weeklyData = [
-  { day: 'Seg', concluidas: 8, abertas: 3 },
-  { day: 'Ter', concluidas: 12, abertas: 5 },
-  { day: 'Qua', concluidas: 7, abertas: 8 },
-  { day: 'Qui', concluidas: 15, abertas: 4 },
-  { day: 'Sex', concluidas: 11, abertas: 6 },
-  { day: 'Sab', concluidas: 4, abertas: 1 },
-  { day: 'Dom', concluidas: 2, abertas: 0 },
-];
-
-const taskTypeData = [
-  { name: 'Anúncio', value: 28, color: '#6366f1' },
-  { name: 'Design', value: 22, color: '#ec4899' },
-  { name: 'Copy', value: 18, color: '#8b5cf6' },
-  { name: 'Análise', value: 15, color: '#06b6d4' },
-  { name: 'Outros', value: 17, color: '#94a3b8' },
-];
+import { useTaskTypesQuery } from '@/hooks/useTaskTypesQuery';
 
 // Platform labels now come from the platforms query - see usePlatformsQuery
 const PLATFORM_COLORS: Record<string, string> = {
