@@ -132,7 +132,7 @@ export function EditPlatformDialog({ open, onClose, platform }: EditPlatformDial
         addClientPlatformMut.mutate({
           clientId: client.id,
           platformSlug: slug,
-          squadId: squadId || null,
+          squadId: platform.squadId || null,
         });
       });
 
