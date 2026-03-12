@@ -7,13 +7,10 @@ import { Label } from '@/components/ui/label';
 import logoGrupoTG from '@/assets/logo-grupo-tg.jpg';
 
 export function LoginPage() {
-  const { login, signup } = useAuth();
-  const [isSignup, setIsSignup] = useState(false);
+  const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [name, setName] = useState('');
   const [error, setError] = useState('');
-  const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
