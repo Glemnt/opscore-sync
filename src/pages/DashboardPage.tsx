@@ -17,6 +17,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import { usePlatformsQuery } from '@/hooks/usePlatformsQuery';
 import { useClientStatusesQuery } from '@/hooks/useClientStatusesQuery';
+import { useAuth } from '@/contexts/AuthContext';
 
 const weeklyData = [
   { day: 'Seg', concluidas: 8, abertas: 3 },
