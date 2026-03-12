@@ -1,32 +1,33 @@
 
 
-## Plano: Corrigir bloqueio de seleção de plataforma na modal Nova Plataforma
+## Plano: Corrigir dialogs de Gerar Demandas e Transferir Plataforma
 
-### Problema identificado
-
-Na linha 74-76 de `AddPlatformSquadDialog.tsx`, a verificação de duplicidade filtra por `clientId` apenas:
-
-```typescript
-const existingPlatformSlugs = clientPlatformsData
-  .filter(cp => cp.clientId === clientId)
-  .map(cp => cp.platformSlug);
-```
-
-Isso bloqueia plataformas que o cliente já possui em **qualquer** squad. Se o cliente já tem Mercado Livre no Time Pantera, não consegue adicionar Mercado Livre no Time Foguete. Como muitos clientes já possuem plataformas em outros times, quase todas as opções aparecem bloqueadas.
+### Problema
+Os dialogs `GenerateDemandsDialog` e `TransferPlatformDialog` nunca aparecem porque estão renderizados no bloco `return` final do componente (linha 902-922), mas os botões que ativam o estado estão no bloco `return` do step 2.5 (linha 615-808). Como o step 2.5 faz um `return` antecipado, o código nunca chega à renderização dos dialogs.
 
 ### Solução
 
-Alterar a verificação de duplicidade para considerar o squad atual (`defaultSquadId`). A plataforma só deve ser bloqueada se o cliente já a possui **neste mesmo squad**.
+**Arquivo: `src/pages/ProjectsPage.tsx`**
 
-### Alteração
+Mover os dois blocos de renderização condicional dos dialogs (`generateTarget` e `transferTarget`) para dentro do bloco `return` do step 2.5, logo antes do `</div>` final (linha ~807), envolvendo tudo em um fragment `<>...</>`:
 
-**`src/components/AddPlatformSquadDialog.tsx` (linha 74-76)**:
+```tsx
+// Antes do fechamento do return do step 2.5 (linha 808):
+return (
+  <>
+    <div className="p-6 animate-fade-in">
+      {/* ... conteúdo existente do step 2.5 ... */}
+    </div>
 
-```typescript
-const existingPlatformSlugs = clientPlatformsData
-  .filter(cp => cp.clientId === clientId && cp.squadId === defaultSquadId)
-  .map(cp => cp.platformSlug);
+    {generateTarget && (
+      <GenerateDemandsDialog ... />
+    )}
+    {transferTarget && (
+      <TransferPlatformDialog ... />
+    )}
+  </>
+);
 ```
 
-Apenas 1 linha alterada. A lógica de duplicidade passa a ser: "este cliente já tem esta plataforma **neste time**?" em vez de "este cliente já tem esta plataforma **em qualquer time**?".
+Nenhuma outra mudança necessária. A renderização no bloco final (linha 902-922) pode ser mantida para cobrir o step 3, ou removida se não houver botões lá.
 
