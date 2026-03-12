@@ -69,6 +69,7 @@ export function DashboardPage() {
   const clients = getVisibleClients();
   const { data: allProjects = [] } = useProjectsQuery();
   const { data: platformsList = [] } = usePlatformsQuery();
+  const { data: taskTypes = [] } = useTaskTypesQuery();
   const platformLabels = useMemo(() => {
     const map: Record<string, string> = {};
     platformsList.forEach(p => { map[p.slug] = p.name; });
