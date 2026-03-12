@@ -230,12 +230,14 @@ export function DashboardPage() {
           icon={<Users className="w-5 h-5 text-primary" />}
           accent="bg-primary-light"
         />
-        <StatCard
-          label="MRR"
-          value={`R$ ${mrr.toLocaleString('pt-BR')}`}
-          icon={<DollarSign className="w-5 h-5 text-emerald-500" />}
-          accent="bg-emerald-500/10"
-        />
+        {isAdmin && (
+          <StatCard
+            label="MRR"
+            value={`R$ ${mrr.toLocaleString('pt-BR')}`}
+            icon={<DollarSign className="w-5 h-5 text-emerald-500" />}
+            accent="bg-emerald-500/10"
+          />
+        )}
         <StatCard
           label="Demandas Atrasadas"
           value={lateTasks}
