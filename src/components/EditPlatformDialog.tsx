@@ -30,7 +30,16 @@ const CLIENT_TYPE_OPTIONS = [
   { value: 'Lojista', label: 'Lojista' },
 ];
 
+const PHASE_OPTIONS = [
+  { value: 'onboarding', label: 'On-board' },
+  { value: 'implementacao', label: 'Implementação' },
+  { value: 'performance', label: 'Performance' },
+  { value: 'escala', label: 'Escala' },
+];
+
 export function EditPlatformDialog({ open, onClose, platform }: EditPlatformDialogProps) {
+  const { currentUser } = useAuth();
+  const isAdmin = currentUser?.accessLevel === 3;
   const { data: appUsers = [] } = useAppUsersQuery();
   const { data: clients = [] } = useClientsQuery();
   const { data: clientStatuses = [] } = useClientStatusesQuery('clients');
