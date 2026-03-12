@@ -1,6 +1,7 @@
 import { createContext, useContext, ReactNode, useCallback } from 'react';
 import { Client, ChangeLogEntry, ChatNote } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
+import { useSquadsQuery } from '@/hooks/useSquadsQuery';
 import {
   useClientsQuery,
   useAddClient,
