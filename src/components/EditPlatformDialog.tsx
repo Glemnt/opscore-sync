@@ -82,6 +82,7 @@ export function EditPlatformDialog({ open, onClose, platform }: EditPlatformDial
     setPlatformPhase(platform.phase || 'onboarding');
     setHealthColor(platform.healthColor || 'green');
     setOrigin(platform.origin || '');
+    setResponsible(platform.responsible || '');
     setSalesResponsible(platform.salesResponsible || '');
     // Client
     if (client) {
