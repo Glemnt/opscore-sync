@@ -64,6 +64,12 @@ export function ReportsPage() {
   const { squads } = useSquads();
   const { data: allTeamMembers = [] } = useTeamMembersQuery();
   const { data: projects = [] } = useProjectsQuery();
+  const { data: dynamicTaskTypes = [] } = useTaskTypesQuery();
+  const { data: clientStatuses = [] } = useClientStatusesQuery('clients');
+
+  const churnKeys = new Set(
+    clientStatuses.filter(s => s.label.toLowerCase().includes('churn')).map(s => s.key)
+  );
 
   // Filter by visible clients
   const visibleClientIds = new Set(visibleClients.map((c) => c.id));
@@ -76,7 +82,7 @@ export function ReportsPage() {
   const [selectedTaskType, setSelectedTaskType] = useState('');
   const [selectedMember, setSelectedMember] = useState('');
 
-  const activeClients = visibleClients.filter(c => c.status === 'active');
+  const activeClients = visibleClients.filter(c => !churnKeys.has(c.status));
 
   const handleCardClick = async (cardId: string) => {
     if (cardId === 'team') {
