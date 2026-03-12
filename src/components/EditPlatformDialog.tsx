@@ -223,7 +223,7 @@ export function EditPlatformDialog({ open, onClose, platform }: EditPlatformDial
               </div>
               <div>
                 <Label className="text-xs">Squad</Label>
-                <select value={squadId} onChange={e => setSquadId(e.target.value)} className={selectClass}>
+                <select value={squadId} disabled className={cn(selectClass, "opacity-60 cursor-not-allowed")}>
                   <option value="">—</option>
                   {squads.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                 </select>
