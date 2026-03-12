@@ -258,8 +258,7 @@ export function ReportsPage() {
                     <td className="py-2.5 px-4 text-sm text-muted-foreground">{clientTasks}</td>
                   </tr>
                 );
-              }
-              ))}
+              })}
             </tbody>
           </table>
         </div>
