@@ -136,9 +136,16 @@ export function ProjectsPage() {
     setSquadDialogOpen(true);
   };
 
+  const [deleteSquadId, setDeleteSquadId] = useState<string | null>(null);
   const handleDeleteSquad = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    removeSquad(id);
+    setDeleteSquadId(id);
+  };
+  const confirmDeleteSquad = () => {
+    if (deleteSquadId) {
+      removeSquad(deleteSquadId);
+      setDeleteSquadId(null);
+    }
   };
 
   const toggleMember = (name: string) => {
