@@ -304,12 +304,6 @@ export function EditPlatformDialog({ open, onClose, platform }: EditPlatformDial
                 </div>
               </div>
 
-              <div>
-                <Label className="text-xs">Etapa da Plataforma</Label>
-                <select value={platformPhase} onChange={e => setPlatformPhase(e.target.value)} className={selectClass}>
-                  {PHASE_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-                </select>
-              </div>
 
               <div>
                 <Label className="text-xs">Origem</Label>
