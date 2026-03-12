@@ -90,7 +90,6 @@ export function EditPlatformDialog({ open, onClose, platform }: EditPlatformDial
       setSegment(client.segment || '');
       
       setStatus(client.status || 'active');
-      setClientPhase((client as any).phase || 'onboarding');
       setPhone(client.phone || '');
       setEmail(client.email || '');
       setContractDuration(client.contractDurationMonths ?? 6);
