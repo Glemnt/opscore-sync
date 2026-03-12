@@ -169,6 +169,8 @@ export interface AppUserProfile {
   accessLevel: AccessLevel;
   squadIds: string[];
   authUserId: string | null;
+  hireDate: string | null;
+  birthday: string | null;
 }
 
 export function mapDbAppUser(row: DbAppUser): AppUserProfile {
@@ -180,5 +182,7 @@ export function mapDbAppUser(row: DbAppUser): AppUserProfile {
     accessLevel: row.access_level as AccessLevel,
     squadIds: row.squad_ids,
     authUserId: row.auth_user_id,
+    hireDate: (row as any).hire_date ?? null,
+    birthday: (row as any).birthday ?? null,
   };
 }
