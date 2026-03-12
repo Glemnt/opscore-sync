@@ -136,9 +136,16 @@ export function ProjectsPage() {
     setSquadDialogOpen(true);
   };
 
+  const [deleteSquadId, setDeleteSquadId] = useState<string | null>(null);
   const handleDeleteSquad = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    removeSquad(id);
+    setDeleteSquadId(id);
+  };
+  const confirmDeleteSquad = () => {
+    if (deleteSquadId) {
+      removeSquad(deleteSquadId);
+      setDeleteSquadId(null);
+    }
   };
 
   const toggleMember = (name: string) => {
@@ -329,6 +336,24 @@ export function ProjectsPage() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* Delete Squad Confirmation */}
+        <AlertDialog open={!!deleteSquadId} onOpenChange={(open) => { if (!open) setDeleteSquadId(null); }}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Excluir Squad</AlertDialogTitle>
+              <AlertDialogDescription>
+                Tem certeza que deseja excluir este squad? Esta ação não pode ser desfeita.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction onClick={confirmDeleteSquad} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                Excluir
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>);
 
   }
@@ -598,11 +623,12 @@ export function ProjectsPage() {
 
                         {/* Health badge */}
                         <div className="flex flex-wrap items-center gap-1.5 mb-2.5 pt-2 border-t border-border/50">
-                          {(() => {
+                        {(() => {
                             const hMap: Record<string, { emoji: string; label: string; cls: string }> = {
                               green: { emoji: '🟢', label: 'Excelente', cls: 'bg-success/15 text-success border-success/30' },
-                              orange: { emoji: '🟠', label: 'Mediano', cls: 'bg-warning/15 text-warning border-warning/30' },
+                              yellow: { emoji: '🟡', label: 'Atenção', cls: 'bg-warning/15 text-warning border-warning/30' },
                               red: { emoji: '🔴', label: 'Ruim', cls: 'bg-destructive/15 text-destructive border-destructive/30' },
+                              white: { emoji: '⚪', label: 'Não avaliado', cls: 'bg-muted text-muted-foreground border-border/50' },
                             };
                             const h = cp.healthColor ? hMap[cp.healthColor] : null;
                             return (
@@ -657,7 +683,7 @@ export function ProjectsPage() {
 
                         {/* Footer: Phase + Actions */}
                         <div className="flex items-center justify-between text-xs text-muted-foreground pt-2 border-t border-border/50">
-                          <span className="text-xs font-medium text-muted-foreground capitalize">{cp.phase}</span>
+                          <span className="text-xs font-medium text-muted-foreground">{phaseLabels[cp.phase] ?? cp.phase}</span>
                           <div className="flex items-center gap-0.5">
                             <Button variant="ghost" size="icon" className="h-6 w-6" title="Editar"
                               onClick={(e) => { e.stopPropagation(); setEditingPlatform(cp); }}>

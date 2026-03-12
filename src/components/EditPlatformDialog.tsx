@@ -94,7 +94,8 @@ export function EditPlatformDialog({ open, onClose, platform }: EditPlatformDial
       setContractDuration(client.contractDurationMonths ?? 6);
       setSquadId(client.squadId || '');
       setClientStartDate(client.startDate || '');
-      setClientPotential(client.healthColor ?? 'medium');
+      setClientPotential(client.healthColor ?? 'white');
+      
       setPlatforms(client.platforms ?? []);
       setNotes(client.notes || '');
     }
@@ -200,15 +201,15 @@ export function EditPlatformDialog({ open, onClose, platform }: EditPlatformDial
               <div>
                 <Label className="text-xs">Status</Label>
                 <select value={status} onChange={e => setStatus(e.target.value)} className={selectClass}>
-                  <option value="active">Ativo</option>
-                  <option value="inativo">Inativo</option>
+                  {clientStatuses.map(s => (
+                    <option key={s.key} value={s.key}>{s.label}</option>
+                  ))}
                 </select>
               </div>
               <div>
                 <Label className="text-xs">Fase</Label>
                 <select value={clientPhase} onChange={e => setClientPhase(e.target.value)} className={selectClass}>
-                  <option value="onboarding">Onboarding</option>
-                  <option value="reuniao_agendada">Reunião Agendada</option>
+                  {PHASE_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
                 </select>
               </div>
               <div>

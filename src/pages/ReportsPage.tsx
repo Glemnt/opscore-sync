@@ -14,6 +14,8 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { generateTeamReport, generateClientReport, generateTaskTypeReport, generateCollaboratorReport } from '@/lib/reportGenerators';
 import { TaskType } from '@/types';
+import { useTaskTypesQuery } from '@/hooks/useTaskTypesQuery';
+import { useClientStatusesQuery } from '@/hooks/useClientStatusesQuery';
 
 const reportCards = [
   {
@@ -62,6 +64,12 @@ export function ReportsPage() {
   const { squads } = useSquads();
   const { data: allTeamMembers = [] } = useTeamMembersQuery();
   const { data: projects = [] } = useProjectsQuery();
+  const { data: dynamicTaskTypes = [] } = useTaskTypesQuery();
+  const { data: clientStatuses = [] } = useClientStatusesQuery('clients');
+
+  const churnKeys = new Set(
+    clientStatuses.filter(s => s.label.toLowerCase().includes('churn')).map(s => s.key)
+  );
 
   // Filter by visible clients
   const visibleClientIds = new Set(visibleClients.map((c) => c.id));
@@ -74,7 +82,7 @@ export function ReportsPage() {
   const [selectedTaskType, setSelectedTaskType] = useState('');
   const [selectedMember, setSelectedMember] = useState('');
 
-  const activeClients = visibleClients.filter(c => c.status === 'active');
+  const activeClients = visibleClients.filter(c => !churnKeys.has(c.status));
 
   const handleCardClick = async (cardId: string) => {
     if (cardId === 'team') {
@@ -194,8 +202,8 @@ export function ReportsPage() {
                 <SelectValue placeholder="Selecione um tipo de tarefa..." />
               </SelectTrigger>
               <SelectContent>
-                {Object.entries(taskTypeConfig).map(([key, conf]) => (
-                  <SelectItem key={key} value={key}>{conf.label}</SelectItem>
+                {dynamicTaskTypes.map(tt => (
+                  <SelectItem key={tt.key} value={tt.key}>{tt.label}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -240,13 +248,17 @@ export function ReportsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {visibleClients.filter(c => c.status === 'active').map(client => (
-                <tr key={client.id} className="hover:bg-muted/20 transition-colors">
-                  <td className="py-2.5 px-4 text-sm text-foreground font-medium">{client.name}</td>
-                  <td className="py-2.5 px-4 text-sm text-muted-foreground">{client.activeProjects}</td>
-                  <td className="py-2.5 px-4 text-sm text-muted-foreground">{client.pendingTasks}</td>
-                </tr>
-              ))}
+              {activeClients.map(client => {
+                const clientProjects = projects.filter(p => p.clientId === client.id && p.status !== 'done').length;
+                const clientTasks = tasks.filter(t => t.clientId === client.id && t.status !== 'done').length;
+                return (
+                  <tr key={client.id} className="hover:bg-muted/20 transition-colors">
+                    <td className="py-2.5 px-4 text-sm text-foreground font-medium">{client.name}</td>
+                    <td className="py-2.5 px-4 text-sm text-muted-foreground">{clientProjects}</td>
+                    <td className="py-2.5 px-4 text-sm text-muted-foreground">{clientTasks}</td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -265,16 +277,16 @@ export function ReportsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {Object.entries(taskTypeConfig).map(([type, conf]) => {
-                const typeTasks = tasks.filter(t => t.type === type);
+              {dynamicTaskTypes.map(tt => {
+                const typeTasks = tasks.filter(t => t.type === tt.key);
                 const avgTime = typeTasks.length > 0
                   ? (typeTasks.reduce((a, t) => a + t.estimatedTime, 0) / typeTasks.length).toFixed(1)
                   : '—';
                 return (
-                  <tr key={type} className="hover:bg-muted/20 transition-colors">
+                  <tr key={tt.key} className="hover:bg-muted/20 transition-colors">
                     <td className="py-2.5 px-4">
-                      <span className={cn('text-xs px-2 py-0.5 rounded-md font-medium', conf.color)}>
-                        {conf.label}
+                      <span className={cn('text-xs px-2 py-0.5 rounded-md font-medium', tt.color)}>
+                        {tt.label}
                       </span>
                     </td>
                     <td className="py-2.5 px-4 text-sm text-muted-foreground">{typeTasks.length}</td>
