@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, Shield, ShieldCheck, ShieldAlert, Pencil, Trash2 } from 'lucide-react';
+import { Plus, Shield, ShieldCheck, ShieldAlert, Pencil, Trash2, CalendarIcon, Cake } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSquads } from '@/contexts/SquadsContext';
 import { useAppUsersQuery, useCreateAppUser, useUpdateAppUser, useDeleteAppUser } from '@/hooks/useAppUsersQuery';
@@ -15,12 +15,28 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
+import { format, differenceInYears, parseISO } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
-const roleLabels: Record<TeamRole, string> = {
+// Only the official Grupo TG roles appear in the dropdown
+const roleLabels: Record<string, string> = {
+  auxiliar_ecommerce: 'AUXILIAR DE ECOMMERCE',
+  assistente_ecommerce: 'ASSISTENTE DE ECOMMERCE',
+  manager: 'MANAGER',
+  head: 'HEAD',
   cs: 'CS',
+  coo: 'COO',
+  ceo: 'CEO',
+};
+
+// All roles including legacy ones for display in table
+const allRoleLabels: Record<string, string> = {
+  ...roleLabels,
   operacional: 'Operacional',
   design: 'Design',
   copy: 'Copy',
@@ -32,6 +48,15 @@ const levelLabels: Record<AccessLevel, { label: string; icon: typeof Shield }> =
   2: { label: 'Supervisor', icon: ShieldCheck },
   3: { label: 'Administrador', icon: ShieldAlert },
 };
+
+function calculateAge(birthday: string | null): number | null {
+  if (!birthday) return null;
+  try {
+    return differenceInYears(new Date(), parseISO(birthday));
+  } catch {
+    return null;
+  }
+}
 
 export function SettingsPage() {
   const { currentUser } = useAuth();
@@ -61,12 +86,15 @@ export function SettingsPage() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState<TeamRole>('operacional');
+  const [role, setRole] = useState<TeamRole>('auxiliar_ecommerce');
   const [accessLevel, setAccessLevel] = useState<AccessLevel>(1);
   const [selectedSquads, setSelectedSquads] = useState<string[]>([]);
+  const [hireDate, setHireDate] = useState<Date | undefined>(undefined);
+  const [birthday, setBirthday] = useState<Date | undefined>(undefined);
 
   const resetForm = () => {
-    setName(''); setEmail(''); setPassword(''); setRole('operacional'); setAccessLevel(1); setSelectedSquads([]);
+    setName(''); setEmail(''); setPassword(''); setRole('auxiliar_ecommerce'); setAccessLevel(1); setSelectedSquads([]);
+    setHireDate(undefined); setBirthday(undefined);
   };
 
   const openEditDialog = (u: AppUserProfile) => {
@@ -75,12 +103,19 @@ export function SettingsPage() {
     setRole(u.role);
     setAccessLevel(u.accessLevel);
     setSelectedSquads(u.squadIds);
+    setHireDate(u.hireDate ? parseISO(u.hireDate) : undefined);
+    setBirthday(u.birthday ? parseISO(u.birthday) : undefined);
   };
 
   const handleCreate = () => {
     if (!name.trim() || !email.trim() || !password.trim()) return;
     createUser.mutate(
-      { name: name.trim(), email: email.trim(), password: password.trim(), role, accessLevel, squadIds: accessLevel === 3 ? squads.map((s) => s.id) : selectedSquads },
+      {
+        name: name.trim(), email: email.trim(), password: password.trim(), role, accessLevel,
+        squadIds: accessLevel === 3 ? squads.map((s) => s.id) : selectedSquads,
+        hireDate: hireDate ? format(hireDate, 'yyyy-MM-dd') : null,
+        birthday: birthday ? format(birthday, 'yyyy-MM-dd') : null,
+      },
       { onSuccess: () => { resetForm(); setOpenCreate(false); } }
     );
   };
@@ -88,7 +123,12 @@ export function SettingsPage() {
   const handleUpdate = () => {
     if (!editingUser || !name.trim()) return;
     updateUser.mutate(
-      { userId: editingUser.id, name: name.trim(), role, accessLevel, squadIds: accessLevel === 3 ? squads.map((s) => s.id) : selectedSquads },
+      {
+        userId: editingUser.id, name: name.trim(), role, accessLevel,
+        squadIds: accessLevel === 3 ? squads.map((s) => s.id) : selectedSquads,
+        hireDate: hireDate ? format(hireDate, 'yyyy-MM-dd') : null,
+        birthday: birthday ? format(birthday, 'yyyy-MM-dd') : null,
+      },
       { onSuccess: () => { setEditingUser(null); resetForm(); } }
     );
   };
@@ -104,71 +144,143 @@ export function SettingsPage() {
 
   const isSelf = (u: AppUserProfile) => currentUser?.authUserId === u.authUserId;
 
+  const computedAge = birthday ? differenceInYears(new Date(), birthday) : null;
+
   // Shared form fields (used in create and edit dialogs)
   const renderFormFields = (isEdit: boolean) => (
-    <div className="space-y-4">
-      <div className="space-y-2">
-        <Label>Nome</Label>
-        <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Nome completo" />
+    <div className="space-y-5">
+      {/* Section: Dados Principais */}
+      <div>
+        <h4 className="text-sm font-semibold text-foreground mb-3 border-b border-border pb-1.5">Dados Principais</h4>
+        <div className="space-y-3">
+          <div className="space-y-2">
+            <Label>Nome</Label>
+            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Nome completo" />
+          </div>
+          {!isEdit && (
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label>Email</Label>
+                <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="email@exemplo.com" />
+              </div>
+              <div className="space-y-2">
+                <Label>Senha</Label>
+                <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Senha" />
+              </div>
+            </div>
+          )}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <Label>Cargo</Label>
+              <Select value={role} onValueChange={(v) => setRole(v as TeamRole)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {Object.entries(roleLabels).map(([k, v]) => (
+                    <SelectItem key={k} value={k}>{v}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Nível de Acesso</Label>
+              <Select value={String(accessLevel)} onValueChange={(v) => setAccessLevel(Number(v) as AccessLevel)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1">1 — Operacional</SelectItem>
+                  <SelectItem value="2">2 — Supervisor</SelectItem>
+                  <SelectItem value="3">3 — Administrador</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          {accessLevel !== 3 && (
+            <div className="space-y-2">
+              <Label>Squads vinculados</Label>
+              <div className="flex flex-wrap gap-2">
+                {squads.map((s) => (
+                  <button
+                    key={s.id}
+                    type="button"
+                    onClick={() => toggleSquad(s.id)}
+                    className={cn(
+                      'px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors',
+                      selectedSquads.includes(s.id)
+                        ? 'bg-primary text-primary-foreground border-primary'
+                        : 'bg-card text-muted-foreground border-border hover:border-primary/40'
+                    )}
+                  >
+                    {s.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
-      {!isEdit && (
+
+      {/* Section: Dados do Colaborador */}
+      <div>
+        <h4 className="text-sm font-semibold text-foreground mb-3 border-b border-border pb-1.5">Dados do Colaborador</h4>
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-2">
-            <Label>Email</Label>
-            <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="email@exemplo.com" />
+            <Label>Data de Entrada</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn('w-full justify-start text-left font-normal', !hireDate && 'text-muted-foreground')}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {hireDate ? format(hireDate, 'dd/MM/yyyy') : 'Selecionar'}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={hireDate}
+                  onSelect={setHireDate}
+                  locale={ptBR}
+                  initialFocus
+                  className={cn('p-3 pointer-events-auto')}
+                />
+              </PopoverContent>
+            </Popover>
           </div>
           <div className="space-y-2">
-            <Label>Senha</Label>
-            <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Senha" />
+            <Label>Data de Aniversário</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn('w-full justify-start text-left font-normal', !birthday && 'text-muted-foreground')}
+                >
+                  <Cake className="mr-2 h-4 w-4" />
+                  {birthday ? format(birthday, 'dd/MM/yyyy') : 'Selecionar'}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={birthday}
+                  onSelect={setBirthday}
+                  locale={ptBR}
+                  initialFocus
+                  captionLayout="dropdown-buttons"
+                  fromYear={1950}
+                  toYear={new Date().getFullYear()}
+                  className={cn('p-3 pointer-events-auto')}
+                />
+              </PopoverContent>
+            </Popover>
           </div>
         </div>
-      )}
-      <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-2">
-          <Label>Cargo</Label>
-          <Select value={role} onValueChange={(v) => setRole(v as TeamRole)}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
-            <SelectContent>
-              {Object.entries(roleLabels).map(([k, v]) => (
-                <SelectItem key={k} value={k}>{v}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="space-y-2">
-          <Label>Nível de Acesso</Label>
-          <Select value={String(accessLevel)} onValueChange={(v) => setAccessLevel(Number(v) as AccessLevel)}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="1">1 — Operacional</SelectItem>
-              <SelectItem value="2">2 — Supervisor</SelectItem>
-              <SelectItem value="3">3 — Administrador</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+        {computedAge !== null && (
+          <div className="mt-3 flex items-center gap-2 text-sm text-muted-foreground">
+            <Cake className="w-4 h-4" />
+            <span>Idade: <strong className="text-foreground">{computedAge} anos</strong></span>
+          </div>
+        )}
       </div>
-      {accessLevel !== 3 && (
-        <div className="space-y-2">
-          <Label>Squads vinculados</Label>
-          <div className="flex flex-wrap gap-2">
-            {squads.map((s) => (
-              <button
-                key={s.id}
-                type="button"
-                onClick={() => toggleSquad(s.id)}
-                className={cn(
-                  'px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors',
-                  selectedSquads.includes(s.id)
-                    ? 'bg-primary text-primary-foreground border-primary'
-                    : 'bg-card text-muted-foreground border-border hover:border-primary/40'
-                )}
-              >
-                {s.name}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 
@@ -220,7 +332,7 @@ export function SettingsPage() {
                   <TableRow key={u.id}>
                     <TableCell className="font-medium text-foreground">{u.name}</TableCell>
                     <TableCell className="text-muted-foreground">{u.login}</TableCell>
-                    <TableCell className="text-muted-foreground">{roleLabels[u.role]}</TableCell>
+                    <TableCell className="text-muted-foreground">{allRoleLabels[u.role] ?? u.role}</TableCell>
                     <TableCell>
                       <span className="flex items-center gap-1.5 text-sm">
                         <LvlIcon className="w-4 h-4 text-primary" />
@@ -383,7 +495,7 @@ export function SettingsPage() {
 
       {/* Create Dialog */}
       <Dialog open={openCreate} onOpenChange={setOpenCreate}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Novo Usuário</DialogTitle>
           </DialogHeader>
@@ -399,7 +511,7 @@ export function SettingsPage() {
 
       {/* Edit Dialog */}
       <Dialog open={!!editingUser} onOpenChange={(open) => { if (!open) { setEditingUser(null); resetForm(); } }}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Editar Usuário</DialogTitle>
           </DialogHeader>
