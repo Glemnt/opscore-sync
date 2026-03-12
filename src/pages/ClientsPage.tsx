@@ -13,6 +13,7 @@ import { PageHeader, StatusBadge } from '@/components/ui/shared';
 import { Client, ClientStatus } from '@/types';
 import { cn } from '@/lib/utils';
 import { useClients } from '@/contexts/ClientsContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { AddClientDialog } from '@/components/AddClientDialog';
 import { ClientDetailModal } from '@/components/ClientDetailModal';
 import { useClientStatusesQuery, useClientStatusesMap, useAddClientStatus, useDeleteClientStatus } from '@/hooks/useClientStatusesQuery';
