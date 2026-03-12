@@ -43,6 +43,8 @@ export function useCreateAppUser() {
           role: input.role,
           accessLevel: input.accessLevel,
           squadIds: input.squadIds,
+          hireDate: input.hireDate || null,
+          birthday: input.birthday || null,
         },
       });
       if (error) {
