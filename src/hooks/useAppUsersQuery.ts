@@ -26,6 +26,8 @@ interface CreateUserInput {
   role: TeamRole;
   accessLevel: AccessLevel;
   squadIds: string[];
+  hireDate?: string | null;
+  birthday?: string | null;
 }
 
 export function useCreateAppUser() {
@@ -41,6 +43,8 @@ export function useCreateAppUser() {
           role: input.role,
           accessLevel: input.accessLevel,
           squadIds: input.squadIds,
+          hireDate: input.hireDate || null,
+          birthday: input.birthday || null,
         },
       });
       if (error) {
@@ -65,6 +69,8 @@ interface UpdateUserInput {
   role: TeamRole;
   accessLevel: AccessLevel;
   squadIds: string[];
+  hireDate?: string | null;
+  birthday?: string | null;
 }
 
 export function useUpdateAppUser() {

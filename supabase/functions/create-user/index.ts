@@ -49,7 +49,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { name, email, password, role, accessLevel, squadIds } = await req.json();
+    const { name, email, password, role, accessLevel, squadIds, hireDate, birthday } = await req.json();
 
     // Create auth user without affecting caller session
     const { data: authData, error: authError } = await adminClient.auth.admin.createUser({
@@ -67,6 +67,8 @@ Deno.serve(async (req) => {
       role,
       access_level: accessLevel,
       squad_ids: squadIds,
+      hire_date: hireDate || null,
+      birthday: birthday || null,
     });
     if (appError) throw appError;
 

@@ -4,7 +4,7 @@ export type TaskStatus = 'backlog' | 'in_progress' | 'waiting_client' | 'done' |
 export type Priority = 'high' | 'medium' | 'low';
 export type TaskType = 'anuncio' | 'copy' | 'design' | 'otimizacao' | 'analise' | 'setup' | 'reuniao' | 'relatorio' | (string & {});
 export type ProjectType = 'criacao_anuncio' | 'setup_campanha' | 'otimizacao' | 'relatorio' | 'redesign' | 'consultoria';
-export type TeamRole = 'cs' | 'operacional' | 'design' | 'copy' | 'gestao';
+export type TeamRole = 'cs' | 'operacional' | 'design' | 'copy' | 'gestao' | 'auxiliar_ecommerce' | 'assistente_ecommerce' | 'manager' | 'head' | 'coo' | 'ceo';
 export type ContractType = 'mrr' | 'tcv';
 export type Platform = string;
 

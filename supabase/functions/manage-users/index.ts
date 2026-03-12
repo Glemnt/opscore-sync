@@ -52,10 +52,10 @@ Deno.serve(async (req) => {
     const { action } = body;
 
     if (action === "update") {
-      const { userId, name, role, accessLevel, squadIds } = body;
+      const { userId, name, role, accessLevel, squadIds, hireDate, birthday } = body;
       const { error } = await adminClient
         .from("app_users")
-        .update({ name, role, access_level: accessLevel, squad_ids: squadIds })
+        .update({ name, role, access_level: accessLevel, squad_ids: squadIds, hire_date: hireDate ?? null, birthday: birthday ?? null })
         .eq("id", userId);
       if (error) throw error;
 

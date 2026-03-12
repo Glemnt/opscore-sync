@@ -18,7 +18,9 @@ export type Database = {
         Row: {
           access_level: number
           auth_user_id: string | null
+          birthday: string | null
           created_at: string
+          hire_date: string | null
           id: string
           login: string
           name: string
@@ -28,7 +30,9 @@ export type Database = {
         Insert: {
           access_level?: number
           auth_user_id?: string | null
+          birthday?: string | null
           created_at?: string
+          hire_date?: string | null
           id?: string
           login: string
           name: string
@@ -38,7 +42,9 @@ export type Database = {
         Update: {
           access_level?: number
           auth_user_id?: string | null
+          birthday?: string | null
           created_at?: string
+          hire_date?: string | null
           id?: string
           login?: string
           name?: string
@@ -985,7 +991,18 @@ export type Database = {
       priority_level: "high" | "medium" | "low"
       project_status: "backlog" | "in_progress" | "waiting_client" | "done"
       task_status: "backlog" | "in_progress" | "waiting_client" | "done"
-      team_role: "cs" | "operacional" | "design" | "copy" | "gestao"
+      team_role:
+        | "cs"
+        | "operacional"
+        | "design"
+        | "copy"
+        | "gestao"
+        | "auxiliar_ecommerce"
+        | "assistente_ecommerce"
+        | "manager"
+        | "head"
+        | "coo"
+        | "ceo"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1121,7 +1138,19 @@ export const Constants = {
       priority_level: ["high", "medium", "low"],
       project_status: ["backlog", "in_progress", "waiting_client", "done"],
       task_status: ["backlog", "in_progress", "waiting_client", "done"],
-      team_role: ["cs", "operacional", "design", "copy", "gestao"],
+      team_role: [
+        "cs",
+        "operacional",
+        "design",
+        "copy",
+        "gestao",
+        "auxiliar_ecommerce",
+        "assistente_ecommerce",
+        "manager",
+        "head",
+        "coo",
+        "ceo",
+      ],
     },
   },
 } as const
