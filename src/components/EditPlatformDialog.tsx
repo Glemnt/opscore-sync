@@ -113,6 +113,7 @@ export function EditPlatformDialog({ open, onClose, platform }: EditPlatformDial
           phase: platformPhase,
           healthColor,
           origin,
+          responsible,
           salesResponsible,
         },
       },
