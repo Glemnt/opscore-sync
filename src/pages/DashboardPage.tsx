@@ -312,33 +312,35 @@ export function DashboardPage() {
         </div>
 
         {/* Revenue by Platform */}
-        <div className="lg:col-span-2 bg-card rounded-xl border border-border p-5 shadow-sm-custom">
-          <div className="mb-4">
-            <h3 className="text-sm font-semibold text-foreground">Receita por Plataforma</h3>
-            <p className="text-xs text-muted-foreground">Distribuição de MRR entre plataformas</p>
-          </div>
-          <div className="flex items-center gap-6">
-            <PieChart width={140} height={140}>
-              <Pie data={platformData} cx={65} cy={65} innerRadius={40} outerRadius={65} dataKey="value" strokeWidth={2}>
-                {platformData.map((entry, index) => (
-                  <Cell key={index} fill={entry.color} />
-                ))}
-              </Pie>
-              <Tooltip formatter={(value: number) => `R$ ${value.toLocaleString('pt-BR')}`} />
-            </PieChart>
-            <div className="space-y-2 flex-1">
-              {platformData.map((item) => (
-                <div key={item.name} className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full" style={{ background: item.color }} />
-                    <span className="text-xs text-muted-foreground">{item.name}</span>
+        {isAdmin && (
+          <div className="lg:col-span-2 bg-card rounded-xl border border-border p-5 shadow-sm-custom">
+            <div className="mb-4">
+              <h3 className="text-sm font-semibold text-foreground">Receita por Plataforma</h3>
+              <p className="text-xs text-muted-foreground">Distribuição de MRR entre plataformas</p>
+            </div>
+            <div className="flex items-center gap-6">
+              <PieChart width={140} height={140}>
+                <Pie data={platformData} cx={65} cy={65} innerRadius={40} outerRadius={65} dataKey="value" strokeWidth={2}>
+                  {platformData.map((entry, index) => (
+                    <Cell key={index} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip formatter={(value: number) => `R$ ${value.toLocaleString('pt-BR')}`} />
+              </PieChart>
+              <div className="space-y-2 flex-1">
+                {platformData.map((item) => (
+                  <div key={item.name} className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full" style={{ background: item.color }} />
+                      <span className="text-xs text-muted-foreground">{item.name}</span>
+                    </div>
+                    <span className="text-xs font-semibold text-foreground">R$ {item.value.toLocaleString('pt-BR')}</span>
                   </div>
-                  <span className="text-xs font-semibold text-foreground">R$ {item.value.toLocaleString('pt-BR')}</span>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Charts row */}

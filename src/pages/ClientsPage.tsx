@@ -229,7 +229,7 @@ export function ClientsPage() {
       {/* Grid */}
       <div className="grid grid-cols-3 gap-4">
         {filtered.map((client) => (
-          <ClientCard key={client.id} client={client} statusMap={statusMap} clientFlows={clientFlowsMap[client.id] ?? []} onClick={() => setSelectedClient(client)} />
+          <ClientCard key={client.id} client={client} statusMap={statusMap} clientFlows={clientFlowsMap[client.id] ?? []} onClick={() => setSelectedClient(client)} isAdmin={isAdmin} />
         ))}
       </div>
 

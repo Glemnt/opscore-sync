@@ -470,7 +470,7 @@ export function ClientDetailModal({ client, open, onClose }: ClientDetailModalPr
             <>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
                 <ReadOnlyField label="Entrada" value={formatDate(client.startDate)} />
-                <ReadOnlyField label="Mensalidade" value={client.monthlyRevenue ? `R$ ${client.monthlyRevenue.toLocaleString('pt-BR')}` : '—'} />
+                {isAdmin && <ReadOnlyField label="Mensalidade" value={client.monthlyRevenue ? `R$ ${client.monthlyRevenue.toLocaleString('pt-BR')}` : '—'} />}
                 <ReadOnlyField label="Squad" value={squad?.name ?? '—'} />
                 
               </div>
