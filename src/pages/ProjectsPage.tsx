@@ -386,12 +386,10 @@ export function ProjectsPage() {
 
 
     const phaseLabels: Record<string, string> = {
-      onboarding: 'Onboarding',
+      onboarding: 'On-board',
       implementacao: 'Implementação',
-      escala: 'Escala',
       performance: 'Performance',
-      active: 'Ativo',
-      inativo: 'Inativo'
+      escala: 'Escala',
     };
 
     const uniqueResponsibles = [...new Set(squadPlatformEntries.map((e) => e.cp.responsible).filter(Boolean))];
