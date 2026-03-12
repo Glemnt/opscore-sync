@@ -202,8 +202,8 @@ export function ReportsPage() {
                 <SelectValue placeholder="Selecione um tipo de tarefa..." />
               </SelectTrigger>
               <SelectContent>
-                {Object.entries(taskTypeConfig).map(([key, conf]) => (
-                  <SelectItem key={key} value={key}>{conf.label}</SelectItem>
+                {dynamicTaskTypes.map(tt => (
+                  <SelectItem key={tt.key} value={tt.key}>{tt.label}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
