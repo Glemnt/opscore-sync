@@ -79,7 +79,7 @@ export function ClientsPage() {
     const matchDateFrom = !dateFrom || c.startDate >= dateFrom;
     const matchDateTo = !dateTo || c.startDate <= dateTo;
     const matchHealth = healthFilter === 'all' || (c.healthColor ?? 'white') === healthFilter;
-    const matchResponsible = responsibleFilter === 'all' || c.responsible === responsibleFilter;
+    const matchResponsible = responsibleFilter === 'all' || allClientPlatforms.some(cp => cp.clientId === c.id && cp.responsible === responsibleFilter);
     const matchPlatform = platformFilter === 'all' || (c.platforms?.includes(platformFilter) ?? false);
     return matchSearch && matchStatus && matchSquad && matchDateFrom && matchDateTo && matchHealth && matchResponsible && matchPlatform;
   });
