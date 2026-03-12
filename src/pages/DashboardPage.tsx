@@ -207,7 +207,7 @@ export function DashboardPage() {
       <PageHeader title="Dashboard" subtitle="Visão geral da operação em tempo real" />
 
       {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div className={cn("grid grid-cols-2 gap-4 mb-6", isAdmin ? "lg:grid-cols-4" : "lg:grid-cols-3")}>
         <StatCard
           label="Clientes Ativos"
           value={activeClients}
