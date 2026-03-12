@@ -1,28 +1,33 @@
 
 
-## Problema
+## Plano: Corrigir dialogs de Gerar Demandas e Transferir Plataforma
 
-O filtro de responsável na página de Squads (linha 402) verifica apenas `e.cp.responsible` (responsável da plataforma). Se o responsável está definido apenas no nível do cliente (`e.client.responsible`) e não na plataforma, o filtro não encontra correspondência.
+### Problema
+Os dialogs `GenerateDemandsDialog` e `TransferPlatformDialog` nunca aparecem porque estão renderizados no bloco `return` final do componente (linha 902-922), mas os botões que ativam o estado estão no bloco `return` do step 2.5 (linha 615-808). Como o step 2.5 faz um `return` antecipado, o código nunca chega à renderização dos dialogs.
 
-Da mesma forma, a lista de responsáveis disponíveis no dropdown (linha 397) só coleta responsáveis de `e.cp.responsible`, ignorando `e.client.responsible`.
+### Solução
 
-## Solução
+**Arquivo: `src/pages/ProjectsPage.tsx`**
 
-### Alteração em `src/pages/ProjectsPage.tsx`
+Mover os dois blocos de renderização condicional dos dialogs (`generateTarget` e `transferTarget`) para dentro do bloco `return` do step 2.5, logo antes do `</div>` final (linha ~807), envolvendo tudo em um fragment `<>...</>`:
 
-**Linha 397** - Incluir responsáveis do cliente na lista do dropdown:
-```typescript
-const uniqueResponsibles = [...new Set(
-  squadPlatformEntries.flatMap((e) => [e.cp.responsible, e.client.responsible]).filter(Boolean)
-)];
+```tsx
+// Antes do fechamento do return do step 2.5 (linha 808):
+return (
+  <>
+    <div className="p-6 animate-fade-in">
+      {/* ... conteúdo existente do step 2.5 ... */}
+    </div>
+
+    {generateTarget && (
+      <GenerateDemandsDialog ... />
+    )}
+    {transferTarget && (
+      <TransferPlatformDialog ... />
+    )}
+  </>
+);
 ```
 
-**Linha 402** - Alterar o filtro para considerar ambos os níveis:
-```typescript
-const matchResponsible = squadResponsibleFilter === 'all' 
-  || e.cp.responsible === squadResponsibleFilter 
-  || e.client.responsible === squadResponsibleFilter;
-```
-
-Sem alterações de banco de dados.
+Nenhuma outra mudança necessária. A renderização no bloco final (linha 902-922) pode ser mantida para cobrir o step 3, ou removida se não houver botões lá.
 
