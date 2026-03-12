@@ -414,23 +414,27 @@ function ClientCard({ client, statusMap, clientFlows, onClick }: { client: Clien
 
       {/* Metrics grid */}
       <div className="pt-3 border-t border-border">
-        <div className="grid grid-cols-5 gap-1">
+        <div className={cn("grid gap-1", isAdmin ? "grid-cols-5" : "grid-cols-3")}>
           <div className="text-center">
             <p className="text-sm font-bold text-foreground">{pendingTasks.length}</p>
             <p className="text-[10px] text-muted-foreground">Pendentes</p>
           </div>
-          <div className="text-center">
-            <p className="text-sm font-bold text-foreground">
-              {client.monthlyRevenue ? `R$${(client.monthlyRevenue / 1000).toFixed(1)}k` : '—'}
-            </p>
-            <p className="text-[10px] text-muted-foreground">Mensalidade</p>
-          </div>
-          <div className="text-center">
-            <p className="text-sm font-bold text-foreground">
-              {client.setupFee ? `R$${(client.setupFee / 1000).toFixed(1)}k` : '—'}
-            </p>
-            <p className="text-[10px] text-muted-foreground">Setup</p>
-          </div>
+          {isAdmin && (
+            <div className="text-center">
+              <p className="text-sm font-bold text-foreground">
+                {client.monthlyRevenue ? `R$${(client.monthlyRevenue / 1000).toFixed(1)}k` : '—'}
+              </p>
+              <p className="text-[10px] text-muted-foreground">Mensalidade</p>
+            </div>
+          )}
+          {isAdmin && (
+            <div className="text-center">
+              <p className="text-sm font-bold text-foreground">
+                {client.setupFee ? `R$${(client.setupFee / 1000).toFixed(1)}k` : '—'}
+              </p>
+              <p className="text-[10px] text-muted-foreground">Setup</p>
+            </div>
+          )}
           <div className="text-center">
             <p className="text-sm font-bold text-foreground">
               {client.contractDurationMonths ? `${client.contractDurationMonths}m` : '—'}
