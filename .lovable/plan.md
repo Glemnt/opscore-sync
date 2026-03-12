@@ -1,29 +1,33 @@
 
 
-## Plano: Unificar fase e reorganizar campos do EditPlatformDialog
+## Plano: Corrigir dialogs de Gerar Demandas e Transferir Plataforma
 
-### Analise
+### Problema
+Os dialogs `GenerateDemandsDialog` e `TransferPlatformDialog` nunca aparecem porque estão renderizados no bloco `return` final do componente (linha 902-922), mas os botões que ativam o estado estão no bloco `return` do step 2.5 (linha 615-808). Como o step 2.5 faz um `return` antecipado, o código nunca chega à renderização dos dialogs.
 
-Existem dois campos de fase no dialog:
-- **"Fase" (topo)** — salva em `clients.phase` (campo do cliente)
-- **"Etapa da Plataforma" (baixo)** — salva em `client_platforms.phase` (campo da plataforma)
+### Solução
 
-O Kanban de Squads filtra por `client_platforms.phase`. Quando o usuario edita a "Fase" de cima, ela atualiza `clients.phase` mas **nao** atualiza `client_platforms.phase` — o campo que o Kanban realmente usa. Isso causa a confusao e o bug de plataformas aparecendo em abas erradas.
+**Arquivo: `src/pages/ProjectsPage.tsx`**
 
-### Correcoes em `EditPlatformDialog.tsx`
+Mover os dois blocos de renderização condicional dos dialogs (`generateTarget` e `transferTarget`) para dentro do bloco `return` do step 2.5, logo antes do `</div>` final (linha ~807), envolvendo tudo em um fragment `<>...</>`:
 
-**1. Unificar o campo de fase**
-- O campo "Fase" no topo passara a controlar `platformPhase` (que salva em `client_platforms.phase`)
-- Remover o state `clientPhase` e o campo "Etapa da Plataforma" da secao inferior
-- No `handleSubmit`, continuar enviando `phase: platformPhase` no update da plataforma, e sincronizar `phase: platformPhase` tambem no update do cliente para manter consistencia
+```tsx
+// Antes do fechamento do return do step 2.5 (linha 808):
+return (
+  <>
+    <div className="p-6 animate-fade-in">
+      {/* ... conteúdo existente do step 2.5 ... */}
+    </div>
 
-**2. Mover "Responsavel da Plataforma" para a secao superior**
-- Mover o select de responsavel da secao "Dados da Plataforma" para a secao "Dados do Cliente", posicionado logo apos o campo "Fase"
+    {generateTarget && (
+      <GenerateDemandsDialog ... />
+    )}
+    {transferTarget && (
+      <TransferPlatformDialog ... />
+    )}
+  </>
+);
+```
 
-**3. Remover campo duplicado**
-- Remover completamente o bloco de "Etapa da Plataforma" (linhas 302-307) da secao inferior
-
-### Arquivo alterado
-
-`src/components/EditPlatformDialog.tsx`
+Nenhuma outra mudança necessária. A renderização no bloco final (linha 902-922) pode ser mantida para cobrir o step 3, ou removida se não houver botões lá.
 

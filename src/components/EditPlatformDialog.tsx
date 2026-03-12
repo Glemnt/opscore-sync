@@ -56,6 +56,7 @@ export function EditPlatformDialog({ open, onClose, platform }: EditPlatformDial
   // Platform fields
   const [clientType, setClientType] = useState(platform.qualityLevel || 'Seller');
   const [platformPhase, setPlatformPhase] = useState(platform.phase || 'onboarding');
+  // clientPhase removed — unified into platformPhase
   const [healthColor, setHealthColor] = useState(platform.healthColor || 'green');
   const [origin, setOrigin] = useState(platform.origin || '');
   const [responsible, setResponsible] = useState(platform.responsible || '');
@@ -66,7 +67,6 @@ export function EditPlatformDialog({ open, onClose, platform }: EditPlatformDial
   const [segment, setSegment] = useState('');
   
   const [status, setStatus] = useState('active');
-  const [clientPhase, setClientPhase] = useState('onboarding');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [contractDuration, setContractDuration] = useState<number>(6);
@@ -90,7 +90,6 @@ export function EditPlatformDialog({ open, onClose, platform }: EditPlatformDial
       setSegment(client.segment || '');
       
       setStatus(client.status || 'active');
-      setClientPhase((client as any).phase || 'onboarding');
       setPhone(client.phone || '');
       setEmail(client.email || '');
       setContractDuration(client.contractDurationMonths ?? 6);
@@ -152,9 +151,8 @@ export function EditPlatformDialog({ open, onClose, platform }: EditPlatformDial
           updates: {
             companyName,
             segment,
-            
             status,
-            phase: clientPhase,
+            phase: platformPhase,
             phone,
             email,
             contractDurationMonths: contractDuration,
@@ -210,8 +208,15 @@ export function EditPlatformDialog({ open, onClose, platform }: EditPlatformDial
               </div>
               <div>
                 <Label className="text-xs">Fase</Label>
-                <select value={clientPhase} onChange={e => setClientPhase(e.target.value)} className={selectClass}>
+                <select value={platformPhase} onChange={e => setPlatformPhase(e.target.value)} className={selectClass}>
                   {PHASE_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                </select>
+              </div>
+              <div>
+                <Label className="text-xs">Responsável</Label>
+                <select value={responsible} onChange={e => setResponsible(e.target.value)} className={selectClass}>
+                  <option value="">Selecione...</option>
+                  {appUsers.map(u => <option key={u.id} value={u.name}>{u.name}</option>)}
                 </select>
               </div>
               <div>
@@ -299,12 +304,6 @@ export function EditPlatformDialog({ open, onClose, platform }: EditPlatformDial
                 </div>
               </div>
 
-              <div>
-                <Label className="text-xs">Etapa da Plataforma</Label>
-                <select value={platformPhase} onChange={e => setPlatformPhase(e.target.value)} className={selectClass}>
-                  {PHASE_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-                </select>
-              </div>
 
               <div>
                 <Label className="text-xs">Origem</Label>
@@ -316,13 +315,6 @@ export function EditPlatformDialog({ open, onClose, platform }: EditPlatformDial
                 />
               </div>
 
-              <div>
-                <Label className="text-xs">Responsável da Plataforma</Label>
-                <select value={responsible} onChange={e => setResponsible(e.target.value)} className={selectClass}>
-                  <option value="">Selecione...</option>
-                  {appUsers.map(u => <option key={u.id} value={u.name}>{u.name}</option>)}
-                </select>
-              </div>
 
               <div>
                 <Label className="text-xs">Vendedor Responsável</Label>
