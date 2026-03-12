@@ -14,6 +14,7 @@ import { useAppUsersQuery } from '@/hooks/useAppUsersQuery';
 import { useClientsQuery } from '@/hooks/useClientsQuery';
 import { cn } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface AddPlatformSquadDialogProps {
   open: boolean;
