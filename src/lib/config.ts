@@ -50,7 +50,13 @@ export const projectTypeConfig: Record<ProjectType, { label: string }> = {
 };
 
 export const teamRoleConfig: Record<TeamRole, { label: string; className: string }> = {
-  cs: { label: 'Atendimento/CS', className: 'bg-blue-100 text-blue-700' },
+  auxiliar_ecommerce: { label: 'Auxiliar de Ecommerce', className: 'bg-teal-100 text-teal-700' },
+  assistente_ecommerce: { label: 'Assistente de Ecommerce', className: 'bg-cyan-100 text-cyan-700' },
+  manager: { label: 'Manager', className: 'bg-amber-100 text-amber-700' },
+  head: { label: 'Head', className: 'bg-orange-100 text-orange-700' },
+  cs: { label: 'CS', className: 'bg-blue-100 text-blue-700' },
+  coo: { label: 'COO', className: 'bg-rose-100 text-rose-700' },
+  ceo: { label: 'CEO', className: 'bg-red-100 text-red-700' },
   operacional: { label: 'Operacional', className: 'bg-indigo-100 text-indigo-700' },
   design: { label: 'Design', className: 'bg-pink-100 text-pink-700' },
   copy: { label: 'Copy', className: 'bg-purple-100 text-purple-700' },
