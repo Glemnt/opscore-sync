@@ -14,6 +14,8 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { generateTeamReport, generateClientReport, generateTaskTypeReport, generateCollaboratorReport } from '@/lib/reportGenerators';
 import { TaskType } from '@/types';
+import { useTaskTypesQuery } from '@/hooks/useTaskTypesQuery';
+import { useClientStatusesQuery } from '@/hooks/useClientStatusesQuery';
 
 const reportCards = [
   {
