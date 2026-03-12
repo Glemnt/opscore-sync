@@ -10,6 +10,7 @@ import { usePlatformsQuery } from '@/hooks/usePlatformsQuery';
 import { useSquads } from '@/contexts/SquadsContext';
 import { cn } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 
 
 interface EditPlatformDialogProps {
@@ -29,7 +30,16 @@ const CLIENT_TYPE_OPTIONS = [
   { value: 'Lojista', label: 'Lojista' },
 ];
 
+const PHASE_OPTIONS = [
+  { value: 'onboarding', label: 'On-board' },
+  { value: 'implementacao', label: 'Implementação' },
+  { value: 'performance', label: 'Performance' },
+  { value: 'escala', label: 'Escala' },
+];
+
 export function EditPlatformDialog({ open, onClose, platform }: EditPlatformDialogProps) {
+  const { currentUser } = useAuth();
+  const isAdmin = currentUser?.accessLevel === 3;
   const { data: appUsers = [] } = useAppUsersQuery();
   const { data: clients = [] } = useClientsQuery();
   const { data: clientStatuses = [] } = useClientStatusesQuery('clients');
@@ -45,7 +55,7 @@ export function EditPlatformDialog({ open, onClose, platform }: EditPlatformDial
 
   // Platform fields
   const [clientType, setClientType] = useState(platform.qualityLevel || 'Seller');
-  
+  const [platformPhase, setPlatformPhase] = useState(platform.phase || 'onboarding');
   const [healthColor, setHealthColor] = useState(platform.healthColor || 'green');
   const [origin, setOrigin] = useState(platform.origin || '');
   const [salesResponsible, setSalesResponsible] = useState(platform.salesResponsible || '');
@@ -68,7 +78,7 @@ export function EditPlatformDialog({ open, onClose, platform }: EditPlatformDial
   useEffect(() => {
     // Platform
     setClientType(platform.qualityLevel || 'Seller');
-    
+    setPlatformPhase(platform.phase || 'onboarding');
     setHealthColor(platform.healthColor || 'green');
     setOrigin(platform.origin || '');
     setSalesResponsible(platform.salesResponsible || '');
@@ -97,6 +107,7 @@ export function EditPlatformDialog({ open, onClose, platform }: EditPlatformDial
         id: platform.id,
         updates: {
           qualityLevel: clientType,
+          phase: platformPhase,
           healthColor,
           origin,
           salesResponsible,
@@ -283,6 +294,13 @@ export function EditPlatformDialog({ open, onClose, platform }: EditPlatformDial
                     </button>
                   ))}
                 </div>
+              </div>
+
+              <div>
+                <Label className="text-xs">Etapa da Plataforma</Label>
+                <select value={platformPhase} onChange={e => setPlatformPhase(e.target.value)} className={selectClass}>
+                  {PHASE_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                </select>
               </div>
 
               <div>

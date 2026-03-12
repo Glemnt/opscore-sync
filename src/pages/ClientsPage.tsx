@@ -13,6 +13,7 @@ import { PageHeader, StatusBadge } from '@/components/ui/shared';
 import { Client, ClientStatus } from '@/types';
 import { cn } from '@/lib/utils';
 import { useClients } from '@/contexts/ClientsContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { AddClientDialog } from '@/components/AddClientDialog';
 import { ClientDetailModal } from '@/components/ClientDetailModal';
 import { useClientStatusesQuery, useClientStatusesMap, useAddClientStatus, useDeleteClientStatus } from '@/hooks/useClientStatusesQuery';
@@ -34,6 +35,8 @@ const COLOR_OPTIONS = [
 ];
 
 export function ClientsPage() {
+  const { currentUser } = useAuth();
+  const isAdmin = currentUser?.accessLevel === 3;
   const { getVisibleClients } = useClients();
   const { squads } = useSquads();
   const { data: projects = [] } = useProjectsQuery();
@@ -134,7 +137,10 @@ export function ClientsPage() {
           className="px-3 py-2 text-sm bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition text-foreground"
         >
           <option value="all">Responsável</option>
-          {uniqueResponsibles.map((r) => <option key={r} value={r}>{r}</option>)}
+          {uniqueResponsibles.map((r) => {
+            const count = allClientPlatforms.filter(cp => cp.responsible === r).length;
+            return <option key={r} value={r}>{r} ({count})</option>;
+          })}
         </select>
 
         <select
@@ -223,7 +229,7 @@ export function ClientsPage() {
       {/* Grid */}
       <div className="grid grid-cols-3 gap-4">
         {filtered.map((client) => (
-          <ClientCard key={client.id} client={client} statusMap={statusMap} clientFlows={clientFlowsMap[client.id] ?? []} onClick={() => setSelectedClient(client)} />
+          <ClientCard key={client.id} client={client} statusMap={statusMap} clientFlows={clientFlowsMap[client.id] ?? []} onClick={() => setSelectedClient(client)} isAdmin={isAdmin} />
         ))}
       </div>
 
@@ -314,7 +320,7 @@ export function ClientsPage() {
   );
 }
 
-function ClientCard({ client, statusMap, clientFlows, onClick }: { client: Client; statusMap: Record<string, { label: string; className: string }>; clientFlows: { flowId: string; flowName: string }[]; onClick: () => void }) {
+function ClientCard({ client, statusMap, clientFlows, onClick, isAdmin }: { client: Client; statusMap: Record<string, { label: string; className: string }>; clientFlows: { flowId: string; flowName: string }[]; onClick: () => void; isAdmin: boolean }) {
   const statusConf = statusMap[client.status] ?? { label: client.status, className: 'bg-muted text-muted-foreground border-border' };
   const { squads } = useSquads();
   const { tasks } = useTasks();
@@ -408,23 +414,27 @@ function ClientCard({ client, statusMap, clientFlows, onClick }: { client: Clien
 
       {/* Metrics grid */}
       <div className="pt-3 border-t border-border">
-        <div className="grid grid-cols-5 gap-1">
+        <div className={cn("grid gap-1", isAdmin ? "grid-cols-5" : "grid-cols-3")}>
           <div className="text-center">
             <p className="text-sm font-bold text-foreground">{pendingTasks.length}</p>
             <p className="text-[10px] text-muted-foreground">Pendentes</p>
           </div>
-          <div className="text-center">
-            <p className="text-sm font-bold text-foreground">
-              {client.monthlyRevenue ? `R$${(client.monthlyRevenue / 1000).toFixed(1)}k` : '—'}
-            </p>
-            <p className="text-[10px] text-muted-foreground">Mensalidade</p>
-          </div>
-          <div className="text-center">
-            <p className="text-sm font-bold text-foreground">
-              {client.setupFee ? `R$${(client.setupFee / 1000).toFixed(1)}k` : '—'}
-            </p>
-            <p className="text-[10px] text-muted-foreground">Setup</p>
-          </div>
+          {isAdmin && (
+            <div className="text-center">
+              <p className="text-sm font-bold text-foreground">
+                {client.monthlyRevenue ? `R$${(client.monthlyRevenue / 1000).toFixed(1)}k` : '—'}
+              </p>
+              <p className="text-[10px] text-muted-foreground">Mensalidade</p>
+            </div>
+          )}
+          {isAdmin && (
+            <div className="text-center">
+              <p className="text-sm font-bold text-foreground">
+                {client.setupFee ? `R$${(client.setupFee / 1000).toFixed(1)}k` : '—'}
+              </p>
+              <p className="text-[10px] text-muted-foreground">Setup</p>
+            </div>
+          )}
           <div className="text-center">
             <p className="text-sm font-bold text-foreground">
               {client.contractDurationMonths ? `${client.contractDurationMonths}m` : '—'}

@@ -1,73 +1,33 @@
 
 
-## Plano: Ajustes de Faturamento, Etapa e Responsável
+## Plano: Corrigir dialogs de Gerar Demandas e Transferir Plataforma
 
-### 1. Restringir faturamento para admin apenas
+### Problema
+Os dialogs `GenerateDemandsDialog` e `TransferPlatformDialog` nunca aparecem porque estão renderizados no bloco `return` final do componente (linha 902-922), mas os botões que ativam o estado estão no bloco `return` do step 2.5 (linha 615-808). Como o step 2.5 faz um `return` antecipado, o código nunca chega à renderização dos dialogs.
 
-O acesso admin é controlado por `currentUser.accessLevel === 3`. Vou usar isso para ocultar dados financeiros em toda a UI.
+### Solução
 
-**Arquivos afetados:**
+**Arquivo: `src/pages/ProjectsPage.tsx`**
 
-- **`src/pages/DashboardPage.tsx`**: Importar `useAuth`, obter `currentUser`. Condicionar a exibição do card MRR (linhas 230-235), do gráfico "Receita por Plataforma" (linhas 309-336). Para non-admin, ocultar completamente esses componentes.
+Mover os dois blocos de renderização condicional dos dialogs (`generateTarget` e `transferTarget`) para dentro do bloco `return` do step 2.5, logo antes do `</div>` final (linha ~807), envolvendo tudo em um fragment `<>...</>`:
 
-- **`src/pages/ClientsPage.tsx`**: Importar `useAuth`. No grid de métricas do card (linhas 416-427), ocultar as colunas "Mensalidade" e "Setup" para non-admin, ajustando `grid-cols-5` para `grid-cols-3`.
+```tsx
+// Antes do fechamento do return do step 2.5 (linha 808):
+return (
+  <>
+    <div className="p-6 animate-fade-in">
+      {/* ... conteúdo existente do step 2.5 ... */}
+    </div>
 
-- **`src/components/ClientDetailModal.tsx`**: Importar `useAuth`. Ocultar campos "Mensalidade", "Setup Pago" no formulário de edição (linhas 362-368) e na visualização ReadOnlyField (linha 466) para non-admin.
+    {generateTarget && (
+      <GenerateDemandsDialog ... />
+    )}
+    {transferTarget && (
+      <TransferPlatformDialog ... />
+    )}
+  </>
+);
+```
 
-- **`src/components/EditPlatformDialog.tsx`**: Se houver campos financeiros visíveis, ocultar para non-admin.
-
-- **`src/components/AddPlatformSquadDialog.tsx`**: O campo "Faturamento" (revenue tier, linha 258) -- ocultar para non-admin.
-
-- **`src/pages/ReportsPage.tsx`**: Verificar e ocultar dados financeiros para non-admin.
-
-### 2. Adicionar campo de etapa da plataforma
-
-O campo `phase` já existe na tabela `client_platforms` com valores como `onboarding`. Vou expandir as opções para incluir as 4 etapas solicitadas.
-
-**Alterações:**
-
-- **`src/pages/ProjectsPage.tsx`** (linha 388-394): Atualizar `phaseLabels` para usar as novas etapas:
-  ```
-  onboarding: 'On-board'
-  implementacao: 'Implementação'
-  performance: 'Performance'
-  escala: 'Escala'
-  ```
-  Remover `active` e `inativo` (esses são status, não etapas).
-
-- **`src/components/EditPlatformDialog.tsx`** (linhas 197-201): A "Fase" do cliente (onboarding/reuniao_agendada) é do nível do cliente. Vou adicionar um campo separado de "Etapa da Plataforma" na seção "Dados da Plataforma" com as opções On-board, Implementação, Performance, Escala, que atualiza `cp.phase`.
-
-- **Cards na ProjectsPage** (linha 659): Já exibe `cp.phase` capitalizado. Vai refletir automaticamente.
-
-- **Filtro de fase nas abas** (ProjectsPage): Já filtra por `cp.phase`. As abas dinâmicas via `platform_phase_statuses` já permitem configurar. Garantir que as 4 etapas apareçam como opções.
-
-### 3. Remover responsável da aba Clientes
-
-Já foi feito na iteração anterior. Vou verificar que não restam vestígios.
-
-- **`src/pages/ClientsPage.tsx`**: O badge de responsável já foi removido do card. O filtro já usa `allClientPlatforms`. Confirmado.
-
-### 4. Filtro por responsável só do card da plataforma
-
-Já implementado na iteração anterior. O `uniqueResponsibles` e `matchResponsible` em ambas as páginas já usam apenas `cp.responsible`. Confirmado.
-
-### 5. Contagem de plataformas por responsável
-
-Adicionar ao dropdown de responsável no filtro das Squads um indicador de contagem:
-
-- **`src/pages/ProjectsPage.tsx`**: No select de responsável, mostrar `"Leonardo (3)"` ao lado de cada opção, contando quantas plataformas cada um gerencia no squad.
-
-- **`src/pages/ClientsPage.tsx`**: Similarmente, mostrar contagem no dropdown de responsável.
-
-### Resumo de arquivos a editar
-
-1. `src/pages/DashboardPage.tsx` -- ocultar MRR e receita por plataforma para non-admin
-2. `src/pages/ClientsPage.tsx` -- ocultar Mensalidade/Setup no card para non-admin; contagem no dropdown responsável
-3. `src/components/ClientDetailModal.tsx` -- ocultar campos financeiros para non-admin
-4. `src/components/AddPlatformSquadDialog.tsx` -- ocultar faturamento para non-admin
-5. `src/components/EditPlatformDialog.tsx` -- adicionar campo de etapa da plataforma; ocultar campos financeiros para non-admin
-6. `src/pages/ProjectsPage.tsx` -- atualizar phaseLabels; contagem no dropdown responsável
-7. `src/pages/ReportsPage.tsx` -- ocultar dados financeiros para non-admin
-
-Sem alterações de banco de dados necessárias. O campo `phase` em `client_platforms` já suporta texto livre.
+Nenhuma outra mudança necessária. A renderização no bloco final (linha 902-922) pode ser mantida para cobrir o step 3, ou removida se não houver botões lá.
 

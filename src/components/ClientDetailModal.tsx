@@ -26,6 +26,7 @@ import { useFlowsQuery } from '@/hooks/useFlowsQuery';
 import { useClientPlatformsQuery, useAddClientPlatform, useUpdateClientPlatform, useDeleteClientPlatform } from '@/hooks/useClientPlatformsQuery';
 import type { ClientPlatform } from '@/hooks/useClientPlatformsQuery';
 import { PlatformAttributesEditor } from '@/components/PlatformAttributesEditor';
+import { useAuth } from '@/contexts/AuthContext';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
@@ -207,6 +208,8 @@ interface ClientDetailModalProps {
 }
 
 export function ClientDetailModal({ client, open, onClose }: ClientDetailModalProps) {
+  const { currentUser } = useAuth();
+  const isAdmin = currentUser?.accessLevel === 3;
   const { updateClientField, addChatNote, deleteClient, updateClient } = useClients();
   const { squads } = useSquads();
   const { data: projects = [] } = useProjectsQuery();
@@ -358,14 +361,18 @@ export function ClientDetailModal({ client, open, onClose }: ClientDetailModalPr
                     <option value="reuniao_agendada">Reunião Agendada</option>
                   </select>
                 </div>
-                <div>
-                  <Label className="text-xs">Mensalidade (R$)</Label>
-                  <Input type="number" value={editData.monthlyRevenue ?? ''} onChange={e => setEditData(p => ({ ...p, monthlyRevenue: Number(e.target.value) }))} className="h-8 text-sm" />
-                </div>
-                <div>
-                  <Label className="text-xs">Setup Pago (R$)</Label>
-                  <Input type="number" value={editData.setupFee ?? ''} onChange={e => setEditData(p => ({ ...p, setupFee: Number(e.target.value) }))} className="h-8 text-sm" />
-                </div>
+                {isAdmin && (
+                  <div>
+                    <Label className="text-xs">Mensalidade (R$)</Label>
+                    <Input type="number" value={editData.monthlyRevenue ?? ''} onChange={e => setEditData(p => ({ ...p, monthlyRevenue: Number(e.target.value) }))} className="h-8 text-sm" />
+                  </div>
+                )}
+                {isAdmin && (
+                  <div>
+                    <Label className="text-xs">Setup Pago (R$)</Label>
+                    <Input type="number" value={editData.setupFee ?? ''} onChange={e => setEditData(p => ({ ...p, setupFee: Number(e.target.value) }))} className="h-8 text-sm" />
+                  </div>
+                )}
                 <div>
                   <Label className="text-xs">CNPJ</Label>
                   <Input value={editData.cnpj ?? ''} onChange={e => setEditData(p => ({ ...p, cnpj: e.target.value }))} placeholder="00.000.000/0000-00" className="h-8 text-sm" />
@@ -463,7 +470,7 @@ export function ClientDetailModal({ client, open, onClose }: ClientDetailModalPr
             <>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
                 <ReadOnlyField label="Entrada" value={formatDate(client.startDate)} />
-                <ReadOnlyField label="Mensalidade" value={client.monthlyRevenue ? `R$ ${client.monthlyRevenue.toLocaleString('pt-BR')}` : '—'} />
+                {isAdmin && <ReadOnlyField label="Mensalidade" value={client.monthlyRevenue ? `R$ ${client.monthlyRevenue.toLocaleString('pt-BR')}` : '—'} />}
                 <ReadOnlyField label="Squad" value={squad?.name ?? '—'} />
                 
               </div>

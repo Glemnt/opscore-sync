@@ -14,6 +14,7 @@ import { useAppUsersQuery } from '@/hooks/useAppUsersQuery';
 import { useClientsQuery } from '@/hooks/useClientsQuery';
 import { cn } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface AddPlatformSquadDialogProps {
   open: boolean;
@@ -39,6 +40,8 @@ const REVENUE_TIER_OPTIONS = [
 ];
 
 export function AddPlatformSquadDialog({ open, onClose, defaultSquadId }: AddPlatformSquadDialogProps) {
+  const { currentUser } = useAuth();
+  const isAdmin = currentUser?.accessLevel === 3;
   const { squads } = useSquads();
   const { data: platformOptions = [] } = usePlatformsQuery();
   const { data: appUsers = [] } = useAppUsersQuery();
@@ -254,26 +257,28 @@ export function AddPlatformSquadDialog({ open, onClose, defaultSquadId }: AddPla
             </div>
           </div>
 
-          <div>
-            <Label className="text-xs">Faturamento</Label>
-            <div className="flex gap-2 mt-1.5">
-              {REVENUE_TIER_OPTIONS.map(opt => (
-                <button
-                  key={opt.value}
-                  type="button"
-                  onClick={() => setRevenueTier(opt.value)}
-                  className={cn(
-                    'flex-1 px-3 py-1.5 text-xs rounded-lg border transition-all font-medium',
-                    revenueTier === opt.value
-                      ? 'border-primary bg-primary/10 text-primary ring-1 ring-primary/30'
-                      : 'border-border bg-card text-muted-foreground hover:border-primary/40'
-                  )}
-                >
-                  {opt.label}
-                </button>
-              ))}
+          {isAdmin && (
+            <div>
+              <Label className="text-xs">Faturamento</Label>
+              <div className="flex gap-2 mt-1.5">
+                {REVENUE_TIER_OPTIONS.map(opt => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => setRevenueTier(opt.value)}
+                    className={cn(
+                      'flex-1 px-3 py-1.5 text-xs rounded-lg border transition-all font-medium',
+                      revenueTier === opt.value
+                        ? 'border-primary bg-primary/10 text-primary ring-1 ring-primary/30'
+                        : 'border-border bg-card text-muted-foreground hover:border-primary/40'
+                    )}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
           <div>
             <Label className="text-xs">Saúde da Plataforma</Label>
