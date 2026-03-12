@@ -95,7 +95,7 @@ export function EditPlatformDialog({ open, onClose, platform }: EditPlatformDial
       setSquadId(client.squadId || '');
       setClientStartDate(client.startDate || '');
       setClientPotential(client.healthColor ?? 'white');
-      setClientPotential(client.healthColor ?? 'medium');
+      
       setPlatforms(client.platforms ?? []);
       setNotes(client.notes || '');
     }
