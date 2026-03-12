@@ -53,7 +53,7 @@ export function EditPlatformDialog({ open, onClose, platform }: EditPlatformDial
   // Client fields
   const [companyName, setCompanyName] = useState('');
   const [segment, setSegment] = useState('');
-  const [clientResponsible, setClientResponsible] = useState('');
+  
   const [status, setStatus] = useState('active');
   const [clientPhase, setClientPhase] = useState('onboarding');
   const [phone, setPhone] = useState('');
@@ -76,7 +76,7 @@ export function EditPlatformDialog({ open, onClose, platform }: EditPlatformDial
     if (client) {
       setCompanyName(client.companyName || '');
       setSegment(client.segment || '');
-      setClientResponsible(client.responsible || '');
+      
       setStatus(client.status || 'active');
       setClientPhase((client as any).phase || 'onboarding');
       setPhone(client.phone || '');
@@ -137,7 +137,7 @@ export function EditPlatformDialog({ open, onClose, platform }: EditPlatformDial
           updates: {
             companyName,
             segment,
-            responsible: clientResponsible,
+            
             status,
             phase: clientPhase,
             phone,
@@ -185,13 +185,6 @@ export function EditPlatformDialog({ open, onClose, platform }: EditPlatformDial
               <div>
                 <Label className="text-xs">Segmento</Label>
                 <Input value={segment} onChange={e => setSegment(e.target.value)} className="h-8 text-sm" />
-              </div>
-              <div>
-                <Label className="text-xs">Responsável</Label>
-                <select value={clientResponsible} onChange={e => setClientResponsible(e.target.value)} className={selectClass}>
-                  <option value="">Selecione...</option>
-                  {appUsers.map(u => <option key={u.id} value={u.name}>{u.name}</option>)}
-                </select>
               </div>
               <div>
                 <Label className="text-xs">Status</Label>
