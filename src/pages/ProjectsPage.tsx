@@ -517,8 +517,11 @@ export function ProjectsPage() {
             onChange={(e) => setSquadPlatformFilter(e.target.value)}
             className="px-3 py-2 text-sm bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition text-foreground">
             
-            <option value="all">Plataforma</option>
-            {platformOptions.map((p) => <option key={p.slug} value={p.slug}>{p.name}</option>)}
+            <option value="all">Plataforma ({squadPlatformEntries.length})</option>
+            {platformOptions.map((p) => {
+              const count = squadPlatformEntries.filter(e => e.cp.platformSlug === p.slug).length;
+              return <option key={p.slug} value={p.slug}>{p.name} ({count})</option>;
+            })}
           </select>
 
           <select
