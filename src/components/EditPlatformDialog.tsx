@@ -145,7 +145,7 @@ export function EditPlatformDialog({ open, onClose, platform }: EditPlatformDial
         }
       });
 
-      // Update client
+      // Update client (do NOT change squadId here — this is a platform edit, not a client edit)
       updateClientMut.mutate(
         {
           id: client.id,
@@ -158,7 +158,6 @@ export function EditPlatformDialog({ open, onClose, platform }: EditPlatformDial
             phone,
             email,
             contractDurationMonths: contractDuration,
-            squadId: squadId || null,
             startDate: clientStartDate,
             healthColor: clientPotential,
             platforms,
