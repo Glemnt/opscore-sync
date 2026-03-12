@@ -399,7 +399,7 @@ export function ProjectsPage() {
     const filteredPlatformEntries = squadPlatformEntries.filter((e) => {
       const matchSearch = e.client.name.toLowerCase().includes(search.toLowerCase()) || e.platformName.toLowerCase().includes(search.toLowerCase());
       const matchStatus = squadStatusFilter === 'all' || e.cp.phase === squadStatusFilter;
-      const matchResponsible = squadResponsibleFilter === 'all' || e.cp.responsible === squadResponsibleFilter || e.client.responsible === squadResponsibleFilter;
+      const matchResponsible = squadResponsibleFilter === 'all' || e.cp.responsible === squadResponsibleFilter;
       const matchHealth = squadHealthFilter === 'all' || (e.cp.healthColor ?? 'white') === squadHealthFilter;
       const matchPlatform = squadPlatformFilter === 'all' || e.cp.platformSlug === squadPlatformFilter;
       const matchQuality = squadQualityFilter === 'all' || (e.cp.qualityLevel ?? '') === squadQualityFilter;

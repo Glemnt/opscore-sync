@@ -382,12 +382,6 @@ function ClientCard({ client, statusMap, clientFlows, onClick }: { client: Clien
 
       {/* Metadata line: Responsible + Entry Date */}
       <div className="flex flex-wrap items-center gap-1.5 mb-3">
-        {client.responsible && (
-          <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground bg-muted/60 rounded-md px-2 py-1 font-medium">
-            <User className="w-3 h-3 shrink-0" />
-            {client.responsible}
-          </span>
-        )}
         <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground bg-muted/60 rounded-md px-2 py-1 font-medium">
           <Calendar className="w-3 h-3 shrink-0" />
           {new Date(client.startDate + 'T00:00:00').toLocaleDateString('pt-BR')}

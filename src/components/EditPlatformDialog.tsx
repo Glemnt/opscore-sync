@@ -76,7 +76,7 @@ export function EditPlatformDialog({ open, onClose, platform }: EditPlatformDial
     if (client) {
       setCompanyName(client.companyName || '');
       setSegment(client.segment || '');
-      setClientResponsible(client.responsible || '');
+      
       setStatus(client.status || 'active');
       setClientPhase((client as any).phase || 'onboarding');
       setPhone(client.phone || '');

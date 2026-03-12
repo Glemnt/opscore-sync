@@ -259,13 +259,6 @@ export function AddClientDialog({ open, onClose, hideFields = [], defaultSquadId
                   {squads.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                 </select>
               </div>
-              <div>
-                <Label className="text-xs">Responsável</Label>
-                <select value={responsible} onChange={e => setResponsible(e.target.value)} className="w-full h-8 px-2 text-sm bg-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring text-foreground">
-                  <option value="">Selecione...</option>
-                  {appUsers.map(u => <option key={u.id} value={u.name}>{u.name}</option>)}
-                </select>
-              </div>
             </div>
             <div>
               <Label className="text-xs">Dia de Pagamento</Label>
