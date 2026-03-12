@@ -69,7 +69,8 @@ export function ClientsPage() {
   ];
 
   const { data: platforms = [] } = usePlatformsQuery();
-  const uniqueResponsibles = [...new Set(clients.map(c => c.responsible).filter(Boolean))];
+  const { data: allClientPlatforms = [] } = useClientPlatformsQuery();
+  const uniqueResponsibles = [...new Set(allClientPlatforms.map(cp => cp.responsible).filter(Boolean))];
 
   const filtered = clients.filter((c) => {
     const matchSearch = c.name.toLowerCase().includes(search.toLowerCase()) || c.segment.toLowerCase().includes(search.toLowerCase());
