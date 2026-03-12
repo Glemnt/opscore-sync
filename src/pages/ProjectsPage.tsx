@@ -264,6 +264,25 @@ export function ProjectsPage() {
                     <span>•</span>
                     <span className="text-primary font-semibold">{activeClients} ativos</span>
                   </div>
+                  {(() => {
+                    const squadCPs = clientPlatformsData.filter(cp => cp.squadId === squad.id);
+                    const platCounts: Record<string, number> = {};
+                    squadCPs.forEach(cp => { platCounts[cp.platformSlug] = (platCounts[cp.platformSlug] || 0) + 1; });
+                    const entries = Object.entries(platCounts);
+                    if (entries.length === 0) return null;
+                    return (
+                      <div className="mt-2 flex flex-wrap gap-1">
+                        {entries.map(([slug, count]) => {
+                          const pName = platformOptions.find(p => p.slug === slug)?.name ?? slug;
+                          return (
+                            <span key={slug} className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-muted text-muted-foreground border border-border">
+                              {pName} <span className="font-bold text-foreground">{count}</span>
+                            </span>
+                          );
+                        })}
+                      </div>
+                    );
+                  })()}
                   <div className="mt-3 flex flex-wrap gap-1">
                     {squad.members.map((m) =>
                     <Avatar key={m} name={m} size="sm" />
@@ -498,8 +517,11 @@ export function ProjectsPage() {
             onChange={(e) => setSquadPlatformFilter(e.target.value)}
             className="px-3 py-2 text-sm bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition text-foreground">
             
-            <option value="all">Plataforma</option>
-            {platformOptions.map((p) => <option key={p.slug} value={p.slug}>{p.name}</option>)}
+            <option value="all">Plataforma ({squadPlatformEntries.length})</option>
+            {platformOptions.map((p) => {
+              const count = squadPlatformEntries.filter(e => e.cp.platformSlug === p.slug).length;
+              return <option key={p.slug} value={p.slug}>{p.name} ({count})</option>;
+            })}
           </select>
 
           <select
@@ -532,6 +554,44 @@ export function ProjectsPage() {
             }
           </div>
         </div>
+
+        {/* Platform summary chips */}
+        {(() => {
+          const platCounts: Record<string, number> = {};
+          squadPlatformEntries.forEach(e => { platCounts[e.cp.platformSlug] = (platCounts[e.cp.platformSlug] || 0) + 1; });
+          const entries = Object.entries(platCounts).filter(([, c]) => c > 0);
+          if (entries.length === 0) return null;
+          return (
+            <div className="flex flex-wrap items-center gap-2 mb-3">
+              <button
+                onClick={() => setSquadPlatformFilter('all')}
+                className={cn(
+                  'px-3 py-1.5 rounded-lg text-xs font-medium border transition-all',
+                  squadPlatformFilter === 'all'
+                    ? 'bg-primary text-primary-foreground border-primary shadow-sm'
+                    : 'bg-card text-muted-foreground border-border hover:text-foreground hover:border-primary/40'
+                )}>
+                Todas ({squadPlatformEntries.length})
+              </button>
+              {entries.map(([slug, count]) => {
+                const pName = platformOptions.find(p => p.slug === slug)?.name ?? slug;
+                return (
+                  <button
+                    key={slug}
+                    onClick={() => setSquadPlatformFilter(squadPlatformFilter === slug ? 'all' : slug)}
+                    className={cn(
+                      'px-3 py-1.5 rounded-lg text-xs font-medium border transition-all',
+                      squadPlatformFilter === slug
+                        ? 'bg-primary text-primary-foreground border-primary shadow-sm'
+                        : 'bg-card text-muted-foreground border-border hover:text-foreground hover:border-primary/40'
+                    )}>
+                    {pName} ({count})
+                  </button>
+                );
+              })}
+            </div>
+          );
+        })()}
 
         {/* Row 2: Phase filter tabs */}
         <div className="flex items-center gap-1.5 bg-card border border-border rounded-lg p-1 mb-5">

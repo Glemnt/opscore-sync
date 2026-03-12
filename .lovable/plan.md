@@ -1,50 +1,33 @@
 
 
-## Plano: Resumo visual por plataforma + filtro interativo na tela do Squad
+## Plano: Corrigir dialogs de Gerar Demandas e Transferir Plataforma
 
-### Situacao atual
+### Problema
+Os dialogs `GenerateDemandsDialog` e `TransferPlatformDialog` nunca aparecem porque estão renderizados no bloco `return` final do componente (linha 902-922), mas os botões que ativam o estado estão no bloco `return` do step 2.5 (linha 615-808). Como o step 2.5 faz um `return` antecipado, o código nunca chega à renderização dos dialogs.
 
-- O **responsavel** ja aparece no card (linha 620) e ja e editavel na criacao e edicao.
-- O **filtro por plataforma** ja existe como dropdown (linha 496-503) mas **sem contagem**.
-- O **filtro por responsavel** ja existe com contagem (linha 472-482).
-- Falta uma **barra visual de resumo** mostrando quantas plataformas de cada tipo existem no squad.
+### Solução
 
-### O que sera feito
+**Arquivo: `src/pages/ProjectsPage.tsx`**
 
-**1. Adicionar barra de resumo por plataforma (chips clicaveis com contagem)**
+Mover os dois blocos de renderização condicional dos dialogs (`generateTarget` e `transferTarget`) para dentro do bloco `return` do step 2.5, logo antes do `</div>` final (linha ~807), envolvendo tudo em um fragment `<>...</>`:
 
-Entre os filtros (Row 1) e as abas de fase (Row 2), adicionar uma linha de chips visuais mostrando cada plataforma e sua contagem no squad. Exemplo:
+```tsx
+// Antes do fechamento do return do step 2.5 (linha 808):
+return (
+  <>
+    <div className="p-6 animate-fade-in">
+      {/* ... conteúdo existente do step 2.5 ... */}
+    </div>
 
-```text
-[ Mercado Livre (10) ] [ Shopee (7) ] [ Shein (5) ] [ TikTok Shop (2) ] [ Todas (24) ]
+    {generateTarget && (
+      <GenerateDemandsDialog ... />
+    )}
+    {transferTarget && (
+      <TransferPlatformDialog ... />
+    )}
+  </>
+);
 ```
 
-- Cada chip e clicavel e funciona como filtro (seta `squadPlatformFilter`)
-- O chip ativo fica destacado com estilo primary
-- A contagem e calculada a partir de `squadPlatformEntries` (fonte de verdade: `client_platforms`)
-- Apenas plataformas que existem no squad aparecem (contagem > 0)
-
-**2. Adicionar contagem ao dropdown de plataforma existente**
-
-O `<select>` de Plataforma (linha 496-503) passara a mostrar contagem, igual ao de Responsavel:
-```
-Mercado Livre (10)
-Shopee (7)
-```
-
-**3. Adicionar contagem ao card do Squad na listagem inicial**
-
-No card de cada squad (linhas 262-266), alem de "X clientes" e "Y ativos", adicionar chips pequenos mostrando a distribuicao por plataforma:
-```text
-ML 10 | Shopee 7 | Shein 5
-```
-
-### Arquivo alterado
-
-`src/pages/ProjectsPage.tsx`:
-- **Card do squad** (~linha 262): adicionar chips de contagem por plataforma
-- **Squad detail view** (~linha 534): inserir barra de chips clicaveis entre Row 1 e Row 2
-- **Dropdown de plataforma** (~linha 496): adicionar contagem por opcao
-
-Nenhuma alteracao de banco necessaria — todos os dados ja existem em `client_platforms`.
+Nenhuma outra mudança necessária. A renderização no bloco final (linha 902-922) pode ser mantida para cobrir o step 3, ou removida se não houver botões lá.
 
