@@ -555,6 +555,44 @@ export function ProjectsPage() {
           </div>
         </div>
 
+        {/* Platform summary chips */}
+        {(() => {
+          const platCounts: Record<string, number> = {};
+          squadPlatformEntries.forEach(e => { platCounts[e.cp.platformSlug] = (platCounts[e.cp.platformSlug] || 0) + 1; });
+          const entries = Object.entries(platCounts).filter(([, c]) => c > 0);
+          if (entries.length === 0) return null;
+          return (
+            <div className="flex flex-wrap items-center gap-2 mb-3">
+              <button
+                onClick={() => setSquadPlatformFilter('all')}
+                className={cn(
+                  'px-3 py-1.5 rounded-lg text-xs font-medium border transition-all',
+                  squadPlatformFilter === 'all'
+                    ? 'bg-primary text-primary-foreground border-primary shadow-sm'
+                    : 'bg-card text-muted-foreground border-border hover:text-foreground hover:border-primary/40'
+                )}>
+                Todas ({squadPlatformEntries.length})
+              </button>
+              {entries.map(([slug, count]) => {
+                const pName = platformOptions.find(p => p.slug === slug)?.name ?? slug;
+                return (
+                  <button
+                    key={slug}
+                    onClick={() => setSquadPlatformFilter(squadPlatformFilter === slug ? 'all' : slug)}
+                    className={cn(
+                      'px-3 py-1.5 rounded-lg text-xs font-medium border transition-all',
+                      squadPlatformFilter === slug
+                        ? 'bg-primary text-primary-foreground border-primary shadow-sm'
+                        : 'bg-card text-muted-foreground border-border hover:text-foreground hover:border-primary/40'
+                    )}>
+                    {pName} ({count})
+                  </button>
+                );
+              })}
+            </div>
+          );
+        })()}
+
         {/* Row 2: Phase filter tabs */}
         <div className="flex items-center gap-1.5 bg-card border border-border rounded-lg p-1 mb-5">
           <button
