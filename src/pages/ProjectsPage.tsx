@@ -665,7 +665,7 @@ export function ProjectsPage() {
 
                         {/* Footer: Phase + Actions */}
                         <div className="flex items-center justify-between text-xs text-muted-foreground pt-2 border-t border-border/50">
-                          <span className="text-xs font-medium text-muted-foreground capitalize">{cp.phase}</span>
+                          <span className="text-xs font-medium text-muted-foreground">{phaseLabels[cp.phase] ?? cp.phase}</span>
                           <div className="flex items-center gap-0.5">
                             <Button variant="ghost" size="icon" className="h-6 w-6" title="Editar"
                               onClick={(e) => { e.stopPropagation(); setEditingPlatform(cp); }}>

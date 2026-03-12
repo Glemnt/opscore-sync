@@ -328,56 +328,84 @@ export function DashboardPage() {
       </div>
 
       {/* Charts row */}
-      <div className="grid grid-cols-3 gap-4 mb-6">
-        {/* Weekly tasks chart */}
-        <div className="col-span-2 bg-card rounded-xl border border-border p-5 shadow-sm-custom">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h3 className="text-sm font-semibold text-foreground">Tarefas da Semana</h3>
-              <p className="text-xs text-muted-foreground">Concluídas vs. Abertas</p>
-            </div>
-            <span className="text-xs bg-primary-light text-primary px-2 py-1 rounded-md font-medium">Esta semana</span>
-          </div>
-          <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={weeklyData} barGap={4}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(220 13% 90%)" vertical={false} />
-              <XAxis dataKey="day" tick={{ fontSize: 11, fill: 'hsl(215 16% 47%)' }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fontSize: 11, fill: 'hsl(215 16% 47%)' }} axisLine={false} tickLine={false} />
-              <Tooltip contentStyle={{ background: 'hsl(0 0% 100%)', border: '1px solid hsl(220 13% 90%)', borderRadius: '8px', fontSize: '12px' }} cursor={{ fill: 'hsl(220 20% 97%)' }} />
-              <Bar dataKey="concluidas" name="Concluídas" fill="hsl(238 75% 52%)" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="abertas" name="Abertas" fill="hsl(220 13% 88%)" radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
+      {(() => {
+        const now2 = new Date();
+        const weekStart = startOfWeek(now2, { weekStartsOn: 1 });
+        const weekEnd = endOfWeek(now2, { weekStartsOn: 1 });
+        const dayNames = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab', 'Dom'];
+        const weeklyData = dayNames.map((day, i) => {
+          const dayIndex = i + 1; // 1=Mon..7=Sun mapped to getDay: Mon=1..Sun=0
+          const gdIndex = dayIndex === 7 ? 0 : dayIndex;
+          const dayTasks = tasks.filter(t => {
+            const d = new Date(t.deadline);
+            return isWithinInterval(d, { start: weekStart, end: weekEnd }) && getDay(d) === gdIndex;
+          });
+          return {
+            day,
+            concluidas: dayTasks.filter(t => t.status === 'done').length,
+            abertas: dayTasks.filter(t => t.status !== 'done').length,
+          };
+        });
 
-        {/* Pie chart */}
-        <div className="bg-card rounded-xl border border-border p-5 shadow-sm-custom">
-          <div className="mb-4">
-            <h3 className="text-sm font-semibold text-foreground">Tipos de Tarefa</h3>
-            <p className="text-xs text-muted-foreground">Distribuição atual</p>
-          </div>
-          <div className="flex justify-center mb-3">
-            <PieChart width={140} height={140}>
-              <Pie data={taskTypeData} cx={65} cy={65} innerRadius={40} outerRadius={65} dataKey="value" strokeWidth={2}>
-                {taskTypeData.map((entry, index) => (
-                  <Cell key={index} fill={entry.color} />
-                ))}
-              </Pie>
-            </PieChart>
-          </div>
-          <div className="space-y-1.5">
-            {taskTypeData.map((item) => (
-              <div key={item.name} className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="w-2.5 h-2.5 rounded-full" style={{ background: item.color }} />
-                  <span className="text-xs text-muted-foreground">{item.name}</span>
+        const TYPE_COLORS = ['#6366f1', '#ec4899', '#8b5cf6', '#06b6d4', '#f97316', '#10b981', '#64748b', '#f59e0b'];
+        const taskTypeData = taskTypes.map((tt, i) => ({
+          name: tt.label,
+          value: tasks.filter(t => t.type === tt.key).length,
+          color: TYPE_COLORS[i % TYPE_COLORS.length],
+        })).filter(d => d.value > 0);
+        const totalTypeTasks = taskTypeData.reduce((s, d) => s + d.value, 0) || 1;
+
+        return (
+          <div className="grid grid-cols-3 gap-4 mb-6">
+            <div className="col-span-2 bg-card rounded-xl border border-border p-5 shadow-sm-custom">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h3 className="text-sm font-semibold text-foreground">Tarefas da Semana</h3>
+                  <p className="text-xs text-muted-foreground">Concluídas vs. Abertas</p>
                 </div>
-                <span className="text-xs font-semibold text-foreground">{item.value}%</span>
+                <span className="text-xs bg-primary-light text-primary px-2 py-1 rounded-md font-medium">Esta semana</span>
               </div>
-            ))}
+              <ResponsiveContainer width="100%" height={200}>
+                <BarChart data={weeklyData} barGap={4}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(220 13% 90%)" vertical={false} />
+                  <XAxis dataKey="day" tick={{ fontSize: 11, fill: 'hsl(215 16% 47%)' }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 11, fill: 'hsl(215 16% 47%)' }} axisLine={false} tickLine={false} />
+                  <Tooltip contentStyle={{ background: 'hsl(0 0% 100%)', border: '1px solid hsl(220 13% 90%)', borderRadius: '8px', fontSize: '12px' }} cursor={{ fill: 'hsl(220 20% 97%)' }} />
+                  <Bar dataKey="concluidas" name="Concluídas" fill="hsl(238 75% 52%)" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="abertas" name="Abertas" fill="hsl(220 13% 88%)" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+
+            <div className="bg-card rounded-xl border border-border p-5 shadow-sm-custom">
+              <div className="mb-4">
+                <h3 className="text-sm font-semibold text-foreground">Tipos de Tarefa</h3>
+                <p className="text-xs text-muted-foreground">Distribuição atual</p>
+              </div>
+              <div className="flex justify-center mb-3">
+                <PieChart width={140} height={140}>
+                  <Pie data={taskTypeData} cx={65} cy={65} innerRadius={40} outerRadius={65} dataKey="value" strokeWidth={2}>
+                    {taskTypeData.map((entry, index) => (
+                      <Cell key={index} fill={entry.color} />
+                    ))}
+                  </Pie>
+                </PieChart>
+              </div>
+              <div className="space-y-1.5">
+                {taskTypeData.map((item) => (
+                  <div key={item.name} className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2.5 h-2.5 rounded-full" style={{ background: item.color }} />
+                      <span className="text-xs text-muted-foreground">{item.name}</span>
+                    </div>
+                    <span className="text-xs font-semibold text-foreground">{Math.round((item.value / totalTypeTasks) * 100)}%</span>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
+        );
+      })()}
 
       {/* Bottom row */}
       <div className="grid grid-cols-3 gap-4">

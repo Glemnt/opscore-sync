@@ -41,17 +41,6 @@ export function LoginPage() {
         </div>
 
         <form onSubmit={handleSubmit} className="bg-card border border-border rounded-xl p-6 shadow-sm space-y-4">
-          {isSignup && (
-            <div className="space-y-2">
-              <Label htmlFor="name">Nome</Label>
-              <Input
-                id="name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Seu nome completo"
-              />
-            </div>
-          )}
           <div className="space-y-2">
             <Label htmlFor="email">E-mail</Label>
             <Input
@@ -75,20 +64,10 @@ export function LoginPage() {
           </div>
 
           {error && <p className="text-sm text-destructive font-medium">{error}</p>}
-          {message && <p className="text-sm text-primary font-medium">{message}</p>}
 
           <Button type="submit" className="w-full gradient-primary shadow-primary" disabled={loading}>
-            {isSignup ? <UserPlus className="w-4 h-4 mr-2" /> : <LogIn className="w-4 h-4 mr-2" />}
-            {loading ? 'Aguarde...' : isSignup ? 'Criar conta' : 'Entrar'}
-          </Button>
-
-          <Button
-            type="button"
-            variant="ghost"
-            className="w-full text-sm"
-            onClick={() => { setIsSignup(!isSignup); setError(''); setMessage(''); }}
-          >
-            {isSignup ? 'Já tem conta? Faça login' : 'Não tem conta? Cadastre-se'}
+            <LogIn className="w-4 h-4 mr-2" />
+            {loading ? 'Aguarde...' : 'Entrar'}
           </Button>
         </form>
       </div>

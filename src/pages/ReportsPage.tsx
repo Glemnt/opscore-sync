@@ -278,16 +278,16 @@ export function ReportsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {Object.entries(taskTypeConfig).map(([type, conf]) => {
-                const typeTasks = tasks.filter(t => t.type === type);
+              {dynamicTaskTypes.map(tt => {
+                const typeTasks = tasks.filter(t => t.type === tt.key);
                 const avgTime = typeTasks.length > 0
                   ? (typeTasks.reduce((a, t) => a + t.estimatedTime, 0) / typeTasks.length).toFixed(1)
                   : '—';
                 return (
-                  <tr key={type} className="hover:bg-muted/20 transition-colors">
+                  <tr key={tt.key} className="hover:bg-muted/20 transition-colors">
                     <td className="py-2.5 px-4">
-                      <span className={cn('text-xs px-2 py-0.5 rounded-md font-medium', conf.color)}>
-                        {conf.label}
+                      <span className={cn('text-xs px-2 py-0.5 rounded-md font-medium', tt.color)}>
+                        {tt.label}
                       </span>
                     </td>
                     <td className="py-2.5 px-4 text-sm text-muted-foreground">{typeTasks.length}</td>
