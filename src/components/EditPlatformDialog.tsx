@@ -94,6 +94,7 @@ export function EditPlatformDialog({ open, onClose, platform }: EditPlatformDial
       setContractDuration(client.contractDurationMonths ?? 6);
       setSquadId(client.squadId || '');
       setClientStartDate(client.startDate || '');
+      setClientPotential(client.healthColor ?? 'white');
       setClientPotential(client.healthColor ?? 'medium');
       setPlatforms(client.platforms ?? []);
       setNotes(client.notes || '');
