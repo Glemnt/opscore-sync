@@ -72,7 +72,7 @@ export function AddPlatformSquadDialog({ open, onClose, defaultSquadId }: AddPla
   };
 
   const existingPlatformSlugs = clientPlatformsData
-    .filter(cp => cp.clientId === clientId)
+    .filter(cp => cp.clientId === clientId && cp.squadId === defaultSquadId)
     .map(cp => cp.platformSlug);
 
   const handleClientChange = (newClientId: string) => {
