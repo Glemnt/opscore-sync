@@ -132,7 +132,7 @@ export function EditPlatformDialog({ open, onClose, platform }: EditPlatformDial
         addClientPlatformMut.mutate({
           clientId: client.id,
           platformSlug: slug,
-          squadId: squadId || null,
+          squadId: platform.squadId || null,
         });
       });
 
@@ -145,7 +145,7 @@ export function EditPlatformDialog({ open, onClose, platform }: EditPlatformDial
         }
       });
 
-      // Update client
+      // Update client (do NOT change squadId here — this is a platform edit, not a client edit)
       updateClientMut.mutate(
         {
           id: client.id,
@@ -158,7 +158,6 @@ export function EditPlatformDialog({ open, onClose, platform }: EditPlatformDial
             phone,
             email,
             contractDurationMonths: contractDuration,
-            squadId: squadId || null,
             startDate: clientStartDate,
             healthColor: clientPotential,
             platforms,
@@ -224,7 +223,7 @@ export function EditPlatformDialog({ open, onClose, platform }: EditPlatformDial
               </div>
               <div>
                 <Label className="text-xs">Squad</Label>
-                <select value={squadId} onChange={e => setSquadId(e.target.value)} className={selectClass}>
+                <select value={squadId} disabled className={cn(selectClass, "opacity-60 cursor-not-allowed")}>
                   <option value="">—</option>
                   {squads.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                 </select>
