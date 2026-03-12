@@ -58,6 +58,7 @@ export function EditPlatformDialog({ open, onClose, platform }: EditPlatformDial
   const [platformPhase, setPlatformPhase] = useState(platform.phase || 'onboarding');
   const [healthColor, setHealthColor] = useState(platform.healthColor || 'green');
   const [origin, setOrigin] = useState(platform.origin || '');
+  const [responsible, setResponsible] = useState(platform.responsible || '');
   const [salesResponsible, setSalesResponsible] = useState(platform.salesResponsible || '');
 
   // Client fields
@@ -81,6 +82,7 @@ export function EditPlatformDialog({ open, onClose, platform }: EditPlatformDial
     setPlatformPhase(platform.phase || 'onboarding');
     setHealthColor(platform.healthColor || 'green');
     setOrigin(platform.origin || '');
+    setResponsible(platform.responsible || '');
     setSalesResponsible(platform.salesResponsible || '');
     // Client
     if (client) {
@@ -111,6 +113,7 @@ export function EditPlatformDialog({ open, onClose, platform }: EditPlatformDial
           phase: platformPhase,
           healthColor,
           origin,
+          responsible,
           salesResponsible,
         },
       },
@@ -312,6 +315,14 @@ export function EditPlatformDialog({ open, onClose, platform }: EditPlatformDial
                   placeholder="Ex: Indicação, Google Ads..."
                   className="h-8 text-sm"
                 />
+              </div>
+
+              <div>
+                <Label className="text-xs">Responsável da Plataforma</Label>
+                <select value={responsible} onChange={e => setResponsible(e.target.value)} className={selectClass}>
+                  <option value="">Selecione...</option>
+                  {appUsers.map(u => <option key={u.id} value={u.name}>{u.name}</option>)}
+                </select>
               </div>
 
               <div>
