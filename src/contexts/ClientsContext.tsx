@@ -97,8 +97,9 @@ export function ClientsProvider({ children }: { children: ReactNode }) {
   const getVisibleClients = useCallback((): Client[] => {
     if (!currentUser) return [];
     if (currentUser.accessLevel === 3) return clients;
-    return clients.filter((c) => currentUser.squadIds.includes(c.squadId));
-  }, [currentUser, clients]);
+    const leaderSquadIds = new Set(squads.filter(s => s.leader === currentUser.name).map(s => s.id));
+    return clients.filter((c) => currentUser.squadIds.includes(c.squadId) || leaderSquadIds.has(c.squadId));
+  }, [currentUser, clients, squads]);
 
   return (
     <ClientsContext.Provider value={{ clients, isLoading, addClient, deleteClient, updateClient, updateClientField, addChatNote, getVisibleClients }}>

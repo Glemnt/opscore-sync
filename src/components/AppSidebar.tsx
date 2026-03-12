@@ -42,7 +42,7 @@ export function AppSidebar({ currentPage, onNavigate }: AppSidebarProps) {
   };
 
   const userSquadNames = currentUser
-    ? squads.filter((s) => currentUser.squadIds.includes(s.id)).map((s) => s.name)
+    ? squads.filter((s) => currentUser.squadIds.includes(s.id) || s.leader === currentUser.name).map((s) => s.name)
     : [];
 
   const accessInfo = currentUser ? accessLevelConfig[currentUser.accessLevel] : null;
