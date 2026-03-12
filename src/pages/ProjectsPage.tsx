@@ -264,6 +264,25 @@ export function ProjectsPage() {
                     <span>•</span>
                     <span className="text-primary font-semibold">{activeClients} ativos</span>
                   </div>
+                  {(() => {
+                    const squadCPs = clientPlatformsData.filter(cp => cp.squadId === squad.id);
+                    const platCounts: Record<string, number> = {};
+                    squadCPs.forEach(cp => { platCounts[cp.platformSlug] = (platCounts[cp.platformSlug] || 0) + 1; });
+                    const entries = Object.entries(platCounts);
+                    if (entries.length === 0) return null;
+                    return (
+                      <div className="mt-2 flex flex-wrap gap-1">
+                        {entries.map(([slug, count]) => {
+                          const pName = platformOptions.find(p => p.slug === slug)?.name ?? slug;
+                          return (
+                            <span key={slug} className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-muted text-muted-foreground border border-border">
+                              {pName} <span className="font-bold text-foreground">{count}</span>
+                            </span>
+                          );
+                        })}
+                      </div>
+                    );
+                  })()}
                   <div className="mt-3 flex flex-wrap gap-1">
                     {squad.members.map((m) =>
                     <Avatar key={m} name={m} size="sm" />
