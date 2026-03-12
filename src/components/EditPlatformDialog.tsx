@@ -10,6 +10,7 @@ import { usePlatformsQuery } from '@/hooks/usePlatformsQuery';
 import { useSquads } from '@/contexts/SquadsContext';
 import { cn } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 
 
 interface EditPlatformDialogProps {
