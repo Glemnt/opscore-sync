@@ -605,11 +605,12 @@ export function ProjectsPage() {
 
                         {/* Health badge */}
                         <div className="flex flex-wrap items-center gap-1.5 mb-2.5 pt-2 border-t border-border/50">
-                          {(() => {
+                        {(() => {
                             const hMap: Record<string, { emoji: string; label: string; cls: string }> = {
                               green: { emoji: '🟢', label: 'Excelente', cls: 'bg-success/15 text-success border-success/30' },
-                              orange: { emoji: '🟠', label: 'Mediano', cls: 'bg-warning/15 text-warning border-warning/30' },
+                              yellow: { emoji: '🟡', label: 'Atenção', cls: 'bg-warning/15 text-warning border-warning/30' },
                               red: { emoji: '🔴', label: 'Ruim', cls: 'bg-destructive/15 text-destructive border-destructive/30' },
+                              white: { emoji: '⚪', label: 'Não avaliado', cls: 'bg-muted text-muted-foreground border-border/50' },
                             };
                             const h = cp.healthColor ? hMap[cp.healthColor] : null;
                             return (
