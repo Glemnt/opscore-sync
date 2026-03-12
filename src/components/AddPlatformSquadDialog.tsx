@@ -221,7 +221,7 @@ export function AddPlatformSquadDialog({ open, onClose, defaultSquadId }: AddPla
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label className="text-xs">Responsável pelo Onboarding</Label>
+              <Label className="text-xs">Responsável da Plataforma</Label>
               <select
                 value={responsible}
                 onChange={e => setResponsible(e.target.value)}
