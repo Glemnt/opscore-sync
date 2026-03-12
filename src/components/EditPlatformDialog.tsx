@@ -151,9 +151,8 @@ export function EditPlatformDialog({ open, onClose, platform }: EditPlatformDial
           updates: {
             companyName,
             segment,
-            
             status,
-            phase: clientPhase,
+            phase: platformPhase,
             phone,
             email,
             contractDurationMonths: contractDuration,
