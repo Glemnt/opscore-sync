@@ -208,6 +208,8 @@ interface ClientDetailModalProps {
 }
 
 export function ClientDetailModal({ client, open, onClose }: ClientDetailModalProps) {
+  const { currentUser } = useAuth();
+  const isAdmin = currentUser?.accessLevel === 3;
   const { updateClientField, addChatNote, deleteClient, updateClient } = useClients();
   const { squads } = useSquads();
   const { data: projects = [] } = useProjectsQuery();
