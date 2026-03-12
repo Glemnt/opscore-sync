@@ -35,6 +35,8 @@ const COLOR_OPTIONS = [
 ];
 
 export function ClientsPage() {
+  const { currentUser } = useAuth();
+  const isAdmin = currentUser?.accessLevel === 3;
   const { getVisibleClients } = useClients();
   const { squads } = useSquads();
   const { data: projects = [] } = useProjectsQuery();
