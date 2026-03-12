@@ -56,6 +56,7 @@ export function EditPlatformDialog({ open, onClose, platform }: EditPlatformDial
   // Platform fields
   const [clientType, setClientType] = useState(platform.qualityLevel || 'Seller');
   const [platformPhase, setPlatformPhase] = useState(platform.phase || 'onboarding');
+  // clientPhase removed — unified into platformPhase
   const [healthColor, setHealthColor] = useState(platform.healthColor || 'green');
   const [origin, setOrigin] = useState(platform.origin || '');
   const [responsible, setResponsible] = useState(platform.responsible || '');
