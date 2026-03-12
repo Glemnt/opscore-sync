@@ -394,7 +394,7 @@ export function ProjectsPage() {
       inativo: 'Inativo'
     };
 
-    const uniqueResponsibles = [...new Set(squadPlatformEntries.flatMap((e) => [e.cp.responsible, e.client.responsible]).filter(Boolean))];
+    const uniqueResponsibles = [...new Set(squadPlatformEntries.map((e) => e.cp.responsible).filter(Boolean))];
 
     const filteredPlatformEntries = squadPlatformEntries.filter((e) => {
       const matchSearch = e.client.name.toLowerCase().includes(search.toLowerCase()) || e.platformName.toLowerCase().includes(search.toLowerCase());
