@@ -1,33 +1,22 @@
 
 
-## Plano: Corrigir dialogs de Gerar Demandas e Transferir Plataforma
+## Plano: Tornar seleção de fase obrigatória antes de gerar demandas
 
-### Problema
-Os dialogs `GenerateDemandsDialog` e `TransferPlatformDialog` nunca aparecem porque estão renderizados no bloco `return` final do componente (linha 902-922), mas os botões que ativam o estado estão no bloco `return` do step 2.5 (linha 615-808). Como o step 2.5 faz um `return` antecipado, o código nunca chega à renderização dos dialogs.
+### Problema atual
 
-### Solução
+O dialog abre com a fase já pré-selecionada (vinda do prop `phase`), então o usuário não percebe que precisa escolher uma fase. Além disso, mesmo sem fase válida, o conteúdo abaixo já aparece (mostrando "nenhum template" ou listando demandas).
 
-**Arquivo: `src/pages/ProjectsPage.tsx`**
+### Alteração em `src/components/GenerateDemandsDialog.tsx`
 
-Mover os dois blocos de renderização condicional dos dialogs (`generateTarget` e `transferTarget`) para dentro do bloco `return` do step 2.5, logo antes do `</div>` final (linha ~807), envolvendo tudo em um fragment `<>...</>`:
+1. **Inicializar `selectedPhase` como `''`** (vazio) em vez de usar o prop `phase` diretamente — forçar o usuário a escolher explicitamente
 
-```tsx
-// Antes do fechamento do return do step 2.5 (linha 808):
-return (
-  <>
-    <div className="p-6 animate-fade-in">
-      {/* ... conteúdo existente do step 2.5 ... */}
-    </div>
+2. **Quando `selectedPhase` estiver vazio**: mostrar uma mensagem orientativa abaixo do select (ex: "Selecione uma fase da pipeline acima para visualizar e gerar as demandas") e esconder a lista de templates e o botão "Criar Demandas"
 
-    {generateTarget && (
-      <GenerateDemandsDialog ... />
-    )}
-    {transferTarget && (
-      <TransferPlatformDialog ... />
-    )}
-  </>
-);
-```
+3. **Destacar visualmente o select** quando vazio — adicionar uma borda de destaque (ex: `ring-2 ring-primary`) para chamar atenção
 
-Nenhuma outra mudança necessária. A renderização no bloco final (linha 902-922) pode ser mantida para cobrir o step 3, ou removida se não houver botões lá.
+4. **Botão "Criar" fica desabilitado** se `selectedPhase` estiver vazio (segurança adicional)
+
+### Arquivo alterado
+
+- `src/components/GenerateDemandsDialog.tsx`
 
