@@ -252,9 +252,9 @@ export function ProjectsPage() {
                     </div>
                   </div>
                   <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                    <span className="font-medium">{squadClients.length} clientes</span>
+                    <span className="font-medium">{totalPlatforms} plataformas</span>
                     <span>•</span>
-                    <span className="text-primary font-semibold">{activeClients} ativos</span>
+                    <span className="text-primary font-semibold">{activePlatforms} ativos</span>
                   </div>
                   {(() => {
                     const squadCPs = clientPlatformsData.filter(cp => cp.squadId === squad.id);
