@@ -161,10 +161,10 @@ export function GenerateDemandsDialog({ open, onOpenChange, phase, clientId, cli
           </DialogHeader>
 
           <div className="space-y-1">
-            <label className="text-sm font-medium">Fase da pipeline</label>
+            <label className="text-sm font-medium">Fase da pipeline <span className="text-destructive">*</span></label>
             <Select value={selectedPhase} onValueChange={setSelectedPhase}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione a fase" />
+              <SelectTrigger className={!selectedPhase ? 'ring-2 ring-primary border-primary' : ''}>
+                <SelectValue placeholder="Selecione a fase da pipeline" />
               </SelectTrigger>
               <SelectContent>
                 {taskStatuses.map((s) => (
@@ -173,6 +173,14 @@ export function GenerateDemandsDialog({ open, onOpenChange, phase, clientId, cli
               </SelectContent>
             </Select>
           </div>
+
+          {!selectedPhase && (
+            <div className="text-center py-8 space-y-2">
+              <p className="text-sm text-muted-foreground">
+                👆 Selecione uma fase da pipeline acima para visualizar e gerar as demandas.
+              </p>
+            </div>
+          )}
 
           {phaseTemplates.length === 0 ? (
             <div className="text-center py-8 space-y-3">
