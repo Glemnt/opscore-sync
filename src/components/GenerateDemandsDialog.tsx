@@ -45,8 +45,8 @@ export function GenerateDemandsDialog({ open, onOpenChange, phase, clientId, cli
   const [selectedPhase, setSelectedPhase] = useState(phase);
 
   useEffect(() => {
-    if (open) setSelectedPhase(phase);
-  }, [open, phase]);
+    if (open) setSelectedPhase('');
+  }, [open]);
 
   const phaseLabel = useMemo(() => {
     const found = taskStatuses.find(s => s.key === selectedPhase);
