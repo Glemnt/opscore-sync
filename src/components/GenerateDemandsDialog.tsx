@@ -254,10 +254,10 @@ export function GenerateDemandsDialog({ open, onOpenChange, phase, clientId, cli
 
           <DialogFooter>
             <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-            {phaseTemplates.length > 0 && (
+            {selectedPhase && phaseTemplates.length > 0 && (
               <Button
                 onClick={handleCreate}
-                disabled={!selectedCount || creating}
+                disabled={!selectedPhase || !selectedCount || creating}
               >
                 <Zap className="w-4 h-4 mr-1" />
                 {creating ? 'Criando...' : `Criar ${selectedCount} Demandas`}
