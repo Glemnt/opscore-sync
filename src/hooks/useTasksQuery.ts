@@ -55,8 +55,8 @@ export function useAddTask() {
       if (task.subtasks?.length) {
         const { error: stErr } = await supabase.from('subtasks').insert(
           task.subtasks.map((st) => ({
-            id: st.id,
-            task_id: task.id,
+            id: st.id && st.id.match(/^[0-9a-f]{8}-/) ? st.id : crypto.randomUUID(),
+            task_id: taskId,
             label: st.label,
             done: st.done,
           }))
