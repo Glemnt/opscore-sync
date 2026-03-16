@@ -182,7 +182,7 @@ export function GenerateDemandsDialog({ open, onOpenChange, phase, clientId, cli
             </div>
           )}
 
-          {phaseTemplates.length === 0 ? (
+          {selectedPhase && phaseTemplates.length === 0 ? (
             <div className="text-center py-8 space-y-3">
               <p className="text-sm text-muted-foreground">
                 Nenhuma demanda padrão configurada para a fase <strong>{phaseLabel}</strong>.
@@ -192,7 +192,7 @@ export function GenerateDemandsDialog({ open, onOpenChange, phase, clientId, cli
                 Configurar Templates
               </Button>
             </div>
-          ) : (
+          ) : selectedPhase && phaseTemplates.length > 0 ? (
             <div className="space-y-3">
               <div className="flex items-center justify-between mb-2">
                 <p className="text-xs text-muted-foreground">{selectedCount} de {rows.length} selecionadas</p>
@@ -250,7 +250,7 @@ export function GenerateDemandsDialog({ open, onOpenChange, phase, clientId, cli
                 </div>
               ))}
             </div>
-          )}
+          ) : null}
 
           <DialogFooter>
             <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
