@@ -41,7 +41,7 @@ const REVENUE_TIER_OPTIONS = [
 
 export function AddPlatformSquadDialog({ open, onClose, defaultSquadId }: AddPlatformSquadDialogProps) {
   const { currentUser } = useAuth();
-  const isAdmin = true; // All users now have full access
+  const isAdmin = currentUser?.accessLevel === 3;
   const { squads } = useSquads();
   const { data: platformOptions = [] } = usePlatformsQuery();
   const { data: appUsers = [] } = useAppUsersQuery();
