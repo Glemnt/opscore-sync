@@ -212,18 +212,10 @@ export function ProjectsPage() {
         
         <div className="grid grid-cols-3 gap-4">
           {visibleSquads.map((squad) => {
-            const cpIdsInSquad = new Set(
-              clientPlatformsData
-                .filter(cp => cp.squadId === squad.id)
-                .map(cp => cp.clientId)
-            );
-            const squadClients = clients.filter(
-              (c) => c.squadId === squad.id || cpIdsInSquad.has(c.id)
-            );
-            const activeStatusKeys = clientStatuses.
-            filter((s) => s.label.toLowerCase().includes('ativo') || s.key === 'active').
-            map((s) => s.key);
-            const activeClients = squadClients.filter((c) => activeStatusKeys.includes(c.status)).length;
+            const squadPlatforms = clientPlatformsData.filter(cp => cp.squadId === squad.id);
+            const totalPlatforms = squadPlatforms.length;
+            // Plataformas ativas = todas exceto as em fase de churn
+            const activePlatforms = squadPlatforms.filter(cp => !cp.phase.toLowerCase().includes('churn')).length;
             return (
               <div
                 key={squad.id}
@@ -260,9 +252,9 @@ export function ProjectsPage() {
                     </div>
                   </div>
                   <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                    <span className="font-medium">{squadClients.length} clientes</span>
+                    <span className="font-medium">{totalPlatforms} plataformas</span>
                     <span>•</span>
-                    <span className="text-primary font-semibold">{activeClients} ativos</span>
+                    <span className="text-primary font-semibold">{activePlatforms} ativos</span>
                   </div>
                   {(() => {
                     const squadCPs = clientPlatformsData.filter(cp => cp.squadId === squad.id);
