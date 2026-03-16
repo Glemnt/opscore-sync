@@ -16,7 +16,7 @@ import { usePlatformsQuery } from '@/hooks/usePlatformsQuery';
 import { priorityConfig } from '@/lib/config';
 import { useTaskTypesQuery, useTaskTypesMap } from '@/hooks/useTaskTypesQuery';
 import { cn, hoursToHM, hmToHours } from '@/lib/utils';
-import { Send, Clock, User, CalendarDays, Flag, MessageSquare, Trash2, Tag, Briefcase, ShoppingBag, Workflow } from 'lucide-react';
+import { Send, Clock, User, CalendarDays, Flag, MessageSquare, Trash2, Briefcase, ShoppingBag, Workflow, Pencil, Save, X } from 'lucide-react';
 import { Avatar } from '@/components/ui/shared';
 import { supabase } from '@/integrations/supabase/client';
 import { useQueryClient } from '@tanstack/react-query';
@@ -39,9 +39,23 @@ export function TaskDetailModal({ task, open, onOpenChange }: TaskDetailModalPro
   const taskTypeMap = useTaskTypesMap();
   const queryClient = useQueryClient();
   const [newNote, setNewNote] = useState('');
-  const [editingTitle, setEditingTitle] = useState(false);
-  const [titleDraft, setTitleDraft] = useState('');
   const chatEndRef = useRef<HTMLDivElement>(null);
+
+  // Edit mode state
+  const [editing, setEditing] = useState(false);
+  const [draftTitle, setDraftTitle] = useState('');
+  const [draftType, setDraftType] = useState('');
+  const [draftResponsible, setDraftResponsible] = useState('');
+  const [draftDeadline, setDraftDeadline] = useState('');
+  const [draftPriority, setDraftPriority] = useState<Priority>('medium');
+  const [draftPlatforms, setDraftPlatforms] = useState<string[]>([]);
+  const [draftEstimatedTime, setDraftEstimatedTime] = useState(0);
+  const [draftRealTime, setDraftRealTime] = useState<number | null>(null);
+
+  // Reset editing when task changes or modal closes
+  useEffect(() => {
+    if (!open) setEditing(false);
+  }, [open, task?.id]);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -73,6 +87,38 @@ export function TaskDetailModal({ task, open, onOpenChange }: TaskDetailModalPro
   const priorityConf = priorityConfig[task.priority] ?? { label: task.priority, className: '', icon: '●' };
   const typeConf = taskTypeMap[task.type] ?? { label: task.type, color: 'bg-gray-100 text-gray-700' };
   const isLate = new Date(task.deadline) < new Date() && task.status !== 'done';
+  const deadlineISO = task.deadline ? task.deadline.slice(0, 10) : '';
+
+  const enterEditMode = () => {
+    setDraftTitle(task.title);
+    setDraftType(task.type);
+    setDraftResponsible(task.responsible);
+    setDraftDeadline(deadlineISO);
+    setDraftPriority(task.priority);
+    setDraftPlatforms(task.platforms ?? []);
+    setDraftEstimatedTime(task.estimatedTime);
+    setDraftRealTime(task.realTime ?? null);
+    setEditing(true);
+  };
+
+  const cancelEdit = () => {
+    setEditing(false);
+  };
+
+  const saveEdit = () => {
+    updateTask(task.id, {
+      title: draftTitle.trim() || task.title,
+      type: draftType as TaskType,
+      responsible: draftResponsible,
+      deadline: draftDeadline,
+      priority: draftPriority,
+      platforms: draftPlatforms,
+      estimatedTime: draftEstimatedTime,
+      realTime: draftRealTime,
+    } as any);
+    setEditing(false);
+    toast.success('Demanda atualizada');
+  };
 
   const toggleSubtask = (subtaskId: string) => {
     const userName = currentUser?.name ?? 'Usuário';
@@ -102,52 +148,64 @@ export function TaskDetailModal({ task, open, onOpenChange }: TaskDetailModalPro
     onOpenChange(false);
   };
 
-  const saveTitle = () => {
-    const trimmed = titleDraft.trim();
-    if (trimmed && trimmed !== task.title) {
-      updateTask(task.id, { title: trimmed });
-    }
-    setEditingTitle(false);
-  };
+  // Draft helpers for time fields
+  const draftEstHM = hoursToHM(draftEstimatedTime);
+  const draftRealHM = draftRealTime != null ? hoursToHM(draftRealTime) : { h: 0, m: 0 };
+  const taskEstHM = hoursToHM(task.estimatedTime);
+  const taskRealHM = task.realTime != null ? hoursToHM(task.realTime) : null;
 
-  const deadlineISO = task.deadline ? task.deadline.slice(0, 10) : '';
+  // Display helpers for readonly priority
+  const displayPriorityConf = editing
+    ? (priorityConfig[draftPriority] ?? priorityConf)
+    : priorityConf;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-hidden flex flex-col gap-0">
-        {/* Header with title and type badge */}
+        {/* Header */}
         <DialogHeader className="pb-4 border-b border-border">
           <div className="flex items-start gap-3">
             <div className="flex-1 min-w-0">
-              {editingTitle ? (
+              {editing ? (
                 <Input
                   autoFocus
-                  value={titleDraft}
-                  onChange={(e) => setTitleDraft(e.target.value)}
-                  onBlur={saveTitle}
-                  onKeyDown={(e) => { if (e.key === 'Enter') saveTitle(); if (e.key === 'Escape') setEditingTitle(false); }}
+                  value={draftTitle}
+                  onChange={(e) => setDraftTitle(e.target.value)}
                   className="text-lg font-semibold mb-2"
                 />
               ) : (
-                <DialogTitle
-                  className="text-lg leading-snug mb-2 cursor-pointer hover:text-primary transition-colors"
-                  onClick={() => { setTitleDraft(task.title); setEditingTitle(true); }}
-                >
-                  {task.title}
-                </DialogTitle>
+                <div className="flex items-center gap-2 mb-2">
+                  <DialogTitle className="text-lg leading-snug">
+                    {task.title}
+                  </DialogTitle>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-7 w-7 text-muted-foreground hover:text-primary"
+                    onClick={enterEditMode}
+                  >
+                    <Pencil className="w-3.5 h-3.5" />
+                  </Button>
+                </div>
               )}
               <div className="flex items-center gap-2 flex-wrap">
-                {/* Type - editable select */}
-                <Select value={task.type} onValueChange={(v) => updateTask(task.id, { type: v as TaskType })}>
-                  <SelectTrigger className={cn('h-7 w-auto text-xs px-2 py-0.5 rounded-md font-medium border-0', typeConf.color)}>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {taskTypes.map((t) => (
-                      <SelectItem key={t.key} value={t.key}>{t.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                {/* Type */}
+                {editing ? (
+                  <Select value={draftType} onValueChange={setDraftType}>
+                    <SelectTrigger className={cn('h-7 w-auto text-xs px-2 py-0.5 rounded-md font-medium border-0', (taskTypeMap[draftType] ?? typeConf).color)}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {taskTypes.map((t) => (
+                        <SelectItem key={t.key} value={t.key}>{t.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <span className={cn('h-7 inline-flex items-center text-xs px-2 py-0.5 rounded-md font-medium', typeConf.color)}>
+                    {typeConf.label}
+                  </span>
+                )}
                 <span className="text-xs text-muted-foreground flex items-center gap-1">
                   <Briefcase className="w-3 h-3" />
                   {task.clientName}
@@ -165,130 +223,177 @@ export function TaskDetailModal({ task, open, onOpenChange }: TaskDetailModalPro
         <div className="flex-1 overflow-y-auto space-y-5 pr-1 pt-4">
           {/* Info Cards */}
           <div className="grid grid-cols-2 gap-3">
-            {/* Responsável - editable with app_users */}
+            {/* Responsável */}
             <div className="bg-muted/50 rounded-xl p-3 space-y-1.5">
               <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium uppercase tracking-wide">
                 <User className="w-3.5 h-3.5" />
                 Responsável
               </div>
-              <Select value={task.responsible} onValueChange={(v) => updateTask(task.id, { responsible: v })}>
-                <SelectTrigger className="h-9 bg-background border-border">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {responsibleOptions.map((u) => (
-                    <SelectItem key={u.id} value={u.name}>
-                      <div className="flex items-center gap-2">
-                        <Avatar name={u.name} size="sm" />
-                        {u.name}
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {editing ? (
+                <Select value={draftResponsible} onValueChange={setDraftResponsible}>
+                  <SelectTrigger className="h-9 bg-background border-border">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {responsibleOptions.map((u) => (
+                      <SelectItem key={u.id} value={u.name}>
+                        <div className="flex items-center gap-2">
+                          <Avatar name={u.name} size="sm" />
+                          {u.name}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <div className="flex items-center gap-2 h-9 px-1">
+                  <Avatar name={task.responsible} size="sm" />
+                  <span className="text-sm font-medium text-foreground">{task.responsible}</span>
+                </div>
+              )}
             </div>
 
-            {/* Prazo - editable */}
+            {/* Prazo */}
             <div className="bg-muted/50 rounded-xl p-3 space-y-1.5">
               <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium uppercase tracking-wide">
                 <CalendarDays className="w-3.5 h-3.5" />
                 Prazo
               </div>
-              <Input
-                type="date"
-                value={deadlineISO}
-                onChange={(e) => {
-                  if (e.target.value) updateTask(task.id, { deadline: e.target.value });
-                }}
-                className={cn('h-9 bg-background border-border', isLate && 'text-destructive')}
-              />
+              {editing ? (
+                <Input
+                  type="date"
+                  value={draftDeadline}
+                  onChange={(e) => setDraftDeadline(e.target.value)}
+                  className={cn('h-9 bg-background border-border', isLate && 'text-destructive')}
+                />
+              ) : (
+                <p className={cn('text-sm font-medium h-9 flex items-center px-1', isLate && 'text-destructive')}>
+                  {deadlineISO ? new Date(deadlineISO + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}
+                </p>
+              )}
             </div>
 
-            {/* Prioridade - editable */}
+            {/* Prioridade */}
             <div className="bg-muted/50 rounded-xl p-3 space-y-1.5">
               <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium uppercase tracking-wide">
                 <Flag className="w-3.5 h-3.5" />
                 Prioridade
               </div>
-              <Select value={task.priority} onValueChange={(v) => updateTask(task.id, { priority: v as Priority })}>
-                <SelectTrigger className="h-9 bg-background border-border">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {Object.entries(priorityConfig).map(([key, conf]) => (
-                    <SelectItem key={key} value={key}>
-                      <span className="flex items-center gap-1.5">{conf.icon} {conf.label}</span>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {editing ? (
+                <Select value={draftPriority} onValueChange={(v) => setDraftPriority(v as Priority)}>
+                  <SelectTrigger className="h-9 bg-background border-border">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(priorityConfig).map(([key, conf]) => (
+                      <SelectItem key={key} value={key}>
+                        <span className="flex items-center gap-1.5">{conf.icon} {conf.label}</span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <p className="text-sm font-medium h-9 flex items-center gap-1.5 px-1">
+                  {priorityConf.icon} {priorityConf.label}
+                </p>
+              )}
             </div>
 
-            {/* Plataformas - editable multi-select */}
+            {/* Plataformas */}
             <div className="bg-muted/50 rounded-xl p-3 space-y-1.5 col-span-2">
               <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium uppercase tracking-wide">
                 <ShoppingBag className="w-3.5 h-3.5" />
                 Plataformas
               </div>
               <div className="flex flex-wrap gap-1.5">
-                {platforms.map((p) => {
-                  const active = (task.platforms ?? []).includes(p.slug);
-                  return (
-                    <button
-                      key={p.id}
-                      type="button"
-                      onClick={() => {
-                        const current = task.platforms ?? [];
-                        const updated = active ? current.filter(s => s !== p.slug) : [...current, p.slug];
-                        updateTask(task.id, { platforms: updated } as any);
-                      }}
-                      className={cn(
-                        'px-2.5 py-1 rounded-md text-xs font-medium border transition-colors',
-                        active ? 'bg-primary text-primary-foreground border-primary' : 'bg-background text-muted-foreground border-border hover:border-primary/40'
-                      )}
-                    >
-                      {p.name}
-                    </button>
-                  );
-                })}
-                {platforms.length === 0 && <span className="text-xs text-muted-foreground">Nenhuma plataforma cadastrada</span>}
+                {editing ? (
+                  <>
+                    {platforms.map((p) => {
+                      const active = draftPlatforms.includes(p.slug);
+                      return (
+                        <button
+                          key={p.id}
+                          type="button"
+                          onClick={() => {
+                            setDraftPlatforms(active ? draftPlatforms.filter(s => s !== p.slug) : [...draftPlatforms, p.slug]);
+                          }}
+                          className={cn(
+                            'px-2.5 py-1 rounded-md text-xs font-medium border transition-colors',
+                            active ? 'bg-primary text-primary-foreground border-primary' : 'bg-background text-muted-foreground border-border hover:border-primary/40'
+                          )}
+                        >
+                          {p.name}
+                        </button>
+                      );
+                    })}
+                    {platforms.length === 0 && <span className="text-xs text-muted-foreground">Nenhuma plataforma cadastrada</span>}
+                  </>
+                ) : (
+                  <>
+                    {(task.platforms ?? []).length > 0 ? (
+                      (task.platforms ?? []).map((slug) => {
+                        const p = platforms.find(pl => pl.slug === slug);
+                        return (
+                          <span key={slug} className="px-2.5 py-1 rounded-md text-xs font-medium bg-primary/10 text-primary border border-primary/20">
+                            {p?.name ?? slug}
+                          </span>
+                        );
+                      })
+                    ) : (
+                      <span className="text-xs text-muted-foreground italic">Nenhuma</span>
+                    )}
+                  </>
+                )}
               </div>
             </div>
 
-            {/* Tempo - editable */}
+            {/* Tempo */}
             <div className="bg-muted/50 rounded-xl p-3 space-y-1.5">
               <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium uppercase tracking-wide">
                 <Clock className="w-3.5 h-3.5" />
                 Tempo
               </div>
-              <div className="space-y-2">
-                <div>
-                  <label className="text-[10px] text-muted-foreground">Estimado</label>
-                  <div className="flex items-center gap-2">
-                    <div className="flex-1">
-                      <Input type="number" min={0} className="h-8 bg-background border-border text-sm" value={hoursToHM(task.estimatedTime).h} onChange={(e) => updateTask(task.id, { estimatedTime: hmToHours(parseInt(e.target.value) || 0, hoursToHM(task.estimatedTime).m) })} />
-                      <span className="text-[10px] text-muted-foreground">h</span>
+              {editing ? (
+                <div className="space-y-2">
+                  <div>
+                    <label className="text-[10px] text-muted-foreground">Estimado</label>
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1">
+                        <Input type="number" min={0} className="h-8 bg-background border-border text-sm" value={draftEstHM.h} onChange={(e) => setDraftEstimatedTime(hmToHours(parseInt(e.target.value) || 0, draftEstHM.m))} />
+                        <span className="text-[10px] text-muted-foreground">h</span>
+                      </div>
+                      <div className="flex-1">
+                        <Input type="number" min={0} max={59} step={5} className="h-8 bg-background border-border text-sm" value={draftEstHM.m} onChange={(e) => setDraftEstimatedTime(hmToHours(draftEstHM.h, Math.min(59, parseInt(e.target.value) || 0)))} />
+                        <span className="text-[10px] text-muted-foreground">min</span>
+                      </div>
                     </div>
-                    <div className="flex-1">
-                      <Input type="number" min={0} max={59} step={5} className="h-8 bg-background border-border text-sm" value={hoursToHM(task.estimatedTime).m} onChange={(e) => updateTask(task.id, { estimatedTime: hmToHours(hoursToHM(task.estimatedTime).h, Math.min(59, parseInt(e.target.value) || 0)) })} />
-                      <span className="text-[10px] text-muted-foreground">min</span>
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-muted-foreground">Real</label>
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1">
+                        <Input type="number" min={0} className="h-8 bg-background border-border text-sm" value={draftRealTime != null ? draftRealHM.h : ''} onChange={(e) => { const v = parseInt(e.target.value); if (isNaN(v)) { setDraftRealTime(null); return; } setDraftRealTime(hmToHours(v, draftRealTime != null ? draftRealHM.m : 0)); }} />
+                        <span className="text-[10px] text-muted-foreground">h</span>
+                      </div>
+                      <div className="flex-1">
+                        <Input type="number" min={0} max={59} step={5} className="h-8 bg-background border-border text-sm" value={draftRealTime != null ? draftRealHM.m : ''} onChange={(e) => { const v = parseInt(e.target.value); if (isNaN(v)) { setDraftRealTime(null); return; } setDraftRealTime(hmToHours(draftRealTime != null ? draftRealHM.h : 0, Math.min(59, v))); }} />
+                        <span className="text-[10px] text-muted-foreground">min</span>
+                      </div>
                     </div>
                   </div>
                 </div>
-                <div>
-                  <label className="text-[10px] text-muted-foreground">Real</label>
-                  <div className="flex items-center gap-2">
-                    <div className="flex-1">
-                      <Input type="number" min={0} className="h-8 bg-background border-border text-sm" value={task.realTime != null ? hoursToHM(task.realTime).h : ''} onChange={(e) => { const v = parseInt(e.target.value); if (isNaN(v)) { updateTask(task.id, { realTime: null }); return; } updateTask(task.id, { realTime: hmToHours(v, task.realTime != null ? hoursToHM(task.realTime).m : 0) }); }} />
-                      <span className="text-[10px] text-muted-foreground">h</span>
-                    </div>
-                    <div className="flex-1">
-                      <Input type="number" min={0} max={59} step={5} className="h-8 bg-background border-border text-sm" value={task.realTime != null ? hoursToHM(task.realTime).m : ''} onChange={(e) => { const v = parseInt(e.target.value); if (isNaN(v)) { updateTask(task.id, { realTime: null }); return; } updateTask(task.id, { realTime: hmToHours(task.realTime != null ? hoursToHM(task.realTime).h : 0, Math.min(59, v)) }); }} />
-                      <span className="text-[10px] text-muted-foreground">min</span>
-                    </div>
-                  </div>
+              ) : (
+                <div className="space-y-1 px-1">
+                  <p className="text-sm">
+                    <span className="text-muted-foreground text-xs">Estimado: </span>
+                    <span className="font-medium">{taskEstHM.h}h {taskEstHM.m > 0 ? `${taskEstHM.m}min` : ''}</span>
+                  </p>
+                  <p className="text-sm">
+                    <span className="text-muted-foreground text-xs">Real: </span>
+                    <span className="font-medium">{taskRealHM ? `${taskRealHM.h}h ${taskRealHM.m > 0 ? `${taskRealHM.m}min` : ''}` : '—'}</span>
+                  </p>
                 </div>
-              </div>
+              )}
               {isLate && (() => {
                 const diffMs = new Date().getTime() - new Date(task.deadline).getTime();
                 const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
@@ -328,7 +433,6 @@ export function TaskDetailModal({ task, open, onOpenChange }: TaskDetailModalPro
                     toast.error('Erro ao aplicar fluxo');
                     return;
                   }
-                  // Update flow_id on the task
                   updateTask(task.id, { flowId } as any);
                   queryClient.invalidateQueries({ queryKey: ['tasks'] });
                   toast.success(`Fluxo "${flow.name}" aplicado com ${flow.steps.length} etapas`);
@@ -418,39 +522,55 @@ export function TaskDetailModal({ task, open, onOpenChange }: TaskDetailModalPro
 
         {/* Footer */}
         <div className="flex items-center gap-2 pt-3 border-t border-border">
-          {canDelete && (
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button size="icon" variant="ghost" className="text-destructive hover:text-destructive hover:bg-destructive/10">
-                  <Trash2 className="w-4 h-4" />
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Excluir demanda</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Tem certeza que deseja excluir "{task.title}"? Esta ação não pode ser desfeita.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                    Excluir
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+          {editing ? (
+            <>
+              <Button variant="ghost" onClick={cancelEdit} className="gap-1.5">
+                <X className="w-4 h-4" />
+                Cancelar
+              </Button>
+              <div className="flex-1" />
+              <Button onClick={saveEdit} className="gap-1.5">
+                <Save className="w-4 h-4" />
+                Salvar
+              </Button>
+            </>
+          ) : (
+            <>
+              {canDelete && (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button size="icon" variant="ghost" className="text-destructive hover:text-destructive hover:bg-destructive/10">
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Excluir demanda</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Tem certeza que deseja excluir "{task.title}"? Esta ação não pode ser desfeita.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                        Excluir
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
+              <Input
+                placeholder="Adicionar observação..."
+                value={newNote}
+                onChange={(e) => setNewNote(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && addNote()}
+                className="flex-1"
+              />
+              <Button size="icon" onClick={addNote} disabled={!newNote.trim()}>
+                <Send className="w-4 h-4" />
+              </Button>
+            </>
           )}
-          <Input
-            placeholder="Adicionar observação..."
-            value={newNote}
-            onChange={(e) => setNewNote(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && addNote()}
-            className="flex-1"
-          />
-          <Button size="icon" onClick={addNote} disabled={!newNote.trim()}>
-            <Send className="w-4 h-4" />
-          </Button>
         </div>
       </DialogContent>
     </Dialog>
