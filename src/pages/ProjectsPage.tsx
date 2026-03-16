@@ -201,12 +201,10 @@ export function ProjectsPage() {
           title="Squads"
           subtitle="Selecione um squad para ver os clientes e projetos"
           actions={
-          isAdmin ?
           <Button onClick={openAddSquad} className="gradient-primary shadow-primary">
                 <Plus className="w-4 h-4 mr-2" />
                 Novo Squad
-              </Button> :
-          undefined
+              </Button>
           } />
         
         <div className="grid grid-cols-3 gap-4">
