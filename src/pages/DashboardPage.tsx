@@ -64,7 +64,7 @@ function DateRangeFilter({ startDate, endDate, onStartChange, onEndChange }: {
 
 export function DashboardPage() {
   const { currentUser } = useAuth();
-  const isAdmin = true; // All users now have full access
+  const isAdmin = currentUser?.accessLevel === 3;
   const { getVisibleClients, clients: allClientsList } = useClients();
   const clients = getVisibleClients();
   const { data: allProjects = [] } = useProjectsQuery();

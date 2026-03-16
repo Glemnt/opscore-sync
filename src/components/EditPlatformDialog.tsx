@@ -39,7 +39,7 @@ const PHASE_OPTIONS = [
 
 export function EditPlatformDialog({ open, onClose, platform }: EditPlatformDialogProps) {
   const { currentUser } = useAuth();
-  const isAdmin = true; // All users now have full access
+  const isAdmin = currentUser?.accessLevel === 3;
   const { data: appUsers = [] } = useAppUsersQuery();
   const { data: clients = [] } = useClientsQuery();
   const { data: clientStatuses = [] } = useClientStatusesQuery('clients');
