@@ -1,33 +1,32 @@
 
 
-## Plano: Corrigir dialogs de Gerar Demandas e Transferir Plataforma
+## Plano: Adicionar modo edição com botão lápis e salvar no TaskDetailModal
 
-### Problema
-Os dialogs `GenerateDemandsDialog` e `TransferPlatformDialog` nunca aparecem porque estão renderizados no bloco `return` final do componente (linha 902-922), mas os botões que ativam o estado estão no bloco `return` do step 2.5 (linha 615-808). Como o step 2.5 faz um `return` antecipado, o código nunca chega à renderização dos dialogs.
+### Problema atual
 
-### Solução
+O `TaskDetailModal` salva cada campo individualmente no banco a cada alteração (inline editing). O usuário quer um fluxo explícito: **modo visualização** (readonly) por padrão, botão de **lápis** para entrar em edição, e botão **Salvar** para persistir tudo de uma vez.
 
-**Arquivo: `src/pages/ProjectsPage.tsx`**
+### Alteração em `src/components/TaskDetailModal.tsx`
 
-Mover os dois blocos de renderização condicional dos dialogs (`generateTarget` e `transferTarget`) para dentro do bloco `return` do step 2.5, logo antes do `</div>` final (linha ~807), envolvendo tudo em um fragment `<>...</>`:
+1. **Adicionar estado `editing`** (boolean, default `false`) e **estados draft** para todos os campos editáveis: `draftTitle`, `draftType`, `draftResponsible`, `draftDeadline`, `draftPriority`, `draftPlatforms`, `draftEstimatedTime`, `draftRealTime`
 
-```tsx
-// Antes do fechamento do return do step 2.5 (linha 808):
-return (
-  <>
-    <div className="p-6 animate-fade-in">
-      {/* ... conteúdo existente do step 2.5 ... */}
-    </div>
+2. **Botão lápis no header** — ao lado do título, um `<Pencil>` que ativa `editing = true` e popula todos os drafts com os valores atuais da task
 
-    {generateTarget && (
-      <GenerateDemandsDialog ... />
-    )}
-    {transferTarget && (
-      <TransferPlatformDialog ... />
-    )}
-  </>
-);
-```
+3. **Modo visualização (editing = false)**: todos os campos mostram valores readonly (texto, badges, sem selects/inputs editáveis)
 
-Nenhuma outra mudança necessária. A renderização no bloco final (linha 902-922) pode ser mantida para cobrir o step 3, ou removida se não houver botões lá.
+4. **Modo edição (editing = true)**: os selects e inputs aparecem como estão hoje, mas operam sobre os estados draft em vez de chamar `updateTask` diretamente
+
+5. **Botão Salvar no footer** — visível apenas em modo edição. Ao clicar, chama `updateTask(task.id, { title, type, responsible, deadline, priority, platforms, estimatedTime, realTime })` com todos os drafts de uma vez, depois seta `editing = false`
+
+6. **Botão Cancelar** — ao lado do salvar, descarta os drafts e volta para visualização
+
+7. **Subtarefas e Notas** — continuam funcionando como hoje (toggle/add independentes do modo edição), pois já são ações pontuais
+
+### Reflexo visual no DemandCard
+
+O `DemandCard` em `ProjectsPage.tsx` já lê os dados da task diretamente. Ao salvar no modal, o `updateTask` invalida o cache e o card atualiza automaticamente — nenhuma alteração necessária no card.
+
+### Arquivo alterado
+
+- `src/components/TaskDetailModal.tsx`
 
