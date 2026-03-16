@@ -45,8 +45,8 @@ export function GenerateDemandsDialog({ open, onOpenChange, phase, clientId, cli
   const [selectedPhase, setSelectedPhase] = useState(phase);
 
   useEffect(() => {
-    if (open) setSelectedPhase(phase);
-  }, [open, phase]);
+    if (open) setSelectedPhase('');
+  }, [open]);
 
   const phaseLabel = useMemo(() => {
     const found = taskStatuses.find(s => s.key === selectedPhase);
@@ -161,10 +161,10 @@ export function GenerateDemandsDialog({ open, onOpenChange, phase, clientId, cli
           </DialogHeader>
 
           <div className="space-y-1">
-            <label className="text-sm font-medium">Fase da pipeline</label>
+            <label className="text-sm font-medium">Fase da pipeline <span className="text-destructive">*</span></label>
             <Select value={selectedPhase} onValueChange={setSelectedPhase}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione a fase" />
+              <SelectTrigger className={!selectedPhase ? 'ring-2 ring-primary border-primary' : ''}>
+                <SelectValue placeholder="Selecione a fase da pipeline" />
               </SelectTrigger>
               <SelectContent>
                 {taskStatuses.map((s) => (
@@ -174,7 +174,15 @@ export function GenerateDemandsDialog({ open, onOpenChange, phase, clientId, cli
             </Select>
           </div>
 
-          {phaseTemplates.length === 0 ? (
+          {!selectedPhase && (
+            <div className="text-center py-8 space-y-2">
+              <p className="text-sm text-muted-foreground">
+                👆 Selecione uma fase da pipeline acima para visualizar e gerar as demandas.
+              </p>
+            </div>
+          )}
+
+          {selectedPhase && phaseTemplates.length === 0 ? (
             <div className="text-center py-8 space-y-3">
               <p className="text-sm text-muted-foreground">
                 Nenhuma demanda padrão configurada para a fase <strong>{phaseLabel}</strong>.
@@ -184,7 +192,7 @@ export function GenerateDemandsDialog({ open, onOpenChange, phase, clientId, cli
                 Configurar Templates
               </Button>
             </div>
-          ) : (
+          ) : selectedPhase && phaseTemplates.length > 0 ? (
             <div className="space-y-3">
               <div className="flex items-center justify-between mb-2">
                 <p className="text-xs text-muted-foreground">{selectedCount} de {rows.length} selecionadas</p>
@@ -242,14 +250,14 @@ export function GenerateDemandsDialog({ open, onOpenChange, phase, clientId, cli
                 </div>
               ))}
             </div>
-          )}
+          ) : null}
 
           <DialogFooter>
             <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-            {phaseTemplates.length > 0 && (
+            {selectedPhase && phaseTemplates.length > 0 && (
               <Button
                 onClick={handleCreate}
-                disabled={!selectedCount || creating}
+                disabled={!selectedPhase || !selectedCount || creating}
               >
                 <Zap className="w-4 h-4 mr-1" />
                 {creating ? 'Criando...' : `Criar ${selectedCount} Demandas`}
