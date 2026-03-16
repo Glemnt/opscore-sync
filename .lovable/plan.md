@@ -1,33 +1,38 @@
 
 
-## Plano: Corrigir dialogs de Gerar Demandas e Transferir Plataforma
+## Plano: Liberar acesso total para todos os usuários (exceto página Admin)
 
-### Problema
-Os dialogs `GenerateDemandsDialog` e `TransferPlatformDialog` nunca aparecem porque estão renderizados no bloco `return` final do componente (linha 902-922), mas os botões que ativam o estado estão no bloco `return` do step 2.5 (linha 615-808). Como o step 2.5 faz um `return` antecipado, o código nunca chega à renderização dos dialogs.
+### Situação atual
 
-### Solução
+Existem restrições baseadas em `accessLevel === 3` espalhadas pelo sistema que limitam funcionalidades para usuários não-admin:
 
-**Arquivo: `src/pages/ProjectsPage.tsx`**
+1. **Visibilidade de dados filtrada por squad** — `ClientsContext`, `AuthContext`, `ProjectsPage`, `ProductivityPage` filtram clientes/squads/membros por squad do usuário
+2. **Campos financeiros ocultos** — Mensalidade, MRR, Setup, Faturamento por plataforma ficam escondidos no Dashboard, ClientDetailModal, ClientCard, AddPlatformSquadDialog
+3. **Exclusão de demandas restrita** — Só admin ou líder do squad pode deletar tasks (ProjectsPage, TasksPage)
+4. **Membros visíveis filtrados** — AddDemandDialog mostra apenas membros dos squads do usuário
+5. **Página Admin** — Corretamente restrita a accessLevel 3 (sidebar + Index.tsx)
 
-Mover os dois blocos de renderização condicional dos dialogs (`generateTarget` e `transferTarget`) para dentro do bloco `return` do step 2.5, logo antes do `</div>` final (linha ~807), envolvendo tudo em um fragment `<>...</>`:
+### Alterações
 
-```tsx
-// Antes do fechamento do return do step 2.5 (linha 808):
-return (
-  <>
-    <div className="p-6 animate-fade-in">
-      {/* ... conteúdo existente do step 2.5 ... */}
-    </div>
+Remover todas as restrições de `isAdmin`/`accessLevel` **exceto** a visibilidade da página Admin (Settings) no sidebar e no Index.tsx.
 
-    {generateTarget && (
-      <GenerateDemandsDialog ... />
-    )}
-    {transferTarget && (
-      <TransferPlatformDialog ... />
-    )}
-  </>
-);
-```
+**Arquivos a alterar:**
 
-Nenhuma outra mudança necessária. A renderização no bloco final (linha 902-922) pode ser mantida para cobrir o step 3, ou removida se não houver botões lá.
+| Arquivo | O que muda |
+|---|---|
+| `src/contexts/ClientsContext.tsx` | `getVisibleClients` retorna todos os clientes sempre |
+| `src/contexts/AuthContext.tsx` | `getVisibleClients` retorna todos os clientes sempre |
+| `src/pages/ProjectsPage.tsx` | `visibleSquads` mostra todos; `canDel` sempre true para autenticados |
+| `src/pages/TasksPage.tsx` | `canDel` sempre true para autenticados |
+| `src/pages/DashboardPage.tsx` | Mostrar MRR e gráfico de receita para todos |
+| `src/pages/ProductivityPage.tsx` | Mostrar todos os team members |
+| `src/pages/ClientsPage.tsx` | Passar `isAdmin={true}` ou remover a prop e sempre mostrar tudo |
+| `src/components/ClientDetailModal.tsx` | Mostrar campos financeiros para todos |
+| `src/components/AddPlatformSquadDialog.tsx` | Mostrar campo faturamento para todos |
+| `src/components/AddDemandDialog.tsx` | Mostrar todos os membros de todos os squads |
+| `src/components/EditPlatformDialog.tsx` | Remover restrição de isAdmin se houver |
+
+**Não alterar:**
+- `src/components/AppSidebar.tsx` — manter botão Admin visível só para accessLevel 3
+- `src/pages/Index.tsx` — manter redirect de Settings para Dashboard se não admin
 
