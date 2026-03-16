@@ -191,8 +191,7 @@ export function ProjectsPage() {
   }, [clientStatuses, platformPhaseKey]);
   const [dragOverClientCol, setDragOverClientCol] = useState<string | null>(null);
 
-  const isAdmin = currentUser?.accessLevel === 3;
-  const visibleSquads = isAdmin ? squads : squads.filter((s) => currentUser?.squadIds.includes(s.id) || s.leader === currentUser?.name);
+  const visibleSquads = squads;
 
   // Step 1: Show squads
   if (!selectedSquad) {
