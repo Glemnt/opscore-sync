@@ -55,8 +55,8 @@ export function useAddTask() {
       if (task.subtasks?.length) {
         const { error: stErr } = await supabase.from('subtasks').insert(
           task.subtasks.map((st) => ({
-            id: st.id,
-            task_id: task.id,
+            id: st.id && st.id.match(/^[0-9a-f]{8}-/) ? st.id : crypto.randomUUID(),
+            task_id: taskId,
             label: st.label,
             done: st.done,
           }))
@@ -84,8 +84,47 @@ export function useUpdateTask() {
         const dbKey = keyMap[k] ?? k;
         dbUpdates[dbKey] = v;
       }
-      const { error } = await supabase.from('tasks').update(dbUpdates as any).eq('id', id);
-      if (error) throw error;
+      if (Object.keys(dbUpdates).length > 0) {
+        const { error } = await supabase.from('tasks').update(dbUpdates as any).eq('id', id);
+        if (error) throw error;
+      }
+
+      // Sync subtasks
+      if (updates.subtasks) {
+        // Delete existing subtasks and re-insert
+        await supabase.from('subtasks').delete().eq('task_id', id);
+        if (updates.subtasks.length > 0) {
+          const { error: stErr } = await supabase.from('subtasks').insert(
+            updates.subtasks.map((st) => ({
+              id: st.id && st.id.match(/^[0-9a-f]{8}-/) ? st.id : crypto.randomUUID(),
+              task_id: id,
+              label: st.label,
+              done: st.done,
+              checked_by: (st as any).checkedBy ?? null,
+              checked_at: (st as any).checkedAt ?? null,
+            }))
+          );
+          if (stErr) throw stErr;
+        }
+      }
+
+      // Insert new chat notes
+      if (updates.chatNotes?.length) {
+        const existingRes = await supabase.from('task_chat_notes').select('id').eq('task_id', id);
+        const existingIds = new Set((existingRes.data ?? []).map((n: any) => n.id));
+        const newNotes = updates.chatNotes.filter((n) => !existingIds.has(n.id));
+        if (newNotes.length > 0) {
+          const { error: nErr } = await supabase.from('task_chat_notes').insert(
+            newNotes.map((n) => ({
+              id: n.id && n.id.match(/^[0-9a-f]{8}-/) ? n.id : crypto.randomUUID(),
+              task_id: id,
+              message: n.message,
+              author: n.author,
+            }))
+          );
+          if (nErr) throw nErr;
+        }
+      }
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['tasks'] }),
   });

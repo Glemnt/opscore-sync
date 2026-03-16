@@ -1,28 +1,33 @@
 
 
-## Plano: Corrigir criação e edição de demandas na página Squads
+## Plano: Corrigir dialogs de Gerar Demandas e Transferir Plataforma
 
-### Problemas encontrados
+### Problema
+Os dialogs `GenerateDemandsDialog` e `TransferPlatformDialog` nunca aparecem porque estão renderizados no bloco `return` final do componente (linha 902-922), mas os botões que ativam o estado estão no bloco `return` do step 2.5 (linha 615-808). Como o step 2.5 faz um `return` antecipado, o código nunca chega à renderização dos dialogs.
 
-Dois bugs estruturais em `src/hooks/useTasksQuery.ts`:
+### Solução
 
-**Bug 1 — Criação falha com subtarefas:**
-Em `useAddTask` (linha 34), o ID da task é recalculado como UUID quando o original (`t_12345`) não é UUID. Porém na linha 59, os subtasks referenciam `task.id` (o ID original `t_...`), não o `taskId` recalculado. Isso causa falha na inserção de subtasks (tipo UUID inválido e referência a task inexistente).
+**Arquivo: `src/pages/ProjectsPage.tsx`**
 
-**Bug 2 — Edição de subtarefas e notas não persiste:**
-Em `useUpdateTask` (linha 83), os campos `subtasks` e `chatNotes` são explicitamente ignorados (`continue`). Quando o usuário marca/desmarca uma subtarefa ou adiciona uma nota no `TaskDetailModal`, a chamada `updateTask(task.id, { subtasks: updated })` não faz nada no banco — a alteração aparece localmente mas se perde ao recarregar.
+Mover os dois blocos de renderização condicional dos dialogs (`generateTarget` e `transferTarget`) para dentro do bloco `return` do step 2.5, logo antes do `</div>` final (linha ~807), envolvendo tudo em um fragment `<>...</>`:
 
-### Correções em `src/hooks/useTasksQuery.ts`
+```tsx
+// Antes do fechamento do return do step 2.5 (linha 808):
+return (
+  <>
+    <div className="p-6 animate-fade-in">
+      {/* ... conteúdo existente do step 2.5 ... */}
+    </div>
 
-**1. Corrigir `useAddTask`:**
-- Usar `taskId` (o UUID recalculado) em vez de `task.id` para o `task_id` dos subtasks
-- Garantir que os IDs dos subtasks também sejam UUIDs válidos
+    {generateTarget && (
+      <GenerateDemandsDialog ... />
+    )}
+    {transferTarget && (
+      <TransferPlatformDialog ... />
+    )}
+  </>
+);
+```
 
-**2. Corrigir `useUpdateTask`:**
-- Quando `updates.subtasks` estiver presente: fazer upsert/delete dos subtasks na tabela `subtasks`
-- Quando `updates.chatNotes` estiver presente: inserir novas notas na tabela `task_chat_notes`
-
-### Arquivo alterado
-
-`src/hooks/useTasksQuery.ts`
+Nenhuma outra mudança necessária. A renderização no bloco final (linha 902-922) pode ser mantida para cobrir o step 3, ou removida se não houver botões lá.
 
