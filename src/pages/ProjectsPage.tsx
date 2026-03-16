@@ -1189,14 +1189,7 @@ function KanbanView({ filtered, clientId, clientName, squadMembers, platformSlug
                 onDrop={(e) => { e.stopPropagation(); handleDrop(col.status, e); }}
               >
                 {colTasks.map((task) => {
-                  const canDel = (() => {
-                    if (!currentUser) return false;
-                    if (currentUser.accessLevel === 3) return true;
-                    const client = clients.find((c) => c.id === task.clientId);
-                    if (!client) return false;
-                    const sq = squads.find((s) => s.id === client.squadId);
-                    return sq?.leader === currentUser.name;
-                  })();
+                  const canDel = !!currentUser;
                   return (
                     <DemandCard
                       key={task.id}

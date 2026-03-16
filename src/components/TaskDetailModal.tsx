@@ -69,14 +69,7 @@ export function TaskDetailModal({ task, open, onOpenChange }: TaskDetailModalPro
     return filtered.length > 0 ? filtered : appUsers;
   }, [task, clients, appUsers]);
 
-  const canDelete = useMemo(() => {
-    if (!currentUser || !task) return false;
-    if (currentUser.accessLevel === 3) return true;
-    const client = clients.find((c) => c.id === task.clientId);
-    if (!client) return false;
-    const squad = squads.find((s) => s.id === client.squadId);
-    return squad?.leader === currentUser.name;
-  }, [currentUser, task, clients, squads]);
+  const canDelete = !!currentUser && !!task;
 
   if (!task) return null;
 
