@@ -1,33 +1,22 @@
 
 
-## Plano: Corrigir dialogs de Gerar Demandas e Transferir Plataforma
+## Plano: Restringir MRR/faturamento apenas para Admins
 
 ### Problema
-Os dialogs `GenerateDemandsDialog` e `TransferPlatformDialog` nunca aparecem porque estão renderizados no bloco `return` final do componente (linha 902-922), mas os botões que ativam o estado estão no bloco `return` do step 2.5 (linha 615-808). Como o step 2.5 faz um `return` antecipado, o código nunca chega à renderização dos dialogs.
 
-### Solução
+Na última alteração, `isAdmin` foi hardcoded como `true` em todos os arquivos. Agora o MRR e dados financeiros precisam voltar a ser restritos a admins (`accessLevel === 3`), enquanto todas as outras funcionalidades continuam abertas.
 
-**Arquivo: `src/pages/ProjectsPage.tsx`**
+### Alterações
 
-Mover os dois blocos de renderização condicional dos dialogs (`generateTarget` e `transferTarget`) para dentro do bloco `return` do step 2.5, logo antes do `</div>` final (linha ~807), envolvendo tudo em um fragment `<>...</>`:
+Em **5 arquivos**, trocar `const isAdmin = true` por `const isAdmin = currentUser?.accessLevel === 3`:
 
-```tsx
-// Antes do fechamento do return do step 2.5 (linha 808):
-return (
-  <>
-    <div className="p-6 animate-fade-in">
-      {/* ... conteúdo existente do step 2.5 ... */}
-    </div>
+| Arquivo | Dados financeiros afetados |
+|---|---|
+| `src/pages/DashboardPage.tsx` | Card MRR, gráfico Receita por Plataforma |
+| `src/pages/ClientsPage.tsx` | Mensalidade e Setup nos cards de clientes |
+| `src/components/ClientDetailModal.tsx` | Campos Mensalidade e Setup no modal |
+| `src/components/AddPlatformSquadDialog.tsx` | Campo faturamento ao adicionar plataforma |
+| `src/components/EditPlatformDialog.tsx` | Campo faturamento ao editar plataforma |
 
-    {generateTarget && (
-      <GenerateDemandsDialog ... />
-    )}
-    {transferTarget && (
-      <TransferPlatformDialog ... />
-    )}
-  </>
-);
-```
-
-Nenhuma outra mudança necessária. A renderização no bloco final (linha 902-922) pode ser mantida para cobrir o step 3, ou removida se não houver botões lá.
+Cada arquivo já importa `useAuth` e já usa `isAdmin` condicionalmente nos JSX — basta corrigir a definição da variável. Nenhuma outra lógica muda (visibilidade de clientes, squads, exclusão de demandas continuam liberadas para todos).
 
