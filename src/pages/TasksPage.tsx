@@ -341,14 +341,7 @@ export function TasksPage() {
                 }
               }}>
                 {colTasks.map(task => {
-                  const canDel = (() => {
-                    if (!currentUser) return false;
-                    if (currentUser.accessLevel === 3) return true;
-                    const client = clients.find((c) => c.id === task.clientId);
-                    if (!client) return false;
-                    const squad = squads.find((s) => s.id === client.squadId);
-                    return squad?.leader === currentUser.name;
-                  })();
+                  const canDel = !!currentUser;
                   return (
                     <TaskCard
                       key={task.id}

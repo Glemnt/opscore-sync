@@ -71,13 +71,8 @@ export function AddDemandDialog({
   const { data: platformOptions = [] } = usePlatformsQuery();
 
   const visibleMembers: string[] = useMemo(() => {
-    if (!currentUser) return squadMembers;
-    if (currentUser.accessLevel === 3) {
-      return Array.from(new Set<string>(squads.flatMap((s) => s.members)));
-    }
-    const userSquads = squads.filter((s) => currentUser.squadIds.includes(s.id) || s.leader === currentUser.name);
-    return Array.from(new Set<string>(userSquads.flatMap((s) => s.members)));
-  }, [currentUser, squadMembers, squads]);
+    return Array.from(new Set<string>(squads.flatMap((s) => s.members)));
+  }, [squads]);
 
   const [mode, setMode] = useState<'new' | 'template' | 'create_template' | 'edit_template'>('new');
   const [title, setTitle] = useState('');

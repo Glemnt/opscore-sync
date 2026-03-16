@@ -191,8 +191,7 @@ export function ProjectsPage() {
   }, [clientStatuses, platformPhaseKey]);
   const [dragOverClientCol, setDragOverClientCol] = useState<string | null>(null);
 
-  const isAdmin = currentUser?.accessLevel === 3;
-  const visibleSquads = isAdmin ? squads : squads.filter((s) => currentUser?.squadIds.includes(s.id) || s.leader === currentUser?.name);
+  const visibleSquads = squads;
 
   // Step 1: Show squads
   if (!selectedSquad) {
@@ -202,12 +201,10 @@ export function ProjectsPage() {
           title="Squads"
           subtitle="Selecione um squad para ver os clientes e projetos"
           actions={
-          isAdmin ?
           <Button onClick={openAddSquad} className="gradient-primary shadow-primary">
                 <Plus className="w-4 h-4 mr-2" />
                 Novo Squad
-              </Button> :
-          undefined
+              </Button>
           } />
         
         <div className="grid grid-cols-3 gap-4">
@@ -222,7 +219,7 @@ export function ProjectsPage() {
                 className="bg-card rounded-xl border border-border p-6 shadow-sm-custom hover:shadow-md-custom hover:-translate-y-0.5 transition-all text-left group cursor-pointer relative">
                 
                 {/* Action buttons — admin only */}
-                {isAdmin &&
+                {true &&
                 <div className="absolute top-3 right-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button
                     onClick={(e) => openEditSquad(squad, e)}
@@ -1190,14 +1187,7 @@ function KanbanView({ filtered, clientId, clientName, squadMembers, platformSlug
                 onDrop={(e) => { e.stopPropagation(); handleDrop(col.status, e); }}
               >
                 {colTasks.map((task) => {
-                  const canDel = (() => {
-                    if (!currentUser) return false;
-                    if (currentUser.accessLevel === 3) return true;
-                    const client = clients.find((c) => c.id === task.clientId);
-                    if (!client) return false;
-                    const sq = squads.find((s) => s.id === client.squadId);
-                    return sq?.leader === currentUser.name;
-                  })();
+                  const canDel = !!currentUser;
                   return (
                     <DemandCard
                       key={task.id}

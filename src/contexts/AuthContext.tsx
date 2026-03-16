@@ -100,8 +100,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const getVisibleClients = useCallback((clients: Client[]): Client[] => {
     if (!currentUser) return [];
-    if (currentUser.accessLevel === 3) return clients;
-    return clients.filter((c) => currentUser.squadIds.includes(c.squadId));
+    return clients;
   }, [currentUser]);
 
   return (
