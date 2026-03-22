@@ -91,7 +91,9 @@ export function ClientsProvider({ children }: { children: ReactNode }) {
         changedBy: currentUser?.name ?? 'Sistema',
       });
     }
-    updateClientMut.mutate({ id: clientId, updates: { [field]: value } });
+    updateClientMut.mutate({ id: clientId, updates: { [field]: value } }, {
+      onError: (err) => toast({ title: 'Erro ao atualizar campo', description: String(err), variant: 'destructive' }),
+    });
   }, [clients, currentUser, updateClientMut, addChangeLogMut]);
 
   const addChatNote = useCallback((clientId: string, message: string) => {

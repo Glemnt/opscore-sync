@@ -64,16 +64,17 @@ interface BadgeProps {
   children: ReactNode;
 }
 
-export function StatusBadge({ className, children }: BadgeProps) {
+export const StatusBadge = forwardRef<HTMLSpanElement, BadgeProps>(({ className, children }, ref) => {
   return (
-    <span className={cn(
+    <span ref={ref} className={cn(
       'inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium border',
       className
     )}>
       {children}
     </span>
   );
-}
+});
+StatusBadge.displayName = 'StatusBadge';
 
 interface AvatarProps {
   name: string;
