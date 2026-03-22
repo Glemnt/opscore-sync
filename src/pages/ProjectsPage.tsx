@@ -214,7 +214,7 @@ export function ProjectsPage() {
             const squadPlatforms = clientPlatformsData.filter(cp => cp.squadId === squad.id);
             const totalPlatforms = squadPlatforms.length;
             // Plataformas ativas = todas exceto as em fase de churn
-            const activePlatforms = squadPlatforms.filter(cp => !cp.phase.toLowerCase().includes('churn')).length;
+            const activePlatforms = squadPlatforms.filter(cp => !(cp.phase ?? '').toLowerCase().includes('churn')).length;
             return (
               <div
                 key={squad.id}
