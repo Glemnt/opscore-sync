@@ -193,6 +193,15 @@ export function ProjectsPage() {
   }, [platformPhaseStatuses, platformPhaseKey]);
   const [dragOverClientCol, setDragOverClientCol] = useState<string | null>(null);
 
+  // Auto-select first platform when entering client detail view
+  useEffect(() => {
+    if (selectedClient && selectedPlatform === null) {
+      const firstPlatform = (selectedClient.platforms ?? [])[0];
+      setSelectedPlatform(firstPlatform ?? 'all');
+    }
+  }, [selectedClient, selectedPlatform]);
+
+
   const visibleSquads = squads;
 
   // Step 1: Show squads
