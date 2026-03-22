@@ -178,17 +178,19 @@ export function ProjectsPage() {
   // Stable key based on platform phases for orphan detection in Squads kanban
   const platformPhaseKey = clientPlatformsData.map(cp => `${cp.id}:${cp.phase}`).sort().join(',');
 
-  // Sync kanban columns when dynamic statuses load
+  // Sync kanban columns from platform_phase_statuses (the real operational phases)
   useEffect(() => {
-    if (clientStatuses.length > 0) {
-      const baseCols = clientStatuses.map((s) => ({ id: s.key, label: s.label, status: s.key }));
+    if (platformPhaseStatuses.length > 0) {
+      const baseCols = [...platformPhaseStatuses]
+        .sort((a, b) => a.sort_order - b.sort_order)
+        .map((s) => ({ id: s.key, label: s.label, status: s.key }));
       const knownKeys = new Set(baseCols.map(c => c.status));
-      // Usar phases de plataformas (contexto operacional do Kanban de Squads)
+      // Orphan detection: phases present in data but not in config
       const orphanStatuses = [...new Set(clientPlatformsData.map(cp => cp.phase))].filter(s => s && !knownKeys.has(s));
       const extraCols = orphanStatuses.map(s => ({ id: s, label: s.charAt(0).toUpperCase() + s.slice(1).replace(/_/g, ' '), status: s }));
       setClientCols([...baseCols, ...extraCols]);
     }
-  }, [clientStatuses, platformPhaseKey]);
+  }, [platformPhaseStatuses, platformPhaseKey]);
   const [dragOverClientCol, setDragOverClientCol] = useState<string | null>(null);
 
   const visibleSquads = squads;
@@ -429,7 +431,6 @@ export function ProjectsPage() {
 
     const filteredPlatformEntries = squadPlatformEntries.filter((e) => {
       const matchSearch = e.client.name.toLowerCase().includes(search.toLowerCase()) || e.platformName.toLowerCase().includes(search.toLowerCase());
-      const matchStatus = squadStatusFilter === 'all' || e.cp.phase === squadStatusFilter;
       const matchResponsible = squadResponsibleFilter === 'all' || e.cp.responsible === squadResponsibleFilter;
       const matchHealth = squadHealthFilter === 'all' || (e.cp.healthColor ?? 'white') === squadHealthFilter;
       const matchPlatform = squadPlatformFilter === 'all' || e.cp.platformSlug === squadPlatformFilter;
@@ -438,7 +439,7 @@ export function ProjectsPage() {
       const startDate = e.cp.startDate ?? e.client.startDate;
       const matchDateFrom = !squadDateFrom || startDate >= squadDateFrom;
       const matchDateTo = !squadDateTo || startDate <= squadDateTo;
-      return matchSearch && matchStatus && matchResponsible && matchHealth && matchPlatform && matchQuality && matchPriority && matchDateFrom && matchDateTo;
+      return matchSearch && matchResponsible && matchHealth && matchPlatform && matchQuality && matchPriority && matchDateFrom && matchDateTo;
     });
 
     
@@ -582,49 +583,53 @@ export function ProjectsPage() {
           );
         })()}
 
-        {/* Row 2: Phase filter tabs */}
-        <div className="flex items-center gap-1.5 bg-card border border-border rounded-lg p-1 mb-5">
-          <button
-            onClick={() => setSquadStatusFilter('all')}
-            className={cn(
-              'px-3 py-1.5 rounded-md text-xs font-medium transition-all',
-              squadStatusFilter === 'all' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground hover:bg-muted'
-            )}>
-            Todos
-            <span className={cn('ml-1.5 text-[10px]', squadStatusFilter === 'all' ? 'bg-primary-foreground/20 rounded-full px-1.5' : 'opacity-70')}>{squadPlatformEntries.length}</span>
-          </button>
-          {clientCols.map((col) => (
-            <div key={col.id} className="relative group flex items-center">
-              <button
-                onClick={() => setSquadStatusFilter(col.status as string)}
+        {/* Kanban by phase */}
+        <div className="flex gap-4 overflow-x-auto pb-4 flex-1 min-h-0">
+          {clientCols.map((col) => {
+            const colEntries = filteredPlatformEntries.filter(e => e.cp.phase === col.status);
+            const isDragOver = platDragOverCol === col.status;
+            return (
+              <div
+                key={col.id}
                 className={cn(
-                  'px-3 py-1.5 rounded-md text-xs font-medium transition-all',
-                  squadStatusFilter === col.status ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground hover:bg-muted'
-                )}>
-                {col.label}
-                <span className={cn('ml-1.5 text-[10px]', squadStatusFilter === col.status ? 'bg-primary-foreground/20 rounded-full px-1.5' : 'opacity-70')}>{squadPlatformEntries.filter(e => e.cp.phase === col.status).length}</span>
-              </button>
-              <button
-                onClick={(e) => { e.stopPropagation(); handleRemoveCol(col.id); }}
-                className="ml-0.5 p-0.5 rounded text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
-                title="Remover fase">
-                <X className="w-3 h-3" />
-              </button>
-            </div>
-          ))}
-          <button
-            onClick={handleAddCol}
-            className="px-2 py-1.5 rounded-md text-xs text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all"
-            title="Nova Fase">
-            <Plus className="w-3.5 h-3.5" />
-          </button>
-        </div>
+                  'flex flex-col w-80 min-w-[320px] shrink-0 rounded-xl border transition-all',
+                  isDragOver ? 'border-primary bg-primary/5 drop-zone-highlight' : 'border-border bg-muted/30'
+                )}
+                onDragOver={(e) => { e.preventDefault(); setPlatDragOverCol(col.status as string); }}
+                onDragLeave={() => setPlatDragOverCol(null)}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  setPlatDragOverCol(null);
+                  const cpId = e.dataTransfer.getData('text/plain');
+                  if (cpId) {
+                    updatePlatformMut.mutate({ id: cpId, updates: { phase: col.status as string } });
+                  }
+                }}
+              >
+                {/* Column header */}
+                <div className="flex items-center justify-between px-3 py-2.5 border-b border-border/50">
+                  <h3 className="text-xs font-bold text-foreground uppercase tracking-wider">
+                    {col.label}
+                    <span className="ml-1.5 text-[10px] font-semibold bg-primary/10 text-primary px-1.5 py-0.5 rounded-full">
+                      {colEntries.length}
+                    </span>
+                  </h3>
+                </div>
 
-
-        
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 overflow-y-auto pb-4">
-          {filteredPlatformEntries.map((entry) => {
+                {/* Column cards */}
+                <div
+                  className="flex-1 overflow-y-auto p-2 space-y-2"
+                  onDragOver={(e) => { e.preventDefault(); setPlatDragOverCol(col.status as string); }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    setPlatDragOverCol(null);
+                    const cpId = e.dataTransfer.getData('text/plain');
+                    if (cpId) {
+                      updatePlatformMut.mutate({ id: cpId, updates: { phase: col.status as string } });
+                    }
+                  }}
+                >
+                  {colEntries.map((entry) => {
                     const { client, cp, platformName } = entry;
                     const cpSquad = cp.squadId ? squads.find((s) => s.id === cp.squadId) : null;
                     const displaySquad = cpSquad ?? (client.squadId ? squads.find((s) => s.id === client.squadId) : null);
@@ -634,45 +639,50 @@ export function ProjectsPage() {
                     return (
                       <div
                         key={cp.id}
-                        onClick={() => { setExpandedPlatformEntry({ cp, client, platformName }); }}
-                        className="w-full bg-card rounded-xl border border-border p-4 shadow-sm-custom hover:shadow-md-custom hover:-translate-y-0.5 transition-all text-left group cursor-pointer">
-                        
-                        {/* Header: Client + Platform */}
-                        <div className="flex items-start justify-between mb-2.5">
-                          <div className="flex items-center gap-2.5 min-w-0">
-                            <div className="w-9 h-9 rounded-lg bg-primary-light flex items-center justify-center shrink-0">
-                              <ShoppingBag className="w-4 h-4 text-primary" />
+                        draggable
+                        onDragStart={(e) => {
+                          e.dataTransfer.setData('text/plain', cp.id);
+                          wasDraggingPlatRef.current = true;
+                        }}
+                        onDragEnd={() => { setTimeout(() => { wasDraggingPlatRef.current = false; }, 200); }}
+                        onClick={() => {
+                          if (wasDraggingPlatRef.current) return;
+                          setExpandedPlatformEntry({ cp, client, platformName });
+                        }}
+                        className="w-full bg-card rounded-xl border border-border p-3 shadow-sm-custom hover:shadow-md-custom hover:-translate-y-0.5 transition-all text-left group cursor-grab active:cursor-grabbing"
+                      >
+                        {/* Header */}
+                        <div className="flex items-start justify-between mb-2">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <div className="w-8 h-8 rounded-lg bg-primary-light flex items-center justify-center shrink-0">
+                              <ShoppingBag className="w-3.5 h-3.5 text-primary" />
                             </div>
-                            <div className="min-w-0">
-                              <h3 className="text-sm font-bold text-foreground group-hover:text-primary transition-colors truncate">
-                                {client.name}
-                              </h3>
-                            </div>
+                            <h3 className="text-xs font-bold text-foreground group-hover:text-primary transition-colors truncate">
+                              {client.name}
+                            </h3>
                           </div>
-                          <div className="flex items-center gap-1.5 shrink-0">
-                            {cp.qualityLevel && (() => {
-                              const qMap: Record<string, {emoji: string; label: string}> = { Seller: { emoji: '🛒', label: 'Seller' }, Lojista: { emoji: '🏪', label: 'Lojista' } };
-                              const q = qMap[cp.qualityLevel];
-                              return <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-accent text-[10px] font-semibold text-accent-foreground">{q ? `${q.emoji} ${q.label}` : cp.qualityLevel}</span>;
-                            })()}
-                          </div>
+                          {cp.qualityLevel && (() => {
+                            const qMap: Record<string, {emoji: string; label: string}> = { Seller: { emoji: '🛒', label: 'Seller' }, Lojista: { emoji: '🏪', label: 'Lojista' } };
+                            const q = qMap[cp.qualityLevel];
+                            return <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-accent text-[10px] font-semibold text-accent-foreground">{q ? `${q.emoji} ${q.label}` : cp.qualityLevel}</span>;
+                          })()}
                         </div>
 
-                        {/* Context: Squad / Responsible */}
-                        <div className="grid grid-cols-2 gap-x-2 gap-y-1.5 mb-2.5 text-xs">
-                          <div className="flex items-center gap-1.5 text-muted-foreground min-w-0">
-                            <Users2 className="w-3.5 h-3.5 shrink-0" />
+                        {/* Context */}
+                        <div className="grid grid-cols-2 gap-x-2 gap-y-1 mb-2 text-xs">
+                          <div className="flex items-center gap-1 text-muted-foreground min-w-0">
+                            <Users2 className="w-3 h-3 shrink-0" />
                             <span className="truncate font-medium text-foreground">{displaySquad?.name ?? '—'}</span>
                           </div>
-                          <div className="flex items-center gap-1.5 text-muted-foreground min-w-0">
-                            <UserCircle className="w-3.5 h-3.5 shrink-0" />
+                          <div className="flex items-center gap-1 text-muted-foreground min-w-0">
+                            <UserCircle className="w-3 h-3 shrink-0" />
                             <span className="truncate font-medium text-foreground">{cp.responsible || '—'}</span>
                           </div>
                         </div>
 
-                        {/* Health badge */}
-                        <div className="flex flex-wrap items-center gap-1.5 mb-2.5 pt-2 border-t border-border/50">
-                        {(() => {
+                        {/* Badges */}
+                        <div className="flex flex-wrap items-center gap-1 mb-2 pt-1.5 border-t border-border/50">
+                          {(() => {
                             const hMap: Record<string, { emoji: string; label: string; cls: string }> = {
                               green: { emoji: '🟢', label: 'Excelente', cls: 'bg-success/15 text-success border-success/30' },
                               yellow: { emoji: '🟡', label: 'Atenção', cls: 'bg-warning/15 text-warning border-warning/30' },
@@ -686,16 +696,14 @@ export function ProjectsPage() {
                               </span>
                             );
                           })()}
-
-                          {/* Platform badge */}
                           <span className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-primary/10 text-[10px] font-semibold text-primary border border-primary/20">
                             {platformName}
                           </span>
                         </div>
 
-                        {/* Full / Flex / Turbo badges (Mercado Livre only) */}
+                        {/* ML badges */}
                         {cp.platformSlug === 'mercado_livre' && (
-                          <div className="flex flex-wrap gap-1 mb-2.5">
+                          <div className="flex flex-wrap gap-1 mb-2">
                             {[
                               { key: 'envios_full', label: 'Full' },
                               { key: 'envios_flex', label: 'Flex' },
@@ -703,15 +711,7 @@ export function ProjectsPage() {
                             ].map((item) => {
                               const active = !!attrs[item.key];
                               return (
-                                <span
-                                  key={item.key}
-                                  className={cn(
-                                    'inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-semibold border',
-                                    active
-                                      ? 'bg-success/15 text-success border-success/30'
-                                      : 'bg-muted text-muted-foreground border-border/50'
-                                  )}
-                                >
+                                <span key={item.key} className={cn('inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-semibold border', active ? 'bg-success/15 text-success border-success/30' : 'bg-muted text-muted-foreground border-border/50')}>
                                   {active ? '✓' : '✗'} {item.label}
                                 </span>
                               );
@@ -719,9 +719,9 @@ export function ProjectsPage() {
                           </div>
                         )}
 
-                        {/* Other attribute badges (non-ML) */}
+                        {/* Other attribute badges */}
                         {cp.platformSlug !== 'mercado_livre' && summaryBadges.length > 0 && (
-                          <div className="flex flex-wrap gap-1 mb-2.5">
+                          <div className="flex flex-wrap gap-1 mb-2">
                             {summaryBadges.map((badge, i) => (
                               <span key={i} className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-secondary text-[10px] font-medium text-secondary-foreground border border-border/50">
                                 {badge}
@@ -730,9 +730,8 @@ export function ProjectsPage() {
                           </div>
                         )}
 
-                        {/* Footer: Phase + Actions */}
-                        <div className="flex items-center justify-between text-xs text-muted-foreground pt-2 border-t border-border/50">
-                          <span className="text-xs font-medium text-muted-foreground">{phaseLabels[cp.phase] ?? cp.phase}</span>
+                        {/* Footer */}
+                        <div className="flex items-center justify-end text-xs text-muted-foreground pt-1.5 border-t border-border/50">
                           <div className="flex items-center gap-0.5">
                             <Button variant="ghost" size="icon" className="h-6 w-6" title="Editar"
                               onClick={(e) => { e.stopPropagation(); setEditingPlatform(cp); }}>
@@ -750,6 +749,15 @@ export function ProjectsPage() {
                         </div>
                       </div>
                     );
+                  })}
+                  {colEntries.length === 0 && (
+                    <div className="flex items-center justify-center h-20 text-xs text-muted-foreground">
+                      Nenhum card nesta fase
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
           })}
         </div>
 
