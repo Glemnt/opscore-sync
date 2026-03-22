@@ -1,5 +1,5 @@
 import { Trophy, TrendingUp, AlertTriangle, CheckCircle, Clock, Target } from 'lucide-react';
-import { useTeamMembersQuery } from '@/hooks/useTeamMembersQuery';
+import { useAppUsersQuery } from '@/hooks/useAppUsersQuery';
 import { useTasksQuery } from '@/hooks/useTasksQuery';
 import { PageHeader, StatCard, Avatar } from '@/components/ui/shared';
 import { teamRoleConfig } from '@/lib/config';
@@ -10,7 +10,7 @@ import { useMemo } from 'react';
 
 export function ProductivityPage() {
   const { currentUser } = useAuth();
-  const { data: allTeamMembers = [] } = useTeamMembersQuery();
+  const { data: allTeamMembers = [] } = useAppUsersQuery();
   const { data: tasks = [] } = useTasksQuery();
 
   // Calculate real metrics from tasks
