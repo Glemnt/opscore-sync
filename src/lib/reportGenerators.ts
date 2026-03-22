@@ -166,9 +166,11 @@ export async function generateTeamReport(
       autoTable(doc, {
         startY: y,
         head: [['Cliente', 'Status', 'Projetos Ativos', 'Demandas Pendentes', 'Receita Mensal']],
-        body: squadClients.map(c => [
-          c.name, c.status, String(c.activeProjects), String(c.pendingTasks), c.monthlyRevenue ? `R$ ${c.monthlyRevenue.toLocaleString('pt-BR')}` : '—'
-        ]),
+        body: squadClients.map(c => {
+          const activeProj = projects.filter(p => p.clientId === c.id && p.status !== 'done').length;
+          const pendingT = tasks.filter(t => t.clientId === c.id && t.status !== 'done').length;
+          return [c.name, c.status, String(activeProj), String(pendingT), c.monthlyRevenue ? `R$ ${c.monthlyRevenue.toLocaleString('pt-BR')}` : '—'];
+        }),
         theme: 'grid',
         headStyles: { fillColor: [80, 80, 80], textColor: [255, 255, 255], fontSize: 8, fontStyle: 'bold' },
         bodyStyles: { fontSize: 8, textColor: TEXT_DARK },
@@ -212,10 +214,13 @@ export async function generateClientReport(client: Client, tasks: Task[], projec
   const doneTasks = clientTasks.filter(t => t.status === 'done').length;
   const healthMap = { green: '🟢 Saudável', yellow: '🟡 Atenção', red: '🔴 Crítico', white: '⚪ Sem dados' };
 
+  const activeProjects = clientProjects.filter(p => p.status !== 'done').length;
+  const pendingTasks = clientTasks.filter(t => t.status !== 'done').length;
+
   y = addKpiRow(doc, y, [
     { label: 'Receita Mensal', value: client.monthlyRevenue ? `R$ ${client.monthlyRevenue.toLocaleString('pt-BR')}` : '—' },
-    { label: 'Projetos Ativos', value: String(client.activeProjects) },
-    { label: 'Demandas Pendentes', value: String(client.pendingTasks) },
+    { label: 'Projetos Ativos', value: String(activeProjects) },
+    { label: 'Demandas Pendentes', value: String(pendingTasks) },
     { label: 'Tarefas Concluídas', value: String(doneTasks) },
     { label: 'Saúde', value: healthMap[client.healthColor || 'white'] },
   ]);
