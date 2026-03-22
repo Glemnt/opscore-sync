@@ -178,17 +178,19 @@ export function ProjectsPage() {
   // Stable key based on platform phases for orphan detection in Squads kanban
   const platformPhaseKey = clientPlatformsData.map(cp => `${cp.id}:${cp.phase}`).sort().join(',');
 
-  // Sync kanban columns when dynamic statuses load
+  // Sync kanban columns from platform_phase_statuses (the real operational phases)
   useEffect(() => {
-    if (clientStatuses.length > 0) {
-      const baseCols = clientStatuses.map((s) => ({ id: s.key, label: s.label, status: s.key }));
+    if (platformPhaseStatuses.length > 0) {
+      const baseCols = [...platformPhaseStatuses]
+        .sort((a, b) => a.sort_order - b.sort_order)
+        .map((s) => ({ id: s.key, label: s.label, status: s.key }));
       const knownKeys = new Set(baseCols.map(c => c.status));
-      // Usar phases de plataformas (contexto operacional do Kanban de Squads)
+      // Orphan detection: phases present in data but not in config
       const orphanStatuses = [...new Set(clientPlatformsData.map(cp => cp.phase))].filter(s => s && !knownKeys.has(s));
       const extraCols = orphanStatuses.map(s => ({ id: s, label: s.charAt(0).toUpperCase() + s.slice(1).replace(/_/g, ' '), status: s }));
       setClientCols([...baseCols, ...extraCols]);
     }
-  }, [clientStatuses, platformPhaseKey]);
+  }, [platformPhaseStatuses, platformPhaseKey]);
   const [dragOverClientCol, setDragOverClientCol] = useState<string | null>(null);
 
   const visibleSquads = squads;
