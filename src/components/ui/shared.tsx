@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+import { ReactNode, forwardRef } from 'react';
 import { cn } from '@/lib/utils';
 
 interface PageHeaderProps {
@@ -28,9 +28,9 @@ interface StatCardProps {
   accent?: string;
 }
 
-export function StatCard({ label, value, icon, trend, className, accent }: StatCardProps) {
+export const StatCard = forwardRef<HTMLDivElement, StatCardProps>(({ label, value, icon, trend, className, accent }, ref) => {
   return (
-    <div className={cn(
+    <div ref={ref} className={cn(
       'bg-card rounded-xl p-5 border border-border shadow-sm-custom hover:shadow-md-custom transition-shadow',
       className
     )}>
@@ -56,23 +56,25 @@ export function StatCard({ label, value, icon, trend, className, accent }: StatC
       </div>
     </div>
   );
-}
+});
+StatCard.displayName = 'StatCard';
 
 interface BadgeProps {
   className?: string;
   children: ReactNode;
 }
 
-export function StatusBadge({ className, children }: BadgeProps) {
+export const StatusBadge = forwardRef<HTMLSpanElement, BadgeProps>(({ className, children }, ref) => {
   return (
-    <span className={cn(
+    <span ref={ref} className={cn(
       'inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium border',
       className
     )}>
       {children}
     </span>
   );
-}
+});
+StatusBadge.displayName = 'StatusBadge';
 
 interface AvatarProps {
   name: string;

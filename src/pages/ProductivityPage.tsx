@@ -1,40 +1,66 @@
 import { Trophy, TrendingUp, AlertTriangle, CheckCircle, Clock, Target } from 'lucide-react';
 import { useTeamMembersQuery } from '@/hooks/useTeamMembersQuery';
+import { useTasksQuery } from '@/hooks/useTasksQuery';
 import { PageHeader, StatCard, Avatar } from '@/components/ui/shared';
 import { teamRoleConfig } from '@/lib/config';
-import { TeamMember } from '@/types';
 import { cn } from '@/lib/utils';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, RadarChart, Radar, PolarGrid, PolarAngleAxis } from 'recharts';
 import { useAuth } from '@/contexts/AuthContext';
-import { useClients } from '@/contexts/ClientsContext';
+import { useMemo } from 'react';
 
 export function ProductivityPage() {
   const { currentUser } = useAuth();
-  const { getVisibleClients } = useClients();
-  const clients = getVisibleClients();
   const { data: allTeamMembers = [] } = useTeamMembersQuery();
+  const { data: tasks = [] } = useTasksQuery();
 
-  // Filter team members by visible squads
-  const teamMembers = allTeamMembers;
+  // Calculate real metrics from tasks
+  const memberMetrics = useMemo(() => {
+    return allTeamMembers.map(m => {
+      const memberTasks = tasks.filter(t => t.responsible === m.name);
+      const completed = memberTasks.filter(t => t.status === 'done').length;
+      const late = memberTasks.filter(t => {
+        const deadline = new Date(t.deadline);
+        const now = new Date();
+        return t.status !== 'done' && deadline < now;
+      }).length;
+      const total = memberTasks.length;
+      const onTimeDone = memberTasks.filter(t => {
+        if (t.status !== 'done') return false;
+        const deadline = new Date(t.deadline);
+        const updated = new Date(t.deadline); // approximate
+        return updated <= deadline;
+      }).length;
+      const onTimePct = completed > 0 ? Math.round((onTimeDone / completed) * 100) : 100;
+      const currentLoad = memberTasks.filter(t => t.status !== 'done').length;
 
-  const performanceData = teamMembers.map(m => ({
+      return {
+        ...m,
+        completedTasks: completed,
+        lateTasks: late,
+        onTimePct,
+        currentLoad,
+      };
+    });
+  }, [allTeamMembers, tasks]);
+
+  const performanceData = memberMetrics.map(m => ({
     name: m.name.split(' ')[0],
     concluidas: m.completedTasks,
     pontualidade: m.onTimePct,
   }));
 
-  const totalCompleted = teamMembers.reduce((a, m) => a + m.completedTasks, 0);
-  const avgOnTime = teamMembers.length > 0 ? Math.round(teamMembers.reduce((a, m) => a + m.onTimePct, 0) / teamMembers.length) : 0;
-  const totalLate = teamMembers.reduce((a, m) => a + m.lateTasks, 0);
-  const overloaded = teamMembers.filter(m => m.currentLoad >= 8).length;
+  const totalCompleted = memberMetrics.reduce((a, m) => a + m.completedTasks, 0);
+  const avgOnTime = memberMetrics.length > 0 ? Math.round(memberMetrics.reduce((a, m) => a + m.onTimePct, 0) / memberMetrics.length) : 0;
+  const totalLate = memberMetrics.reduce((a, m) => a + m.lateTasks, 0);
+  const overloaded = memberMetrics.filter(m => m.currentLoad >= 8).length;
 
-  const sorted = [...teamMembers].sort((a, b) => b.completedTasks - a.completedTasks);
+  const sorted = [...memberMetrics].sort((a, b) => b.completedTasks - a.completedTasks);
 
   return (
     <div className="p-6 animate-fade-in">
       <PageHeader
         title="Produtividade"
-        subtitle="Métricas de desempenho da equipe"
+        subtitle="Métricas de desempenho da equipe (calculadas em tempo real)"
       />
 
       {/* Stats */}

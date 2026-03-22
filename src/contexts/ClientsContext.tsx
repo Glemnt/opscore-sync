@@ -1,5 +1,6 @@
 import { createContext, useContext, ReactNode, useCallback } from 'react';
 import { Client, ChangeLogEntry, ChatNote } from '@/types';
+import { toast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSquadsQuery } from '@/hooks/useSquadsQuery';
 import {
@@ -42,12 +43,17 @@ export function ClientsProvider({ children }: { children: ReactNode }) {
   const addClient = useCallback((client: Client, callbacks?: MutationCallbacks) => {
     addClientMut.mutate(client, {
       onSuccess: () => callbacks?.onSuccess?.(),
-      onError: (err) => callbacks?.onError?.(err),
+      onError: (err) => {
+        toast({ title: 'Erro ao adicionar cliente', description: String(err), variant: 'destructive' });
+        callbacks?.onError?.(err);
+      },
     });
   }, [addClientMut]);
 
   const deleteClient = useCallback((clientId: string) => {
-    deleteClientMut.mutate(clientId);
+    deleteClientMut.mutate(clientId, {
+      onError: (err) => toast({ title: 'Erro ao excluir cliente', description: String(err), variant: 'destructive' }),
+    });
   }, [deleteClientMut]);
 
   const updateClient = useCallback((clientId: string, updates: Partial<Client>) => {
@@ -69,7 +75,9 @@ export function ClientsProvider({ children }: { children: ReactNode }) {
         }
       }
     }
-    updateClientMut.mutate({ id: clientId, updates });
+    updateClientMut.mutate({ id: clientId, updates }, {
+      onError: (err) => toast({ title: 'Erro ao atualizar cliente', description: String(err), variant: 'destructive' }),
+    });
   }, [clients, currentUser, updateClientMut, addChangeLogMut]);
 
   const updateClientField = useCallback((clientId: string, field: string, value: any, fieldLabel: string) => {
@@ -83,7 +91,9 @@ export function ClientsProvider({ children }: { children: ReactNode }) {
         changedBy: currentUser?.name ?? 'Sistema',
       });
     }
-    updateClientMut.mutate({ id: clientId, updates: { [field]: value } });
+    updateClientMut.mutate({ id: clientId, updates: { [field]: value } }, {
+      onError: (err) => toast({ title: 'Erro ao atualizar campo', description: String(err), variant: 'destructive' }),
+    });
   }, [clients, currentUser, updateClientMut, addChangeLogMut]);
 
   const addChatNote = useCallback((clientId: string, message: string) => {
