@@ -214,10 +214,13 @@ export async function generateClientReport(client: Client, tasks: Task[], projec
   const doneTasks = clientTasks.filter(t => t.status === 'done').length;
   const healthMap = { green: '🟢 Saudável', yellow: '🟡 Atenção', red: '🔴 Crítico', white: '⚪ Sem dados' };
 
+  const activeProjects = clientProjects.filter(p => p.status !== 'done').length;
+  const pendingTasks = clientTasks.filter(t => t.status !== 'done').length;
+
   y = addKpiRow(doc, y, [
     { label: 'Receita Mensal', value: client.monthlyRevenue ? `R$ ${client.monthlyRevenue.toLocaleString('pt-BR')}` : '—' },
-    { label: 'Projetos Ativos', value: String(client.activeProjects) },
-    { label: 'Demandas Pendentes', value: String(client.pendingTasks) },
+    { label: 'Projetos Ativos', value: String(activeProjects) },
+    { label: 'Demandas Pendentes', value: String(pendingTasks) },
     { label: 'Tarefas Concluídas', value: String(doneTasks) },
     { label: 'Saúde', value: healthMap[client.healthColor || 'white'] },
   ]);
