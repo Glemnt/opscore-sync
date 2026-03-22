@@ -485,7 +485,7 @@ export function ProjectsPage() {
           } />
 
         {/* Row 1: Search + filter dropdowns */}
-        <div className="flex flex-wrap items-center gap-3 mb-3">
+        <div key={selectedSquad?.id ?? 'no-squad'} className="flex flex-wrap items-center gap-3 mb-3">
           <div className="relative flex-1 max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <input
