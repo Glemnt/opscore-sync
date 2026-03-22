@@ -1,0 +1,1 @@
+UPDATE client_platforms SET phase = 'onboarding' WHERE id = '1991d0f0-6f6a-44b8-8a4d-8c079be1cbb4';
