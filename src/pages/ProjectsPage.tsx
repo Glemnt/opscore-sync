@@ -870,8 +870,10 @@ export function ProjectsPage() {
           client={expandedPlatformEntry.client}
           platformName={expandedPlatformEntry.platformName}
           onViewDemands={() => {
-            setSelectedClient(expandedPlatformEntry.client);
-            setSelectedPlatform(expandedPlatformEntry.cp.platformSlug);
+            if (expandedPlatformEntry?.client && expandedPlatformEntry?.cp?.platformSlug) {
+              setSelectedClient(expandedPlatformEntry.client);
+              setSelectedPlatform(expandedPlatformEntry.cp.platformSlug);
+            }
             setExpandedPlatformEntry(null);
           }}
         />
