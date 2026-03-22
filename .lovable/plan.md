@@ -1,68 +1,92 @@
 
 
-## Plano: Corrigir Bug de Tela Branca na Area de Tarefas/Demandas
+## Plano: Corrigir Fluxo de Demandas (Reset de Responsavel + Tela Branca)
 
 ### Problema
 
-O time reporta tela branca ao tentar subir tarefas, ver demandas ou acessar acoes relacionadas. Nao foi possivel reproduzir como admin, o que indica que o problema pode ser intermitente, relacionado a dados especificos, ou a ausencia de tratamento de erros que transforma qualquer crash em tela branca silenciosa.
+Dois bugs criticos no fluxo de demandas:
+1. Ao selecionar responsavel no template SARRAMA Shopee, o formulario reseta e perde todos os dados preenchidos
+2. Ao criar demandas em outras plataformas, tela branca
 
-### Causa raiz identificada
+### Causa raiz
 
-1. **Ausencia de Error Boundary** — o app nao tem nenhum React Error Boundary. Qualquer erro de runtime em qualquer componente resulta em tela branca sem feedback ao usuario.
+**Bug 1 — Reset do formulario ao selecionar responsavel:**
 
-2. **Crash potencial em `cp.phase.toLowerCase()`** (ProjectsPage.tsx, linha 217) — se alguma plataforma tiver `phase` como `null` ou `undefined`, o `.toLowerCase()` lanca TypeError e a pagina inteira quebra.
+Em `GenerateDemandsDialog.tsx`, linhas 64-96, o `useEffect` que expande templates em rows depende de `phaseTemplates` e `flows`:
 
-3. **`return null` em transicao de estado** (ProjectsPage.tsx, linha 878) — quando `selectedPlatform === null` e `selectedClient` existe, o componente retorna `null` momentaneamente enquanto define o `selectedPlatform`. Isso pode causar flash de tela branca.
+```tsx
+useEffect(() => {
+  const expanded: DemandRow[] = [];
+  for (const t of phaseTemplates) { ... }
+  setRows(expanded); // RESETA TUDO
+}, [phaseTemplates, flows]);
+```
 
-4. **Sem loading states** — quando dados de `taskStatuses` ou `clientPlatformsData` estao carregando, nao ha indicador visual.
+`phaseTemplates` e um `useMemo` que depende de `templates` (vindo do react-query). Quando o usuario interage com o Select de responsavel, o react-query pode disparar um refetch (ex: window focus, stale time). Quando `templates` refetcha, a referencia do array muda, `phaseTemplates` recalcula (nova referencia mesmo com mesmos dados), o useEffect dispara e **reseta todas as rows**, apagando responsavel e deadline ja preenchidos.
+
+O mesmo acontece com `flows` — qualquer refetch dispara o reset.
+
+**Bug 2 — Tela branca em outras plataformas:**
+
+Quando o usuario navega para o detalhe de uma plataforma via `onViewDemands` (PlatformDetailModal), o codigo seta `selectedClient` e `selectedPlatform`. Se a plataforma nao existe no array `selectedClient.platforms` ou se `clientPlatformsData` ainda nao carregou, o componente pode crashar silenciosamente.
 
 ### Solucao
 
-#### 1. Adicionar Error Boundary global
+#### 1. Estabilizar rows no GenerateDemandsDialog
 
-Criar `src/components/ErrorBoundary.tsx` com:
-- Captura de erros em `componentDidCatch`
-- UI de fallback com botao "Tentar novamente"
-- Wrap no componente `AppContent` em `Index.tsx`
+Substituir o `useEffect` que reseta rows por logica que so recalcula quando a fase muda (nao quando dados refetcham):
 
-#### 2. Corrigir null safety em `cp.phase`
+- Usar uma ref para rastrear a fase anterior
+- So resetar rows quando `selectedPhase` realmente mudar
+- Memoizar `phaseTemplates` com comparacao estavel (por IDs, nao por referencia)
 
-Em `src/pages/ProjectsPage.tsx`, linha 217:
-```
-// De:
-cp.phase.toLowerCase().includes('churn')
-// Para:
-(cp.phase ?? '').toLowerCase().includes('churn')
-```
-
-E em `src/hooks/useClientPlatformsQuery.ts`, na funcao `mapRow`:
-```
-phase: row.phase ?? 'onboarding',
-```
-
-#### 3. Eliminar `return null` na transicao de estado
-
-Em `src/pages/ProjectsPage.tsx`, linhas 874-878, substituir:
 ```tsx
-if (selectedPlatform === null) {
-    const firstPlatform = (selectedClient.platforms ?? [])[0];
-    setSelectedPlatform(firstPlatform ?? 'all');
-    return null; // <- causa tela branca momentanea
-}
+// Usar ref para detectar mudanca real de fase
+const prevPhaseRef = useRef(selectedPhase);
+
+useEffect(() => {
+  // So recalcular se a fase mudou de verdade
+  if (prevPhaseRef.current === selectedPhase && rows.length > 0) return;
+  prevPhaseRef.current = selectedPhase;
+  
+  const expanded: DemandRow[] = [];
+  // ... mesmo codigo de expansao
+  setRows(expanded);
+}, [selectedPhase, templates, flows]);
 ```
-Por um useEffect que faca a mesma logica sem retornar null.
 
-#### 4. Adicionar loading states
+#### 2. Proteger contra perda de dados no updateRow
 
-Em `TasksPage.tsx` e `ProjectsPage.tsx`, mostrar skeleton/spinner quando `isLoading` for true nos hooks de query.
+Garantir que `updateRow` nao e afetada por re-renders:
+
+```tsx
+const updateRow = useCallback((idx: number, patch: Partial<DemandRow>) => {
+  setRows((prev) => prev.map((r, i) => (i === idx ? { ...r, ...patch } : r)));
+}, []);
+```
+
+#### 3. Wrap GenerateDemandsDialog com Error Boundary
+
+Adicionar try-catch no render e proteger contra crash silencioso que leva a tela branca.
+
+#### 4. Proteger navegacao para detalhe de plataforma
+
+Em `ProjectsPage.tsx`, no handler `onViewDemands`, validar que a plataforma existe antes de navegar:
+
+```tsx
+onViewDemands={() => {
+  if (expandedPlatformEntry?.client && expandedPlatformEntry?.cp?.platformSlug) {
+    setSelectedClient(expandedPlatformEntry.client);
+    setSelectedPlatform(expandedPlatformEntry.cp.platformSlug);
+  }
+  setExpandedPlatformEntry(null);
+}}
+```
 
 ### Arquivos alterados
 
 | Arquivo | Alteracao |
 |---|---|
-| `src/components/ErrorBoundary.tsx` | Novo componente Error Boundary |
-| `src/pages/Index.tsx` | Wrap com ErrorBoundary |
-| `src/pages/ProjectsPage.tsx` | Fix null safety em `cp.phase`, eliminar `return null`, loading state |
-| `src/hooks/useClientPlatformsQuery.ts` | Default `phase` para `'onboarding'` |
-| `src/pages/TasksPage.tsx` | Loading state |
+| `src/components/GenerateDemandsDialog.tsx` | Estabilizar useEffect de rows para nao resetar ao refetch; useCallback no updateRow |
+| `src/pages/ProjectsPage.tsx` | Validar dados antes de navegar no onViewDemands |
 
