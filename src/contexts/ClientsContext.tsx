@@ -51,7 +51,9 @@ export function ClientsProvider({ children }: { children: ReactNode }) {
   }, [addClientMut]);
 
   const deleteClient = useCallback((clientId: string) => {
-    deleteClientMut.mutate(clientId);
+    deleteClientMut.mutate(clientId, {
+      onError: (err) => toast({ title: 'Erro ao excluir cliente', description: String(err), variant: 'destructive' }),
+    });
   }, [deleteClientMut]);
 
   const updateClient = useCallback((clientId: string, updates: Partial<Client>) => {
