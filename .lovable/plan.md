@@ -1,19 +1,21 @@
 
 
-## Corrigir contadores estaticos active_projects / pending_tasks
+## Corrigir ProductivityPage — usar app_users em vez de team_members
 
 ### Problema
-Os campos `active_projects` e `pending_tasks` na tabela `clients` sao estaticos (default 0, nunca atualizados). O unico lugar que consome esses valores estaticos de forma errada e o **report generator** (`reportGenerators.ts`), que exibe "Projetos Ativos: 0" e "Demandas Pendentes: 0". As paginas de UI (ClientsPage, ClientDetailModal) ja calculam dinamicamente filtrando `tasks`.
+A `ProductivityPage` usa `useTeamMembersQuery()` (tabela `team_members`) para obter a lista de membros. Embora as metricas ja sejam calculadas dinamicamente a partir de `tasks`, a **fonte da lista de pessoas** e a tabela errada — `team_members` tem campos estaticos (`completed_tasks`, `late_tasks`, etc.) e nao reflete os usuarios reais cadastrados em `app_users`.
 
-### Correções
+### Correcao
 
-**1. `src/lib/reportGenerators.ts`** — Calcular dinamicamente nos relatorios
+**`src/pages/ProductivityPage.tsx`**:
+- Trocar `useTeamMembersQuery` por `useAppUsersQuery`
+- Adaptar o `useMemo` para usar `AppUserProfile` em vez de `TeamMember` (campos: `id`, `name`, `role`)
+- A logica de calculo dinamico (completed, late, onTimePct, currentLoad) permanece identica — ja filtra `tasks` por `t.responsible === m.name`
+- O ranking e graficos continuam funcionando sem mudanca visual
 
-- **Relatorio de squads** (L170): trocar `c.activeProjects` e `c.pendingTasks` por contagens calculadas a partir dos arrays `tasks` e `projects` passados como parametro.
-- **Relatorio de cliente** (L217-218): trocar `client.activeProjects` por `clientProjects.filter(p => p.status !== 'done').length` e `client.pendingTasks` por `clientTasks.filter(t => t.status !== 'done').length`.
+### Detalhes tecnicos
 
-**2. Nenhuma mudanca de schema** — Os campos continuam no banco (remover colunas quebraria types.ts e inserts), mas deixam de ser consumidos para exibicao. Valores inseridos como 0 nos dialogs de criacao permanecem inofensivos.
+O tipo `AppUserProfile` ja tem `name` e `role` (ambos `TeamRole`), que sao os unicos campos usados do membro base. Os campos `completedTasks`, `lateTasks`, `onTimePct`, `currentLoad` ja sao calculados no `useMemo` e sobrescrevem os do objeto original via spread (`...m`).
 
-### Resultado
-Todos os pontos de exibicao (UI e relatorios PDF) passam a usar contagens reais calculadas dinamicamente a partir de `tasks` e `projects`.
+Mudanca minima: apenas o import e a query source mudam. Nenhuma alteracao de schema ou migracao necessaria.
 
