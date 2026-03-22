@@ -1,36 +1,19 @@
 
 
-## Confirmacao de Politica — Acesso Global
+## Corrigir contadores estaticos active_projects / pending_tasks
 
----
+### Problema
+Os campos `active_projects` e `pending_tasks` na tabela `clients` sao estaticos (default 0, nunca atualizados). O unico lugar que consome esses valores estaticos de forma errada e o **report generator** (`reportGenerators.ts`), que exibe "Projetos Ativos: 0" e "Demandas Pendentes: 0". As paginas de UI (ClientsPage, ClientDetailModal) ja calculam dinamicamente filtrando `tasks`.
 
-### Decisao registrada
+### Correções
 
-**Regra oficial:** Todos os usuarios autenticados veem todos os clientes, squads e dados operacionais. Dados financeiros (monthlyRevenue, setupFee, MRR) sao restritos a admin (accessLevel === 3).
+**1. `src/lib/reportGenerators.ts`** — Calcular dinamicamente nos relatorios
 
-### Validacao do estado atual
+- **Relatorio de squads** (L170): trocar `c.activeProjects` e `c.pendingTasks` por contagens calculadas a partir dos arrays `tasks` e `projects` passados como parametro.
+- **Relatorio de cliente** (L217-218): trocar `client.activeProjects` por `clientProjects.filter(p => p.status !== 'done').length` e `client.pendingTasks` por `clientTasks.filter(t => t.status !== 'done').length`.
 
-O sistema **ja esta alinhado** com esta decisao. Nenhuma mudanca de codigo e necessaria.
+**2. Nenhuma mudanca de schema** — Os campos continuam no banco (remover colunas quebraria types.ts e inserts), mas deixam de ser consumidos para exibicao. Valores inseridos como 0 nos dialogs de criacao permanecem inofensivos.
 
-**Evidencias:**
-
-| Ponto | Status | Evidencia |
-|---|---|---|
-| `getVisibleClients()` retorna todos os clientes | OK | `ClientsContext.tsx` L107-110: retorna `clients` sem filtro |
-| MRR no Dashboard restrito a admin | OK | `DashboardPage.tsx`: cards financeiros com `isAdmin` guard |
-| Mensalidade/Setup nos cards de cliente | OK | `ClientsPage.tsx` L422-437: `{isAdmin && ...}` |
-| Campos financeiros no modal de edicao | OK | `ClientDetailModal.tsx` L366-374: inputs envoltos em `isAdmin` |
-| Campo financeiro em modo leitura | OK | `ClientDetailModal.tsx` L473: `{isAdmin && <ReadOnlyField ...>}` |
-
-### Risco aceito
-
-O payload JSON de `useClientsQuery` ainda inclui `monthly_revenue` e `setup_fee` para todos os usuarios autenticados (a query faz `select('*')`). A protecao e apenas visual (frontend). Como todos sao colaboradores internos, este risco e **aceito** conforme a decisao do usuario.
-
-### Pendencia resolvida
-
-A contradicao entre `global-access-policy` e `squad-visibility-rules` esta oficialmente resolvida: **a politica global prevalece**. A memory `squad-visibility-rules` deve ser atualizada para refletir que o isolamento por squad NAO se aplica — todos veem tudo.
-
-### Nenhuma alteracao de codigo necessaria
-
-O sistema ja implementa exatamente esta politica.
+### Resultado
+Todos os pontos de exibicao (UI e relatorios PDF) passam a usar contagens reais calculadas dinamicamente a partir de `tasks` e `projects`.
 
