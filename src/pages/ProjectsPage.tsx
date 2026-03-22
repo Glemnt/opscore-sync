@@ -462,7 +462,17 @@ export function ProjectsPage() {
           actions={
           <div className="flex items-center gap-2">
             <button
-              onClick={() => setSelectedSquad(null)}
+              onClick={() => {
+                setSquadResponsibleFilter('all');
+                setSquadHealthFilter('all');
+                setSquadPlatformFilter('all');
+                setSquadQualityFilter('all');
+                setSquadPriorityFilter('all');
+                setSquadDateFrom('');
+                setSquadDateTo('');
+                setSearch('');
+                setSelectedSquad(null);
+              }}
               className="flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
                 <ArrowLeft className="w-4 h-4" />
                 Voltar aos Squads
@@ -475,7 +485,7 @@ export function ProjectsPage() {
           } />
 
         {/* Row 1: Search + filter dropdowns */}
-        <div className="flex flex-wrap items-center gap-3 mb-3">
+        <div key={selectedSquad?.id ?? 'no-squad'} className="flex flex-wrap items-center gap-3 mb-3">
           <div className="relative flex-1 max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <input
