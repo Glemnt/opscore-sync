@@ -43,7 +43,10 @@ export function ClientsProvider({ children }: { children: ReactNode }) {
   const addClient = useCallback((client: Client, callbacks?: MutationCallbacks) => {
     addClientMut.mutate(client, {
       onSuccess: () => callbacks?.onSuccess?.(),
-      onError: (err) => callbacks?.onError?.(err),
+      onError: (err) => {
+        toast({ title: 'Erro ao adicionar cliente', description: String(err), variant: 'destructive' });
+        callbacks?.onError?.(err);
+      },
     });
   }, [addClientMut]);
 
