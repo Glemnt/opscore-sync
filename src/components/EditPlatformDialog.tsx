@@ -31,8 +31,9 @@ const CLIENT_TYPE_OPTIONS = [
 ];
 
 const PHASE_OPTIONS = [
-  { value: 'onboarding', label: 'On-board' },
+  { value: 'onboarding', label: 'Onboarding' },
   { value: 'implementacao', label: 'Implementação' },
+  { value: 'active', label: 'Ativo' },
   { value: 'performance', label: 'Performance' },
   { value: 'escala', label: 'Escala' },
 ];
