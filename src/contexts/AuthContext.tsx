@@ -11,7 +11,6 @@ interface AuthContextType {
   loading: boolean;
   login: (email: string, password: string) => Promise<boolean>;
   logout: () => Promise<void>;
-  signup: (email: string, password: string, name: string) => Promise<{ error?: string }>;
   getVisibleClients: (clients: Client[]) => Client[];
 }
 
