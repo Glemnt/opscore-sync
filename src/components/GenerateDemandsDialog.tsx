@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -60,8 +60,19 @@ export function GenerateDemandsDialog({ open, onOpenChange, phase, clientId, cli
 
   const todayStr = new Date().toISOString().split('T')[0];
 
-  // Expand templates: 1 row per flow step
+  // Stable key to detect when we actually need to rebuild rows
+  const templateIds = useMemo(
+    () => phaseTemplates.map(t => t.id).join(','),
+    [phaseTemplates]
+  );
+  const prevKeyRef = useRef('');
+
+  // Expand templates: 1 row per flow step — only when phase/templates actually change
   useEffect(() => {
+    const key = `${selectedPhase}::${templateIds}`;
+    if (key === prevKeyRef.current && rows.length > 0) return;
+    prevKeyRef.current = key;
+
     const expanded: DemandRow[] = [];
     for (const t of phaseTemplates) {
       const flow = flows.find((f) => f.id === t.flowId);
@@ -79,7 +90,6 @@ export function GenerateDemandsDialog({ open, onOpenChange, phase, clientId, cli
           });
         }
       } else {
-        // Fallback: template without valid flow (shouldn't happen with new config)
         expanded.push({
           templateId: t.id,
           title: t.title,
@@ -93,11 +103,11 @@ export function GenerateDemandsDialog({ open, onOpenChange, phase, clientId, cli
       }
     }
     setRows(expanded);
-  }, [phaseTemplates, flows]);
+  }, [selectedPhase, templateIds, phaseTemplates, flows]);
 
-  const updateRow = (idx: number, patch: Partial<DemandRow>) => {
+  const updateRow = useCallback((idx: number, patch: Partial<DemandRow>) => {
     setRows((prev) => prev.map((r, i) => (i === idx ? { ...r, ...patch } : r)));
-  };
+  }, []);
 
   const selectedCount = rows.filter((r) => r.selected).length;
   const [creating, setCreating] = useState(false);
