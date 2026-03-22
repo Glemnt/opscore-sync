@@ -166,9 +166,11 @@ export async function generateTeamReport(
       autoTable(doc, {
         startY: y,
         head: [['Cliente', 'Status', 'Projetos Ativos', 'Demandas Pendentes', 'Receita Mensal']],
-        body: squadClients.map(c => [
-          c.name, c.status, String(c.activeProjects), String(c.pendingTasks), c.monthlyRevenue ? `R$ ${c.monthlyRevenue.toLocaleString('pt-BR')}` : '—'
-        ]),
+        body: squadClients.map(c => {
+          const activeProj = projects.filter(p => p.clientId === c.id && p.status !== 'done').length;
+          const pendingT = tasks.filter(t => t.clientId === c.id && t.status !== 'done').length;
+          return [c.name, c.status, String(activeProj), String(pendingT), c.monthlyRevenue ? `R$ ${c.monthlyRevenue.toLocaleString('pt-BR')}` : '—'];
+        }),
         theme: 'grid',
         headStyles: { fillColor: [80, 80, 80], textColor: [255, 255, 255], fontSize: 8, fontStyle: 'bold' },
         bodyStyles: { fontSize: 8, textColor: TEXT_DARK },
