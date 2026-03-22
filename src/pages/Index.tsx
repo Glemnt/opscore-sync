@@ -51,15 +51,17 @@ function AppContent() {
   };
 
   return (
-    <SquadsProvider>
-      <ClientsProvider>
-        <TasksProvider>
-          <Layout currentPage={currentPage} onNavigate={setCurrentPage}>
-            {renderPage()}
-          </Layout>
-        </TasksProvider>
-      </ClientsProvider>
-    </SquadsProvider>
+    <ErrorBoundary>
+      <SquadsProvider>
+        <ClientsProvider>
+          <TasksProvider>
+            <Layout currentPage={currentPage} onNavigate={setCurrentPage}>
+              {renderPage()}
+            </Layout>
+          </TasksProvider>
+        </ClientsProvider>
+      </SquadsProvider>
+    </ErrorBoundary>
   );
 }
 

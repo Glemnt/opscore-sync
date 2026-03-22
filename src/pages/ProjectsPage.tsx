@@ -872,10 +872,19 @@ export function ProjectsPage() {
   }
 
   // If no platform selected yet, default to first available or 'all'
+  useEffect(() => {
+    if (selectedClient && selectedPlatform === null) {
+      const firstPlatform = (selectedClient.platforms ?? [])[0];
+      setSelectedPlatform(firstPlatform ?? 'all');
+    }
+  }, [selectedClient, selectedPlatform]);
+
   if (selectedPlatform === null) {
-    const firstPlatform = (selectedClient.platforms ?? [])[0];
-    setSelectedPlatform(firstPlatform ?? 'all');
-    return null;
+    return (
+      <div className="p-6 flex items-center justify-center">
+        <p className="text-muted-foreground">Carregando...</p>
+      </div>
+    );
   }
 
   // Step 3: Show projects of selected client (optionally filtered by platform)
