@@ -28,9 +28,9 @@ interface StatCardProps {
   accent?: string;
 }
 
-export function StatCard({ label, value, icon, trend, className, accent }: StatCardProps) {
+export const StatCard = forwardRef<HTMLDivElement, StatCardProps>(({ label, value, icon, trend, className, accent }, ref) => {
   return (
-    <div className={cn(
+    <div ref={ref} className={cn(
       'bg-card rounded-xl p-5 border border-border shadow-sm-custom hover:shadow-md-custom transition-shadow',
       className
     )}>
@@ -56,7 +56,8 @@ export function StatCard({ label, value, icon, trend, className, accent }: StatC
       </div>
     </div>
   );
-}
+});
+StatCard.displayName = 'StatCard';
 
 interface BadgeProps {
   className?: string;
