@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Layout } from '@/components/Layout';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { DashboardPage } from '@/pages/DashboardPage';
 import { ClientsPage } from '@/pages/ClientsPage';
 import { ProjectsPage } from '@/pages/ProjectsPage';
@@ -50,15 +51,17 @@ function AppContent() {
   };
 
   return (
-    <SquadsProvider>
-      <ClientsProvider>
-        <TasksProvider>
-          <Layout currentPage={currentPage} onNavigate={setCurrentPage}>
-            {renderPage()}
-          </Layout>
-        </TasksProvider>
-      </ClientsProvider>
-    </SquadsProvider>
+    <ErrorBoundary>
+      <SquadsProvider>
+        <ClientsProvider>
+          <TasksProvider>
+            <Layout currentPage={currentPage} onNavigate={setCurrentPage}>
+              {renderPage()}
+            </Layout>
+          </TasksProvider>
+        </ClientsProvider>
+      </SquadsProvider>
+    </ErrorBoundary>
   );
 }
 

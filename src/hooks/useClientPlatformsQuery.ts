@@ -26,7 +26,7 @@ function mapRow(row: any): ClientPlatform {
     id: row.id,
     clientId: row.client_id,
     platformSlug: row.platform_slug,
-    phase: row.phase,
+    phase: row.phase ?? 'onboarding',
     responsible: row.responsible,
     squadId: row.squad_id,
     startDate: row.start_date,
