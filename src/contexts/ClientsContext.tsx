@@ -75,7 +75,9 @@ export function ClientsProvider({ children }: { children: ReactNode }) {
         }
       }
     }
-    updateClientMut.mutate({ id: clientId, updates });
+    updateClientMut.mutate({ id: clientId, updates }, {
+      onError: (err) => toast({ title: 'Erro ao atualizar cliente', description: String(err), variant: 'destructive' }),
+    });
   }, [clients, currentUser, updateClientMut, addChangeLogMut]);
 
   const updateClientField = useCallback((clientId: string, field: string, value: any, fieldLabel: string) => {
