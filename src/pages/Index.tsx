@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Layout } from '@/components/Layout';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { DashboardPage } from '@/pages/DashboardPage';
 import { ClientsPage } from '@/pages/ClientsPage';
 import { ProjectsPage } from '@/pages/ProjectsPage';
