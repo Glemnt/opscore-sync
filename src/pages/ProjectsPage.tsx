@@ -431,7 +431,6 @@ export function ProjectsPage() {
 
     const filteredPlatformEntries = squadPlatformEntries.filter((e) => {
       const matchSearch = e.client.name.toLowerCase().includes(search.toLowerCase()) || e.platformName.toLowerCase().includes(search.toLowerCase());
-      const matchStatus = squadStatusFilter === 'all' || e.cp.phase === squadStatusFilter;
       const matchResponsible = squadResponsibleFilter === 'all' || e.cp.responsible === squadResponsibleFilter;
       const matchHealth = squadHealthFilter === 'all' || (e.cp.healthColor ?? 'white') === squadHealthFilter;
       const matchPlatform = squadPlatformFilter === 'all' || e.cp.platformSlug === squadPlatformFilter;
@@ -440,7 +439,7 @@ export function ProjectsPage() {
       const startDate = e.cp.startDate ?? e.client.startDate;
       const matchDateFrom = !squadDateFrom || startDate >= squadDateFrom;
       const matchDateTo = !squadDateTo || startDate <= squadDateTo;
-      return matchSearch && matchStatus && matchResponsible && matchHealth && matchPlatform && matchQuality && matchPriority && matchDateFrom && matchDateTo;
+      return matchSearch && matchResponsible && matchHealth && matchPlatform && matchQuality && matchPriority && matchDateFrom && matchDateTo;
     });
 
     
