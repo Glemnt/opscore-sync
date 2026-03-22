@@ -871,14 +871,7 @@ export function ProjectsPage() {
 
   }
 
-  // If no platform selected yet, default to first available or 'all'
-  useEffect(() => {
-    if (selectedClient && selectedPlatform === null) {
-      const firstPlatform = (selectedClient.platforms ?? [])[0];
-      setSelectedPlatform(firstPlatform ?? 'all');
-    }
-  }, [selectedClient, selectedPlatform]);
-
+  // If no platform selected yet, show loading
   if (selectedPlatform === null) {
     return (
       <div className="p-6 flex items-center justify-center">
