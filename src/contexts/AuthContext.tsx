@@ -11,7 +11,6 @@ interface AuthContextType {
   loading: boolean;
   login: (email: string, password: string) => Promise<boolean>;
   logout: () => Promise<void>;
-  signup: (email: string, password: string, name: string) => Promise<{ error?: string }>;
   getVisibleClients: (clients: Client[]) => Client[];
 }
 
@@ -72,31 +71,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setSession(null);
   }, []);
 
-  const signup = useCallback(async (email: string, password: string, name: string): Promise<{ error?: string }> => {
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: { emailRedirectTo: window.location.origin },
-    });
-    if (error) return { error: error.message };
-    // Create app_users entry
-    if (data.user) {
-      await supabase.from('app_users').insert({
-        auth_user_id: data.user.id,
-        name,
-        login: email,
-        role: 'operacional',
-        access_level: 1,
-        squad_ids: [],
-      });
-      // Give user role
-      await supabase.from('user_roles').insert({
-        user_id: data.user.id,
-        role: 'user',
-      });
-    }
-    return {};
-  }, []);
+  // Signup removed — user creation is exclusively via admin edge function "create-user"
 
   const getVisibleClients = useCallback((clients: Client[]): Client[] => {
     if (!currentUser) return [];
@@ -104,7 +79,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [currentUser]);
 
   return (
-    <AuthContext.Provider value={{ currentUser, session, loading, login, logout, signup, getVisibleClients }}>
+    <AuthContext.Provider value={{ currentUser, session, loading, login, logout, getVisibleClients }}>
       {children}
     </AuthContext.Provider>
   );

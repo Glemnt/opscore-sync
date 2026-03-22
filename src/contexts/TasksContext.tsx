@@ -1,5 +1,6 @@
 import { createContext, useContext, ReactNode, useCallback } from 'react';
 import { Task, Flow } from '@/types';
+import { toast } from '@/hooks/use-toast';
 import {
   useTasksQuery, useAddTask, useUpdateTask, useDeleteTask,
 } from '@/hooks/useTasksQuery';
@@ -8,6 +9,8 @@ import {
   useCustomTemplatesQuery, useAddTemplate, useUpdateTemplate, useRemoveTemplate,
   type CustomTemplate,
 } from '@/hooks/useFlowsQuery';
+import { useClientFlowsQuery } from '@/hooks/useClientFlowsQuery';
+import { useClients } from '@/contexts/ClientsContext';
 
 export type { CustomTemplate };
 
@@ -33,6 +36,7 @@ const TasksContext = createContext<TasksContextType | undefined>(undefined);
 
 export function TasksProvider({ children }: { children: ReactNode }) {
   const { data: tasks = [], isLoading } = useTasksQuery();
+  const { clients } = useClients();
   const addTaskMut = useAddTask();
   const updateTaskMut = useUpdateTask();
   const deleteTaskMut = useDeleteTask();
@@ -47,27 +51,35 @@ export function TasksProvider({ children }: { children: ReactNode }) {
   const updateTemplateMut = useUpdateTemplate();
   const removeTemplateMut = useRemoveTemplate();
 
-  // clientFlows loaded from DB would need a separate query, keeping simple for now
+  // Load client flows from DB
+  const { data: clientFlowsMap = {} } = useClientFlowsQuery();
   const clientFlows: Record<string, string[]> = {};
+  for (const [clientId, entries] of Object.entries(clientFlowsMap)) {
+    clientFlows[clientId] = entries.map(e => e.flowId);
+  }
 
-  const addTask = useCallback((task: Task) => addTaskMut.mutate(task), [addTaskMut]);
-  const updateTask = useCallback((id: string, updates: Partial<Task>) => updateTaskMut.mutate({ id, updates }), [updateTaskMut]);
-  const deleteTask = useCallback((id: string) => deleteTaskMut.mutate(id), [deleteTaskMut]);
+  const onMutationError = useCallback((err: unknown) => {
+    toast({ title: 'Erro ao salvar', description: String(err), variant: 'destructive' });
+  }, []);
 
-  const addFlow = useCallback((flow: Flow) => addFlowMut.mutate(flow), [addFlowMut]);
-  const updateFlow = useCallback((id: string, updates: Partial<Omit<Flow, 'id'>>) => updateFlowMut.mutate({ id, updates }), [updateFlowMut]);
-  const deleteFlow = useCallback((id: string) => deleteFlowMut.mutate(id), [deleteFlowMut]);
+  const addTask = useCallback((task: Task) => addTaskMut.mutate(task, { onError: onMutationError }), [addTaskMut, onMutationError]);
+  const updateTask = useCallback((id: string, updates: Partial<Task>) => updateTaskMut.mutate({ id, updates }, { onError: onMutationError }), [updateTaskMut, onMutationError]);
+  const deleteTask = useCallback((id: string) => deleteTaskMut.mutate(id, { onError: onMutationError }), [deleteTaskMut, onMutationError]);
 
-  const addTemplate = useCallback((t: CustomTemplate) => addTemplateMut.mutate(t), [addTemplateMut]);
-  const updateTemplate = useCallback((id: string, updates: Partial<Omit<CustomTemplate, 'id'>>) => updateTemplateMut.mutate({ id, updates }), [updateTemplateMut]);
-  const removeTemplate = useCallback((id: string) => removeTemplateMut.mutate(id), [removeTemplateMut]);
+  const addFlow = useCallback((flow: Flow) => addFlowMut.mutate(flow, { onError: onMutationError }), [addFlowMut, onMutationError]);
+  const updateFlow = useCallback((id: string, updates: Partial<Omit<Flow, 'id'>>) => updateFlowMut.mutate({ id, updates }, { onError: onMutationError }), [updateFlowMut, onMutationError]);
+  const deleteFlow = useCallback((id: string) => deleteFlowMut.mutate(id, { onError: onMutationError }), [deleteFlowMut, onMutationError]);
+
+  const addTemplate = useCallback((t: CustomTemplate) => addTemplateMut.mutate(t, { onError: onMutationError }), [addTemplateMut, onMutationError]);
+  const updateTemplate = useCallback((id: string, updates: Partial<Omit<CustomTemplate, 'id'>>) => updateTemplateMut.mutate({ id, updates }, { onError: onMutationError }), [updateTemplateMut, onMutationError]);
+  const removeTemplate = useCallback((id: string) => removeTemplateMut.mutate(id, { onError: onMutationError }), [removeTemplateMut, onMutationError]);
 
   const assignFlowToClient = useCallback((clientId: string, flowId: string) => {
     const flow = flows.find((f) => f.id === flowId);
     if (!flow) return;
-    const client = tasks.find((t) => t.clientId === clientId);
-    const clientName = client?.clientName ?? clientId;
-    flow.steps.forEach((step, i) => {
+    const client = clients.find((c) => c.id === clientId);
+    const clientName = client?.name ?? clientId;
+    flow.steps.forEach((step) => {
       addTaskMut.mutate({
         id: crypto.randomUUID(),
         title: `${flow.name} - ${step}`,
@@ -81,9 +93,9 @@ export function TasksProvider({ children }: { children: ReactNode }) {
         priority: 'medium',
         comments: `Etapa do fluxo "${flow.name}"`,
         createdAt: new Date().toISOString(),
-      });
+      }, { onError: onMutationError });
     });
-  }, [flows, tasks, addTaskMut]);
+  }, [flows, clients, addTaskMut, onMutationError]);
 
   return (
     <TasksContext.Provider value={{ tasks, isLoading, addTask, updateTask, deleteTask, customTemplates, addTemplate, updateTemplate, removeTemplate, flows, addFlow, updateFlow, deleteFlow, clientFlows, assignFlowToClient }}>
