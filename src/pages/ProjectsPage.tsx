@@ -230,7 +230,7 @@ export function ProjectsPage() {
                 className="bg-card rounded-xl border border-border p-6 shadow-sm-custom hover:shadow-md-custom hover:-translate-y-0.5 transition-all text-left group cursor-pointer relative">
                 
                 {/* Action buttons — admin only */}
-                {true &&
+                {currentUser?.accessLevel === 3 &&
                 <div className="absolute top-3 right-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button
                     onClick={(e) => openEditSquad(squad, e)}

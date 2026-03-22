@@ -130,7 +130,7 @@ export function AddTaskDialog({ open, onOpenChange, defaultStatus = 'backlog', d
     const client = visibleClients.find((c) => c.id === clientId)!;
 
     const newTask: Task = {
-      id: `t_${Date.now()}`,
+      id: crypto.randomUUID(),
       title,
       clientId,
       clientName: client.name,
@@ -143,8 +143,8 @@ export function AddTaskDialog({ open, onOpenChange, defaultStatus = 'backlog', d
       comments,
       createdAt: new Date().toISOString().split('T')[0],
       platforms: selectedPlatforms.length > 0 ? selectedPlatforms : undefined,
-      subtasks: subtasks.map((label, i) => ({
-        id: `st_${Date.now()}_${i}`,
+      subtasks: subtasks.map((label) => ({
+        id: crypto.randomUUID(),
         label,
         done: false,
       })),
