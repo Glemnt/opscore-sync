@@ -27,6 +27,9 @@ import { useClientPlatformsQuery, useAddClientPlatform, useUpdateClientPlatform,
 import type { ClientPlatform } from '@/hooks/useClientPlatformsQuery';
 import { PlatformAttributesEditor } from '@/components/PlatformAttributesEditor';
 import { useAuth } from '@/contexts/AuthContext';
+import { useClientPlatformChecklistQuery } from '@/hooks/useClientPlatformChecklistQuery';
+import { PLATFORM_STATUS_OPTIONS, computeDiasEmAtraso } from '@/lib/platformUtils';
+import { Progress } from '@/components/ui/progress';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
