@@ -90,6 +90,9 @@ export function ProjectsPage() {
   const [squadDateFrom, setSquadDateFrom] = useState('');
   const [squadDateTo, setSquadDateTo] = useState('');
   const [view, setView] = useState<'kanban' | 'list'>('kanban');
+  const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
+  const [squadFaseMacroFilter, setSquadFaseMacroFilter] = useState('all');
+  const [squadDiasAtrasoFilter, setSquadDiasAtrasoFilter] = useState('all');
   const [addDemandOpen, setAddDemandOpen] = useState(false);
   const [addColDialogOpen, setAddColDialogOpen] = useState(false);
   const [newColLabel, setNewColLabel] = useState('');
