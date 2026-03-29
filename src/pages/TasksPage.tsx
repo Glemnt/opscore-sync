@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
-import { Plus, Search, Clock, MessageSquare, AlertTriangle, Trash2, Workflow, ChevronDown, ShoppingBag, X, CalendarDays } from 'lucide-react';
+import { Plus, Search, Clock, MessageSquare, AlertTriangle, Trash2, Workflow, ChevronDown, ShoppingBag, X, CalendarDays, Lock, Link } from 'lucide-react';
+import { toast } from 'sonner';
 import { useTasks } from '@/contexts/TasksContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSquads } from '@/contexts/SquadsContext';
@@ -30,6 +31,9 @@ export function TasksPage() {
   const [selectedType, setSelectedType] = useState('all');
   const [selectedPlatform, setSelectedPlatform] = useState('all');
   const [selectedStatus, setSelectedStatus] = useState('all');
+  const [selectedClient, setSelectedClient] = useState('all');
+  const [selectedPriority, setSelectedPriority] = useState('all');
+  const [filterBloqueiaPassagem, setFilterBloqueiaPassagem] = useState('all');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [editingCol, setEditingCol] = useState<string | null>(null);
@@ -65,9 +69,14 @@ export function TasksPage() {
     const matchType = selectedType === 'all' || t.type === selectedType;
     const matchPlatform = selectedPlatform === 'all' || (t.platforms ?? []).includes(selectedPlatform);
     const matchStatus = selectedStatus === 'all' || t.status === selectedStatus;
+    const matchClient = selectedClient === 'all' || t.clientId === selectedClient;
+    const matchPriority = selectedPriority === 'all' || t.priority === selectedPriority;
+    const matchBloqueia = filterBloqueiaPassagem === 'all' || 
+      (filterBloqueiaPassagem === 'sim' && t.bloqueiaPassagem) ||
+      (filterBloqueiaPassagem === 'nao' && !t.bloqueiaPassagem);
     const matchDateFrom = !dateFrom || (t.deadline && t.deadline >= dateFrom);
     const matchDateTo = !dateTo || (t.deadline && t.deadline <= dateTo);
-    return matchSearch && matchResp && matchType && matchPlatform && matchStatus && matchDateFrom && matchDateTo;
+    return matchSearch && matchResp && matchType && matchPlatform && matchStatus && matchClient && matchPriority && matchBloqueia && matchDateFrom && matchDateTo;
   });
 
   const isLate = (task: Task) => new Date(task.deadline) < new Date() && task.status !== 'done';
@@ -75,11 +84,23 @@ export function TasksPage() {
   const handleDrop = (colStatus: TaskStatus, e: React.DragEvent) => {
     e.preventDefault();
     setDragOverCol(null);
-    // Check if it's a column drag
     const colKey = e.dataTransfer.getData('column-key');
-    if (colKey) return; // handled by column drop
+    if (colKey) return;
     const taskId = e.dataTransfer.getData('text/plain');
     if (taskId) {
+      const task = allTasks.find(t => t.id === taskId);
+      // Check dependencies when moving from backlog to in_progress
+      if (task && colStatus !== 'backlog' && colStatus !== 'done' && task.dependsOn?.length) {
+        const unmetDeps = task.dependsOn.filter(depId => {
+          const depTask = allTasks.find(t => t.id === depId);
+          return !depTask || depTask.status !== 'done' || depTask.approvalStatus !== 'approved';
+        });
+        if (unmetDeps.length > 0) {
+          const depNames = unmetDeps.map(id => allTasks.find(t => t.id === id)?.title ?? id).join(', ');
+          toast.error(`Dependências pendentes: ${depNames}`);
+          return;
+        }
+      }
       updateTask(taskId, { status: colStatus });
     }
   };
@@ -233,6 +254,35 @@ export function TasksPage() {
           {taskStatuses.map(s => (
             <option key={s.key} value={s.key}>{s.label}</option>
           ))}
+        </select>
+        <select
+          value={selectedClient}
+          onChange={e => setSelectedClient(e.target.value)}
+          className="px-3 py-2 text-sm bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 text-foreground"
+        >
+          <option value="all">Todos clientes</option>
+          {clients.map(c => (
+            <option key={c.id} value={c.id}>{c.name}</option>
+          ))}
+        </select>
+        <select
+          value={selectedPriority}
+          onChange={e => setSelectedPriority(e.target.value)}
+          className="px-3 py-2 text-sm bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 text-foreground"
+        >
+          <option value="all">Todas prioridades</option>
+          <option value="high">P1 Crítica</option>
+          <option value="medium">P3 Média</option>
+          <option value="low">P4 Baixa</option>
+        </select>
+        <select
+          value={filterBloqueiaPassagem}
+          onChange={e => setFilterBloqueiaPassagem(e.target.value)}
+          className="px-3 py-2 text-sm bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 text-foreground"
+        >
+          <option value="all">Bloqueia passagem</option>
+          <option value="sim">Sim</option>
+          <option value="nao">Não</option>
         </select>
         <div className="flex items-center gap-1.5">
           <CalendarDays className="w-4 h-4 text-muted-foreground" />
@@ -433,6 +483,16 @@ function TaskCard({ task, isLate, onClick, canDelete, onDelete }: { task: Task; 
   const priorityConf = priorityConfig[task.priority] ?? { label: task.priority, className: '', icon: '●' };
   const subtasks = task.subtasks ?? [];
   const progress = subtasks.length > 0 ? Math.round((subtasks.filter(s => s.done).length / subtasks.length) * 100) : -1;
+  
+  const priorityBadge: Record<string, { label: string; className: string }> = {
+    high: { label: 'P1', className: 'bg-destructive/10 text-destructive border-destructive/20' },
+    medium: { label: 'P3', className: 'bg-warning/10 text-warning border-warning/20' },
+    low: { label: 'P4', className: 'bg-muted text-muted-foreground border-border' },
+  };
+  const pBadge = priorityBadge[task.priority] ?? priorityBadge.medium;
+  
+  const diasEmAberto = Math.max(0, Math.floor((Date.now() - new Date(task.createdAt).getTime()) / (1000 * 60 * 60 * 24)));
+  const hasDeps = (task.dependsOn?.length ?? 0) > 0;
 
   const handleDragStart = (e: React.DragEvent) => {
     e.dataTransfer.setData('text/plain', task.id);
@@ -458,7 +518,17 @@ function TaskCard({ task, isLate, onClick, canDelete, onDelete }: { task: Task; 
       )}
       <div className="flex items-start justify-between gap-2 mb-2">
         <p className="text-sm font-semibold text-foreground line-clamp-2 leading-snug flex-1">{task.title}</p>
-        <span className="text-xs">{priorityConf.icon}</span>
+        <div className="flex items-center gap-1">
+          {task.bloqueiaPassagem && (
+            <span title="Bloqueia passagem"><Lock className="w-3 h-3 text-destructive" /></span>
+          )}
+          {hasDeps && (
+            <span title="Tem dependências"><Link className="w-3 h-3 text-warning" /></span>
+          )}
+          <span className={cn('text-[10px] px-1.5 py-0.5 rounded border font-bold', pBadge.className)}>
+            {pBadge.label}
+          </span>
+        </div>
       </div>
 
       <div className="flex items-center gap-1.5 mb-3 flex-wrap">

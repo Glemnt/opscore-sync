@@ -1123,6 +1123,42 @@ export type Database = {
           },
         ]
       }
+      task_dependencies: {
+        Row: {
+          created_at: string
+          depends_on_task_id: string
+          id: string
+          task_id: string
+        }
+        Insert: {
+          created_at?: string
+          depends_on_task_id: string
+          id?: string
+          task_id: string
+        }
+        Update: {
+          created_at?: string
+          depends_on_task_id?: string
+          id?: string
+          task_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_dependencies_depends_on_task_id_fkey"
+            columns: ["depends_on_task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_dependencies_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       task_statuses: {
         Row: {
           class_name: string
@@ -1176,16 +1212,27 @@ export type Database = {
       }
       tasks: {
         Row: {
+          aguardando_cliente: boolean
+          approval_status: string
+          bloqueia_passagem: boolean
           client_id: string
           client_name: string
           comments: string
           created_at: string
           deadline: string
+          depende_cliente: boolean
           estimated_time: number
+          etapa: string
           flow_id: string | null
           id: string
+          link_entrega: string
           motivo_atraso: string
+          nota_entrega: number | null
+          observacao_entrega: string
+          origem_tarefa: string
           platform: string[] | null
+          platform_id: string | null
+          print_entrega: string
           priority: Database["public"]["Enums"]["priority_level"]
           project_id: string | null
           project_name: string | null
@@ -1197,16 +1244,27 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          aguardando_cliente?: boolean
+          approval_status?: string
+          bloqueia_passagem?: boolean
           client_id: string
           client_name?: string
           comments?: string
           created_at?: string
           deadline?: string
+          depende_cliente?: boolean
           estimated_time?: number
+          etapa?: string
           flow_id?: string | null
           id?: string
+          link_entrega?: string
           motivo_atraso?: string
+          nota_entrega?: number | null
+          observacao_entrega?: string
+          origem_tarefa?: string
           platform?: string[] | null
+          platform_id?: string | null
+          print_entrega?: string
           priority?: Database["public"]["Enums"]["priority_level"]
           project_id?: string | null
           project_name?: string | null
@@ -1218,16 +1276,27 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          aguardando_cliente?: boolean
+          approval_status?: string
+          bloqueia_passagem?: boolean
           client_id?: string
           client_name?: string
           comments?: string
           created_at?: string
           deadline?: string
+          depende_cliente?: boolean
           estimated_time?: number
+          etapa?: string
           flow_id?: string | null
           id?: string
+          link_entrega?: string
           motivo_atraso?: string
+          nota_entrega?: number | null
+          observacao_entrega?: string
+          origem_tarefa?: string
           platform?: string[] | null
+          platform_id?: string | null
+          print_entrega?: string
           priority?: Database["public"]["Enums"]["priority_level"]
           project_id?: string | null
           project_name?: string | null

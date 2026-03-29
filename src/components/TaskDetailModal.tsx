@@ -31,7 +31,7 @@ interface TaskDetailModalProps {
 }
 
 export function TaskDetailModal({ task, open, onOpenChange }: TaskDetailModalProps) {
-  const { updateTask, deleteTask, flows } = useTasks();
+  const { updateTask, deleteTask, flows, tasks: allTasks } = useTasks();
   const { currentUser } = useAuth();
   const { squads } = useSquads();
   const { clients } = useClients();
@@ -430,7 +430,102 @@ export function TaskDetailModal({ task, open, onOpenChange }: TaskDetailModalPro
             </div>
           </div>
 
-          {/* Aplicar Fluxo */}
+          {/* Entrega — visible for revisao/aguardando_aprovacao/done */}
+          {(task.status === 'revisao' || task.status === 'aguardando_aprovacao' || task.status === 'done') && (
+            <div className="space-y-3">
+              <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                📦 Entrega
+              </h4>
+              <div className="grid grid-cols-1 gap-3">
+                <div className="space-y-1">
+                  <label className="text-xs text-muted-foreground">Link de entrega</label>
+                  <Input
+                    value={(task as any).linkEntrega ?? ''}
+                    onChange={(e) => {
+                      supabase.from('tasks').update({ link_entrega: e.target.value } as any).eq('id', task.id)
+                        .then(({ error }) => {
+                          if (!error) queryClient.invalidateQueries({ queryKey: ['tasks'] });
+                        });
+                    }}
+                    placeholder="https://..."
+                    className="h-8 text-sm"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs text-muted-foreground">Print de entrega (URL)</label>
+                  <Input
+                    value={(task as any).printEntrega ?? ''}
+                    onChange={(e) => {
+                      supabase.from('tasks').update({ print_entrega: e.target.value } as any).eq('id', task.id)
+                        .then(({ error }) => {
+                          if (!error) queryClient.invalidateQueries({ queryKey: ['tasks'] });
+                        });
+                    }}
+                    placeholder="URL da imagem..."
+                    className="h-8 text-sm"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs text-muted-foreground">Observação de entrega</label>
+                  <Input
+                    value={(task as any).observacaoEntrega ?? ''}
+                    onChange={(e) => {
+                      supabase.from('tasks').update({ observacao_entrega: e.target.value } as any).eq('id', task.id)
+                        .then(({ error }) => {
+                          if (!error) queryClient.invalidateQueries({ queryKey: ['tasks'] });
+                        });
+                    }}
+                    placeholder="Comentário sobre a entrega..."
+                    className="h-8 text-sm"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs text-muted-foreground">Nota (0-10)</label>
+                  <Input
+                    type="number"
+                    min={0}
+                    max={10}
+                    value={(task as any).notaEntrega ?? ''}
+                    onChange={(e) => {
+                      const val = e.target.value ? Number(e.target.value) : null;
+                      supabase.from('tasks').update({ nota_entrega: val } as any).eq('id', task.id)
+                        .then(({ error }) => {
+                          if (!error) queryClient.invalidateQueries({ queryKey: ['tasks'] });
+                        });
+                    }}
+                    className="h-8 text-sm w-24"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Dependências */}
+          {(task as any).dependsOn?.length > 0 && (
+            <div className="space-y-2">
+              <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                🔗 Dependências
+              </h4>
+              <div className="space-y-1.5">
+                {((task as any).dependsOn as string[]).map((depId: string) => {
+                  const depTask = allTasks?.find((t: any) => t.id === depId);
+                  const isDone = depTask?.status === 'done' && (depTask as any)?.approvalStatus === 'approved';
+                  return (
+                    <div key={depId} className={cn(
+                      'flex items-center gap-2 text-xs px-2.5 py-1.5 rounded-lg border',
+                      isDone ? 'bg-success/10 border-success/20 text-success' : 'bg-warning/10 border-warning/20 text-warning'
+                    )}>
+                      <span>{isDone ? '✅' : '⏳'}</span>
+                      <span className="truncate">{depTask?.title ?? depId}</span>
+                      <span className="text-[10px] ml-auto">{depTask?.status ?? 'desconhecido'}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+
           <div className="space-y-3">
             <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
               <Workflow className="w-4 h-4" />

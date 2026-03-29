@@ -3,24 +3,41 @@ import { supabase } from '@/integrations/supabase/client';
 import { mapDbTask, type DbTask, type DbSubtask, type DbTaskChatNote } from '@/types/database';
 import type { Task } from '@/types';
 
+interface DbTaskDependency {
+  id: string;
+  task_id: string;
+  depends_on_task_id: string;
+}
+
 export function useTasksQuery() {
   return useQuery({
     queryKey: ['tasks'],
     queryFn: async () => {
-      const [tasksRes, subtasksRes, notesRes] = await Promise.all([
+      const [tasksRes, subtasksRes, notesRes, depsRes] = await Promise.all([
         supabase.from('tasks').select('*').order('created_at', { ascending: false }),
         supabase.from('subtasks').select('*'),
         supabase.from('task_chat_notes').select('*').order('created_at', { ascending: true }),
+        supabase.from('task_dependencies' as any).select('*'),
       ]);
       if (tasksRes.error) throw tasksRes.error;
       const tasks = tasksRes.data as DbTask[];
       const subtasks = (subtasksRes.data ?? []) as DbSubtask[];
       const notes = (notesRes.data ?? []) as DbTaskChatNote[];
+      const deps = (depsRes.data ?? []) as unknown as DbTaskDependency[];
+      
+      // Group dependencies by task_id
+      const depsMap: Record<string, string[]> = {};
+      for (const d of deps) {
+        if (!depsMap[d.task_id]) depsMap[d.task_id] = [];
+        depsMap[d.task_id].push(d.depends_on_task_id);
+      }
+      
       return tasks.map((t) =>
         mapDbTask(
           t,
           subtasks.filter((s) => s.task_id === t.id),
-          notes.filter((n) => n.task_id === t.id)
+          notes.filter((n) => n.task_id === t.id),
+          depsMap[t.id] ?? []
         )
       );
     },
@@ -49,7 +66,18 @@ export function useAddTask() {
         comments: task.comments,
         platform: task.platforms ?? null,
         flow_id: (task as any).flowId ?? null,
-      });
+        platform_id: task.platformId ?? null,
+        etapa: task.etapa ?? '',
+        bloqueia_passagem: task.bloqueiaPassagem ?? false,
+        depende_cliente: task.dependeCliente ?? false,
+        aguardando_cliente: task.aguardandoCliente ?? false,
+        origem_tarefa: task.origemTarefa ?? 'manual',
+        link_entrega: task.linkEntrega ?? '',
+        print_entrega: task.printEntrega ?? '',
+        observacao_entrega: task.observacaoEntrega ?? '',
+        nota_entrega: task.notaEntrega ?? null,
+        approval_status: task.approvalStatus ?? 'pending',
+      } as any);
       if (error) throw error;
       // Insert subtasks if any
       if (task.subtasks?.length) {
@@ -63,6 +91,17 @@ export function useAddTask() {
         );
         if (stErr) throw stErr;
       }
+      // Insert dependencies if any
+      if (task.dependsOn?.length) {
+        const { error: depErr } = await supabase.from('task_dependencies' as any).insert(
+          task.dependsOn.map((depId) => ({
+            task_id: taskId,
+            depends_on_task_id: depId,
+          }))
+        );
+        if (depErr) throw depErr;
+      }
+      return taskId;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['tasks'] }),
   });
@@ -79,9 +118,15 @@ export function useUpdateTask() {
         estimatedTime: 'estimated_time', realTime: 'real_time',
         createdAt: 'created_at', platforms: 'platform', flowId: 'flow_id',
         motivoAtraso: 'motivo_atraso',
+        platformId: 'platform_id', etapa: 'etapa',
+        bloqueiaPassagem: 'bloqueia_passagem', dependeCliente: 'depende_cliente',
+        aguardandoCliente: 'aguardando_cliente', origemTarefa: 'origem_tarefa',
+        linkEntrega: 'link_entrega', printEntrega: 'print_entrega',
+        observacaoEntrega: 'observacao_entrega', notaEntrega: 'nota_entrega',
+        approvalStatus: 'approval_status',
       };
       for (const [k, v] of Object.entries(updates)) {
-        if (k === 'subtasks' || k === 'chatNotes') continue;
+        if (k === 'subtasks' || k === 'chatNotes' || k === 'dependsOn') continue;
         const dbKey = keyMap[k] ?? k;
         dbUpdates[dbKey] = v;
       }
@@ -92,7 +137,6 @@ export function useUpdateTask() {
 
       // Sync subtasks
       if (updates.subtasks) {
-        // Delete existing subtasks and re-insert
         await supabase.from('subtasks').delete().eq('task_id', id);
         if (updates.subtasks.length > 0) {
           const { error: stErr } = await supabase.from('subtasks').insert(
@@ -124,6 +168,20 @@ export function useUpdateTask() {
             }))
           );
           if (nErr) throw nErr;
+        }
+      }
+
+      // Sync dependencies
+      if (updates.dependsOn !== undefined) {
+        await supabase.from('task_dependencies' as any).delete().eq('task_id', id);
+        if (updates.dependsOn.length > 0) {
+          const { error: depErr } = await supabase.from('task_dependencies' as any).insert(
+            updates.dependsOn.map((depId) => ({
+              task_id: id,
+              depends_on_task_id: depId,
+            }))
+          );
+          if (depErr) throw depErr;
         }
       }
     },

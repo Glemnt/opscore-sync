@@ -120,6 +120,9 @@ export interface SubTask {
   checkedAt?: string;
 }
 
+export type OrigemTarefa = 'automatica' | 'manual' | 'recorrente';
+export type ApprovalStatus = 'pending' | 'approved' | 'rejected';
+
 export interface Task {
   id: string;
   title: string;
@@ -141,6 +144,18 @@ export interface Task {
   motivoAtraso?: string;
   subtasks?: SubTask[];
   chatNotes?: ChatNote[];
+  platformId?: string;
+  etapa?: string;
+  bloqueiaPassagem?: boolean;
+  dependeCliente?: boolean;
+  aguardandoCliente?: boolean;
+  origemTarefa?: OrigemTarefa;
+  linkEntrega?: string;
+  printEntrega?: string;
+  observacaoEntrega?: string;
+  notaEntrega?: number;
+  approvalStatus?: ApprovalStatus;
+  dependsOn?: string[];
 }
 
 export interface Squad {
