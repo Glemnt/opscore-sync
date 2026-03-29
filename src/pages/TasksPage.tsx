@@ -89,8 +89,9 @@ export function TasksPage() {
     const taskId = e.dataTransfer.getData('text/plain');
     if (taskId) {
       const task = allTasks.find(t => t.id === taskId);
-      // Check dependencies when moving from backlog to in_progress
-      if (task && colStatus !== 'backlog' && colStatus !== 'done' && task.dependsOn?.length) {
+      if (!task) return;
+      // Check dependencies when moving from backlog
+      if (colStatus !== 'backlog' && task.dependsOn?.length) {
         const unmetDeps = task.dependsOn.filter(depId => {
           const depTask = allTasks.find(t => t.id === depId);
           return !depTask || depTask.status !== 'done' || depTask.approvalStatus !== 'approved';
@@ -100,6 +101,17 @@ export function TasksPage() {
           toast.error(`Dependências pendentes: ${depNames}`);
           return;
         }
+      }
+      // Redirect direct drop to 'done' → 'aguardando_aprovacao'
+      if (colStatus === 'done' && task.approvalStatus !== 'approved') {
+        toast.info('Demandas precisam de aprovação antes de serem concluídas');
+        updateTask(taskId, { status: 'aguardando_aprovacao' as TaskStatus, approvalStatus: 'pending' } as any);
+        return;
+      }
+      // If moving to aguardando_aprovacao, set approval_status pending
+      if (colStatus === 'aguardando_aprovacao') {
+        updateTask(taskId, { status: colStatus, approvalStatus: 'pending' } as any);
+        return;
       }
       updateTask(taskId, { status: colStatus });
     }
