@@ -443,12 +443,31 @@ export function ProjectsPage() {
     };
 
 
-    const phaseLabels: Record<string, string> = {
-      onboarding: 'On-board',
-      implementacao: 'Implementação',
-      performance: 'Performance',
-      escala: 'Escala',
+    const PLATFORM_COLORS: Record<string, string> = {
+      mercado_livre: 'bg-green-100 text-green-800 border-green-300',
+      shopee: 'bg-orange-100 text-orange-800 border-orange-300',
+      shein: 'bg-purple-100 text-purple-800 border-purple-300',
+      tiktok: 'bg-gray-900 text-white border-gray-700',
     };
+
+    const PRIORITY_BADGES: Record<string, string> = {
+      P1: 'bg-destructive/15 text-destructive border-destructive/30',
+      P2: 'bg-orange-100 text-orange-700 border-orange-300',
+      P3: 'bg-yellow-100 text-yellow-700 border-yellow-300',
+      P4: 'bg-muted text-muted-foreground border-border',
+    };
+
+    const computeDiasEmAtraso = (deadline: string | null): number => {
+      if (!deadline) return 0;
+      const diff = differenceInCalendarDays(new Date(), new Date(deadline));
+      return diff > 0 ? diff : 0;
+    };
+
+    // Build kanban column group lookup
+    const colGroupMap = new Map<string, string>();
+    for (const col of kanbanColumns) {
+      colGroupMap.set(col.key, col.groupKey);
+    }
 
     const uniqueResponsibles = [...new Set(squadPlatformEntries.map((e) => e.cp.responsible).filter(Boolean))];
 
@@ -458,11 +477,20 @@ export function ProjectsPage() {
       const matchHealth = squadHealthFilter === 'all' || (e.cp.healthColor ?? 'white') === squadHealthFilter;
       const matchPlatform = squadPlatformFilter === 'all' || e.cp.platformSlug === squadPlatformFilter;
       const matchQuality = squadQualityFilter === 'all' || (e.cp.qualityLevel ?? '') === squadQualityFilter;
-      const matchPriority = squadPriorityFilter === 'all' || allTasksData.some((t) => t.clientId === e.client.id && (t.platforms ?? []).includes(e.cp.platformSlug) && t.priority === squadPriorityFilter);
+      const matchPriority = squadPriorityFilter === 'all' || (e.client as any).prioridadeGeral === squadPriorityFilter;
       const startDate = e.cp.startDate ?? e.client.startDate;
       const matchDateFrom = !squadDateFrom || startDate >= squadDateFrom;
       const matchDateTo = !squadDateTo || startDate <= squadDateTo;
-      return matchSearch && matchResponsible && matchHealth && matchPlatform && matchQuality && matchPriority && matchDateFrom && matchDateTo;
+      // New: fase macro filter
+      const entryGroup = colGroupMap.get(e.cp.phase) ?? '';
+      const matchFaseMacro = squadFaseMacroFilter === 'all' || entryGroup === squadFaseMacroFilter;
+      // New: dias em atraso filter
+      const diasAtraso = computeDiasEmAtraso(e.cp.deadline);
+      const matchDiasAtraso = squadDiasAtrasoFilter === 'all' ||
+        (squadDiasAtrasoFilter === '>0' && diasAtraso > 0) ||
+        (squadDiasAtrasoFilter === '>3' && diasAtraso > 3) ||
+        (squadDiasAtrasoFilter === '>7' && diasAtraso > 7);
+      return matchSearch && matchResponsible && matchHealth && matchPlatform && matchQuality && matchPriority && matchDateFrom && matchDateTo && matchFaseMacro && matchDiasAtraso;
     });
 
     
