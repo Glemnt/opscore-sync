@@ -172,6 +172,9 @@ export function mapDbTask(
     rejectionReason: (row as any).rejection_reason ?? '',
     rejectionCount: (row as any).rejection_count ?? 0,
     dependsOn,
+    startedAt: (row as any).started_at ?? undefined,
+    completedAt: (row as any).completed_at ?? undefined,
+    tempoRealMinutos: (row as any).tempo_real_minutos != null ? Number((row as any).tempo_real_minutos) : undefined,
   };
 }
 

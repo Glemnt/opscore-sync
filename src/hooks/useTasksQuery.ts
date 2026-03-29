@@ -81,6 +81,9 @@ export function useAddTask() {
         approved_at: task.approvedAt ?? null,
         rejection_reason: task.rejectionReason ?? '',
         rejection_count: task.rejectionCount ?? 0,
+        started_at: task.startedAt ?? null,
+        completed_at: task.completedAt ?? null,
+        tempo_real_minutos: task.tempoRealMinutos ?? null,
       } as any);
       if (error) throw error;
       // Insert subtasks if any
@@ -132,6 +135,9 @@ export function useUpdateTask() {
         approvedAt: 'approved_at',
         rejectionReason: 'rejection_reason',
         rejectionCount: 'rejection_count',
+        startedAt: 'started_at',
+        completedAt: 'completed_at',
+        tempoRealMinutos: 'tempo_real_minutos',
       };
       for (const [k, v] of Object.entries(updates)) {
         if (k === 'subtasks' || k === 'chatNotes' || k === 'dependsOn') continue;

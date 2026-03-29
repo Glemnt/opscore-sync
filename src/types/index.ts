@@ -160,6 +160,18 @@ export interface Task {
   rejectionReason?: string;
   rejectionCount?: number;
   dependsOn?: string[];
+  startedAt?: string;
+  completedAt?: string;
+  tempoRealMinutos?: number;
+}
+
+export interface TaskPause {
+  id: string;
+  taskId: string;
+  pauseStart: string;
+  pauseEnd: string | null;
+  reason: string;
+  createdAt: string;
 }
 
 export interface Squad {
