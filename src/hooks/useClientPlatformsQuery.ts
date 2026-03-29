@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { logTimelineEvent } from '@/hooks/useTimelineQuery';
 
 export interface ClientPlatform {
   id: string;
@@ -19,7 +20,6 @@ export interface ClientPlatform {
   salesResponsible: string;
   createdAt: string;
   updatedAt: string;
-  // Operational fields
   platformStatus: string;
   motivoAtraso: string;
   prazoInterno: string | null;
@@ -78,7 +78,7 @@ export function useClientPlatformsQuery() {
 export function useAddClientPlatform() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (input: { clientId: string; platformSlug: string; phase?: string; responsible?: string; squadId?: string | null; startDate?: string; deadline?: string | null; qualityLevel?: string; healthColor?: string; revenueTier?: string; origin?: string; salesResponsible?: string }) => {
+    mutationFn: async (input: { clientId: string; platformSlug: string; phase?: string; responsible?: string; squadId?: string | null; startDate?: string; deadline?: string | null; qualityLevel?: string; healthColor?: string; revenueTier?: string; origin?: string; salesResponsible?: string; triggeredBy?: string }) => {
       const { error } = await supabase.from('client_platforms').insert({
         client_id: input.clientId,
         platform_slug: input.platformSlug,
@@ -94,6 +94,14 @@ export function useAddClientPlatform() {
         sales_responsible: input.salesResponsible ?? '',
       } as any);
       if (error) throw error;
+
+      // Timeline: platform_added
+      logTimelineEvent({
+        clientId: input.clientId,
+        eventType: 'platform_added',
+        description: `Plataforma "${input.platformSlug}" adicionada`,
+        triggeredBy: input.triggeredBy ?? 'Sistema',
+      });
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['client_platforms'] }),
   });
@@ -102,7 +110,7 @@ export function useAddClientPlatform() {
 export function useUpdateClientPlatform() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, updates }: { id: string; updates: Record<string, any> }) => {
+    mutationFn: async ({ id, updates, _meta }: { id: string; updates: Record<string, any>; _meta?: { clientId?: string; platformSlug?: string; triggeredBy?: string; oldValues?: Record<string, any> } }) => {
       const dbUpdates: Record<string, any> = {};
       const keyMap: Record<string, string> = {
         platformSlug: 'platform_slug',
@@ -132,6 +140,33 @@ export function useUpdateClientPlatform() {
       }
       const { error } = await supabase.from('client_platforms').update(dbUpdates).eq('id', id);
       if (error) throw error;
+
+      // Timeline logging for key platform changes
+      if (_meta?.clientId) {
+        const userName = _meta.triggeredBy ?? 'Sistema';
+        const slug = _meta.platformSlug ?? '';
+
+        if (updates.phase !== undefined || updates.platform_status !== undefined) {
+          const phase = updates.phase ?? updates.platform_status;
+          if (phase === 'performance') {
+            logTimelineEvent({ clientId: _meta.clientId, platformId: id, eventType: 'platform_to_performance', description: `Plataforma "${slug}" passou para performance`, triggeredBy: userName });
+          } else if (phase === 'escala') {
+            logTimelineEvent({ clientId: _meta.clientId, platformId: id, eventType: 'platform_to_scale', description: `Plataforma "${slug}" passou para escala`, triggeredBy: userName });
+          } else if (updates.phase !== undefined) {
+            logTimelineEvent({ clientId: _meta.clientId, platformId: id, eventType: 'platform_phase_changed', description: `Fase da plataforma "${slug}" alterada para "${phase}"`, newValue: String(phase), triggeredBy: userName });
+          } else {
+            logTimelineEvent({ clientId: _meta.clientId, platformId: id, eventType: 'platform_status_changed', description: `Status da plataforma "${slug}" alterado para "${phase}"`, newValue: String(phase), triggeredBy: userName });
+          }
+        }
+
+        if (updates.responsible !== undefined) {
+          logTimelineEvent({ clientId: _meta.clientId, platformId: id, eventType: 'responsible_changed', description: `Responsável da plataforma "${slug}" alterado para "${updates.responsible}"`, newValue: updates.responsible, triggeredBy: userName });
+        }
+
+        if (updates.prontaPerformance === true) {
+          logTimelineEvent({ clientId: _meta.clientId, platformId: id, eventType: 'platform_to_performance', description: `Plataforma "${slug}" marcada como pronta para performance`, triggeredBy: userName });
+        }
+      }
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['client_platforms'] }),
   });
@@ -140,9 +175,19 @@ export function useUpdateClientPlatform() {
 export function useDeleteClientPlatform() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (id: string) => {
+    mutationFn: async (input: string | { id: string; clientId?: string; platformSlug?: string; triggeredBy?: string }) => {
+      const id = typeof input === 'string' ? input : input.id;
       const { error } = await supabase.from('client_platforms').delete().eq('id', id);
       if (error) throw error;
+
+      if (typeof input !== 'string' && input.clientId) {
+        logTimelineEvent({
+          clientId: input.clientId,
+          eventType: 'platform_removed',
+          description: `Plataforma "${input.platformSlug ?? ''}" removida`,
+          triggeredBy: input.triggeredBy ?? 'Sistema',
+        });
+      }
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['client_platforms'] }),
   });

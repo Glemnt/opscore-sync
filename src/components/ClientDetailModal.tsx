@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
-import { Building2, Calendar as CalendarIcon, Clock, User, CheckCircle2, AlertCircle, ClipboardList, Circle, Send, History, Edit3, Save, X, FileText, Upload, Eye, Trash2, Pencil, Plus, Workflow, ShoppingBag, ChevronDown, ChevronUp, AlertTriangle, Route, Shield } from 'lucide-react';
+import { Building2, Calendar as CalendarIcon, Clock, User, CheckCircle2, AlertCircle, ClipboardList, Circle, Send, History, Edit3, Save, X, FileText, Upload, Eye, Trash2, Pencil, Plus, Workflow, ShoppingBag, ChevronDown, ChevronUp, AlertTriangle, Route, Shield, Activity } from 'lucide-react';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Calendar } from '@/components/ui/calendar';
@@ -38,6 +38,8 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import { useTimelineEventsQuery } from '@/hooks/useTimelineQuery';
+import { TimelineFeed } from '@/components/TimelineFeed';
 
 // ─── Checklist Progress Mini Component ───
 function ChecklistProgressBar({ clientPlatformId }: { clientPlatformId: string }) {
@@ -803,6 +805,9 @@ export function ClientDetailModal({ client, open, onClose }: ClientDetailModalPr
         {/* Jornada CS */}
         <ClientJourneySection clientId={client.id} startDate={client.startDate} />
 
+        {/* Timeline de Eventos */}
+        <ClientTimelineSection clientId={client.id} />
+
         {/* Timeline */}
         <div className="px-6 py-4">
           <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4">
@@ -1215,6 +1220,28 @@ function ContractSection({ client, updateClientField }: { client: Client; update
           <Upload className="w-4 h-4" />
           Anexar contrato
         </button>
+      )}
+    </div>
+  );
+}
+
+// ─── Client Timeline Section ───
+function ClientTimelineSection({ clientId }: { clientId: string }) {
+  const [expanded, setExpanded] = useState(false);
+  const { data: events = [], isLoading } = useTimelineEventsQuery(clientId);
+
+  return (
+    <div className="px-6 py-4 border-b border-border">
+      <button onClick={() => setExpanded(!expanded)} className="flex items-center justify-between w-full">
+        <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+          <Activity className="w-3.5 h-3.5" /> Timeline de Eventos ({events.length})
+        </h4>
+        {expanded ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
+      </button>
+      {expanded && (
+        <div className="mt-4 max-h-[400px] overflow-y-auto">
+          <TimelineFeed events={events} isLoading={isLoading} showPlatformFilter />
+        </div>
       )}
     </div>
   );
