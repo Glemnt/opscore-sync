@@ -449,6 +449,50 @@ export function SettingsPage() {
           </div>
         )}
       </div>
+
+      {/* Section: Metas */}
+      {isEdit && editingUser && (
+        <div>
+          <h4 className="text-sm font-semibold text-foreground mb-3 border-b border-border pb-1.5 flex items-center gap-2">
+            <Target className="w-4 h-4" /> Metas do Colaborador
+          </h4>
+          {/* Auto-calculated readonly fields */}
+          <div className="grid grid-cols-2 gap-3 mb-3">
+            <div className="p-3 bg-muted/50 rounded-lg">
+              <span className="text-[10px] text-muted-foreground uppercase font-medium">Plataformas sob responsabilidade</span>
+              <p className="text-lg font-bold text-foreground">{clientPlatforms.filter(p => p.responsible === editingUser.name).length}</p>
+            </div>
+            <div className="p-3 bg-muted/50 rounded-lg">
+              <span className="text-[10px] text-muted-foreground uppercase font-medium">Plataformas em atraso</span>
+              <p className="text-lg font-bold text-destructive">
+                {clientPlatforms.filter(p => p.responsible === editingUser.name && p.deadline && new Date(p.deadline) < new Date() && !['performance', 'escala', 'done'].includes(p.phase)).length}
+              </p>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <Label className="text-xs">Meta semanal de passagens</Label>
+              <Input type="number" min={0} value={goalPassagens} onChange={e => setGoalPassagens(Number(e.target.value))} className="h-8 text-sm" />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs">Meta diária destravamentos</Label>
+              <Input type="number" min={0} value={goalDestravamentos} onChange={e => setGoalDestravamentos(Number(e.target.value))} className="h-8 text-sm" />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs">Meta redução backlog</Label>
+              <Input type="number" min={0} value={goalReducaoBacklog} onChange={e => setGoalReducaoBacklog(Number(e.target.value))} className="h-8 text-sm" />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs">Meta anúncios/dia</Label>
+              <Input type="number" min={0} value={goalAnunciosDia} onChange={e => setGoalAnunciosDia(Number(e.target.value))} className="h-8 text-sm" />
+            </div>
+            <div className="space-y-2 col-span-2">
+              <Label className="text-xs">Meta anúncios/cliente (plataforma)</Label>
+              <Input type="number" min={0} value={goalAnunciosCliente} onChange={e => setGoalAnunciosCliente(Number(e.target.value))} className="h-8 text-sm" />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 
