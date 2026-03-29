@@ -18,10 +18,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Calendar, Clock, AlertTriangle, CheckCircle2, Users, Heart, Send, Plus, Eye, CircleDot, Route } from 'lucide-react';
+import { Calendar, Clock, AlertTriangle, CheckCircle2, Users, Heart, Send, Plus, Eye, CircleDot, Route, Pencil, X } from 'lucide-react';
 import { differenceInDays, format, startOfWeek, endOfWeek, addWeeks, isWithinInterval, parseISO, isValid } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
+import { Progress } from '@/components/ui/progress';
 import type { Client, Task } from '@/types';
 
 // --- Notification tracking ---
