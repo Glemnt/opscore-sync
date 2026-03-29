@@ -38,6 +38,8 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import { useTimelineEventsQuery } from '@/hooks/useTimelineQuery';
+import { TimelineFeed } from '@/components/TimelineFeed';
 
 // ─── Checklist Progress Mini Component ───
 function ChecklistProgressBar({ clientPlatformId }: { clientPlatformId: string }) {
@@ -1226,9 +1228,7 @@ function ContractSection({ client, updateClientField }: { client: Client; update
 // ─── Client Timeline Section ───
 function ClientTimelineSection({ clientId }: { clientId: string }) {
   const [expanded, setExpanded] = useState(false);
-  const { useTimelineEventsQuery } = require('@/hooks/useTimelineQuery');
   const { data: events = [], isLoading } = useTimelineEventsQuery(clientId);
-  const { TimelineFeed } = require('@/components/TimelineFeed');
 
   return (
     <div className="px-6 py-4 border-b border-border">
