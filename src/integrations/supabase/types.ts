@@ -577,6 +577,105 @@ export type Database = {
           },
         ]
       }
+      cs_journey_items: {
+        Row: {
+          actual_date: string | null
+          client_id: string
+          completed_at: string | null
+          completed_by: string
+          created_at: string
+          day_number: number
+          id: string
+          link: string
+          notes: string
+          phase: string
+          scheduled_date: string
+          status: string
+          template_id: string | null
+          title: string
+        }
+        Insert: {
+          actual_date?: string | null
+          client_id: string
+          completed_at?: string | null
+          completed_by?: string
+          created_at?: string
+          day_number?: number
+          id?: string
+          link?: string
+          notes?: string
+          phase?: string
+          scheduled_date: string
+          status?: string
+          template_id?: string | null
+          title?: string
+        }
+        Update: {
+          actual_date?: string | null
+          client_id?: string
+          completed_at?: string | null
+          completed_by?: string
+          created_at?: string
+          day_number?: number
+          id?: string
+          link?: string
+          notes?: string
+          phase?: string
+          scheduled_date?: string
+          status?: string
+          template_id?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cs_journey_items_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cs_journey_items_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "cs_journey_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cs_journey_templates: {
+        Row: {
+          created_at: string
+          day_number: number
+          description: string
+          id: string
+          is_active: boolean
+          phase: string
+          sort_order: number
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          day_number: number
+          description?: string
+          id?: string
+          is_active?: boolean
+          phase?: string
+          sort_order?: number
+          title: string
+        }
+        Update: {
+          created_at?: string
+          day_number?: number
+          description?: string
+          id?: string
+          is_active?: boolean
+          phase?: string
+          sort_order?: number
+          title?: string
+        }
+        Relationships: []
+      }
       custom_templates: {
         Row: {
           created_at: string
