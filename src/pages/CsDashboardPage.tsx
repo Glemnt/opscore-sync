@@ -30,7 +30,7 @@ function useTaskNotificationsQuery() {
     queryFn: async () => {
       const { data, error } = await supabase.from('task_client_notifications' as any).select('*');
       if (error) throw error;
-      return (data ?? []) as Array<{ id: string; task_id: string; notified_by: string; notified_at: string }>;
+      return (data ?? []) as unknown as Array<{ id: string; task_id: string; notified_by: string; notified_at: string }>;
     },
   });
 }
@@ -197,7 +197,7 @@ export function CsDashboardPage() {
 
   // Kanban columns
   const sortedStatuses = useMemo(() =>
-    [...taskStatuses].sort((a, b) => a.sortOrder - b.sortOrder),
+    [...taskStatuses].sort((a, b) => a.sort_order - b.sort_order),
     [taskStatuses]
   );
 
