@@ -1123,6 +1123,35 @@ export type Database = {
           },
         ]
       }
+      task_client_notifications: {
+        Row: {
+          id: string
+          notified_at: string
+          notified_by: string
+          task_id: string
+        }
+        Insert: {
+          id?: string
+          notified_at?: string
+          notified_by?: string
+          task_id: string
+        }
+        Update: {
+          id?: string
+          notified_at?: string
+          notified_by?: string
+          task_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_client_notifications_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       task_dependencies: {
         Row: {
           created_at: string
