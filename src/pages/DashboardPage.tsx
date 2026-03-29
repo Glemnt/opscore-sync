@@ -5,6 +5,7 @@ import {
   Users, AlertTriangle, TrendingUp, TrendingDown, Activity, DollarSign, UserMinus, UserPlus,
   CalendarIcon, ArrowUpRight, ArrowDownRight, Shield, Clock, XCircle, Filter, X, ChevronDown, ChevronUp
 } from 'lucide-react';
+import { useHealthScores } from '@/hooks/useHealthScores';
 import { useTasks } from '@/contexts/TasksContext';
 import { useClients } from '@/contexts/ClientsContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -315,11 +316,15 @@ export function DashboardPage() {
 
   const churnInPeriod = churnClients.length;
 
+  const allHealthScores = useHealthScores();
   const healthCounts = useMemo(() => {
     const counts = { green: 0, yellow: 0, red: 0, white: 0 };
-    activeClients.forEach(c => { const h = c.healthColor ?? 'white'; counts[h as keyof typeof counts] = (counts[h as keyof typeof counts] || 0) + 1; });
+    activeClients.forEach(c => {
+      const h = allHealthScores[c.id]?.color ?? 'white';
+      counts[h as keyof typeof counts] = (counts[h as keyof typeof counts] || 0) + 1;
+    });
     return counts;
-  }, [activeClients]);
+  }, [activeClients, allHealthScores]);
 
   const churnRiskClients = activeClients.filter(c => c.riscoChurn && c.riscoChurn !== 'baixo');
 
