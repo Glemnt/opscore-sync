@@ -4,7 +4,9 @@ import { useTasksQuery } from '@/hooks/useTasksQuery';
 import { useTaskPausesQuery } from '@/hooks/useTaskPausesQuery';
 import { useClientPlatformsQuery } from '@/hooks/useClientPlatformsQuery';
 import { useSquadsQuery } from '@/hooks/useSquadsQuery';
+import { useUserGoalsQuery } from '@/hooks/useUserGoalsQuery';
 import { PageHeader, StatCard, Avatar } from '@/components/ui/shared';
+import { Progress } from '@/components/ui/progress';
 import { teamRoleConfig } from '@/lib/config';
 import { cn } from '@/lib/utils';
 import {
@@ -23,6 +25,7 @@ export function ProductivityPage() {
   const { data: pauses = [] } = useTaskPausesQuery();
   const { data: clientPlatforms = [] } = useClientPlatformsQuery();
   const { data: squads = [] } = useSquadsQuery();
+  const { data: allGoals = [] } = useUserGoalsQuery();
 
   const [period, setPeriod] = useState<PeriodFilter>('month');
   const [squadFilter, setSquadFilter] = useState('all');
