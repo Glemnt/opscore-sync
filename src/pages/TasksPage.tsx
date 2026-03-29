@@ -255,6 +255,34 @@ export function TasksPage() {
             <option key={s.key} value={s.key}>{s.label}</option>
           ))}
         </select>
+        <select
+          value={selectedClient}
+          onChange={e => setSelectedClient(e.target.value)}
+          className="px-3 py-2 text-sm bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 text-foreground"
+        >
+          <option value="all">Todos clientes</option>
+          {clients.map(c => (
+            <option key={c.id} value={c.id}>{c.name}</option>
+          ))}
+        </select>
+        <select
+          value={selectedPriority}
+          onChange={e => setSelectedPriority(e.target.value)}
+          className="px-3 py-2 text-sm bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 text-foreground"
+        >
+          <option value="all">Todas prioridades</option>
+          <option value="high">P1 Crítica</option>
+          <option value="medium">P3 Média</option>
+          <option value="low">P4 Baixa</option>
+        </select>
+        <select
+          value={filterBloqueiaPassagem}
+          onChange={e => setFilterBloqueiaPassagem(e.target.value)}
+          className="px-3 py-2 text-sm bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 text-foreground"
+        >
+          <option value="all">Bloqueia passagem</option>
+          <option value="sim">Sim</option>
+          <option value="nao">Não</option>
         <div className="flex items-center gap-1.5">
           <CalendarDays className="w-4 h-4 text-muted-foreground" />
           <input
