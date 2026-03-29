@@ -19,6 +19,8 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Calendar, Clock, AlertTriangle, CheckCircle2, Users, Heart, Send, Plus, Eye, CircleDot, Route, Pencil, X } from 'lucide-react';
+import { useHealthScores } from '@/hooks/useHealthScores';
+import { HEALTH_ICONS } from '@/lib/healthScore';
 import { differenceInDays, format, startOfWeek, endOfWeek, addWeeks, isWithinInterval, parseISO, isValid } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { toast } from 'sonner';
@@ -151,19 +153,19 @@ export function CsDashboardPage() {
   }, [filteredTasks, myClients]);
 
   // Health metrics
+  const allHealthScores = useHealthScores();
   const healthMetrics = useMemo(() => {
     let emDia = 0, atencao = 0, critico = 0, semContato = 0;
     for (const c of myClients) {
-      const clientTasks = myTasks.filter(t => t.clientId === c.id && t.status !== 'done' && t.status !== 'concluida');
-      const overdue = clientTasks.filter(t => differenceInDays(parseISO(t.deadline), now) < 0).length;
       const ds = daysSince(c.ultimoContato);
       if (ds === null || ds > 3) semContato++;
-      if (overdue >= 3 || c.healthColor === 'red') critico++;
-      else if (overdue >= 1 || c.healthColor === 'yellow') atencao++;
+      const h = allHealthScores[c.id];
+      if (!h || h.color === 'red') critico++;
+      else if (h.color === 'yellow') atencao++;
       else emDia++;
     }
     return { total: myClients.length, emDia, atencao, critico, semContato };
-  }, [myClients, myTasks]);
+  }, [myClients, allHealthScores]);
 
   // Handle notification toggle
   const handleNotify = (taskId: string) => {
