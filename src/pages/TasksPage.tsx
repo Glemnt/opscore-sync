@@ -597,10 +597,41 @@ function TaskCard({ task, isLate, onClick, canDelete, onDelete, allTasks, onAppr
         </div>
       )}
 
+      {/* Rejection banner */}
+      {task.rejectionReason && task.status !== 'done' && (
+        <div className="flex items-center gap-1.5 text-xs bg-destructive/10 text-destructive rounded-lg p-2 mb-3 border border-destructive/20">
+          <RotateCcw className="w-3 h-3 shrink-0" />
+          <span className="line-clamp-2">Reprovada: {task.rejectionReason}</span>
+          {(task.rejectionCount ?? 0) > 0 && (
+            <span className="ml-auto text-[10px] font-bold whitespace-nowrap">{task.rejectionCount}x</span>
+          )}
+        </div>
+      )}
+
       {task.comments && (
         <div className="flex items-start gap-1.5 text-xs text-muted-foreground bg-muted/50 rounded-lg p-2 mb-3">
           <MessageSquare className="w-3 h-3 mt-0.5 shrink-0" />
           <span className="line-clamp-2">{task.comments}</span>
+        </div>
+      )}
+
+      {/* Quick approve/reject buttons on aguardando_aprovacao cards */}
+      {task.status === 'aguardando_aprovacao' && (
+        <div className="flex gap-1.5 mb-3">
+          <button
+            onClick={(e) => { e.stopPropagation(); onApprove?.(task.id); }}
+            className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-xs font-medium rounded-lg bg-emerald-100 text-emerald-700 hover:bg-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:hover:bg-emerald-900/50 transition-colors"
+          >
+            <CheckCircle className="w-3 h-3" />
+            Aprovar
+          </button>
+          <button
+            onClick={(e) => { e.stopPropagation(); onReject?.(task.id); }}
+            className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-xs font-medium rounded-lg bg-destructive/10 text-destructive hover:bg-destructive/20 transition-colors"
+          >
+            <XCircle className="w-3 h-3" />
+            Reprovar
+          </button>
         </div>
       )}
 
