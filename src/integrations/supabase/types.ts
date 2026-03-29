@@ -419,7 +419,11 @@ export type Database = {
           endereco: string
           estado: string
           fase_macro: string
+          health_calculated_at: string | null
           health_color: Database["public"]["Enums"]["health_color"] | null
+          health_override: boolean
+          health_override_reason: string
+          health_score: number | null
           id: string
           logistica_principal: string
           logo: string | null
@@ -475,7 +479,11 @@ export type Database = {
           endereco?: string
           estado?: string
           fase_macro?: string
+          health_calculated_at?: string | null
           health_color?: Database["public"]["Enums"]["health_color"] | null
+          health_override?: boolean
+          health_override_reason?: string
+          health_score?: number | null
           id?: string
           logistica_principal?: string
           logo?: string | null
@@ -531,7 +539,11 @@ export type Database = {
           endereco?: string
           estado?: string
           fase_macro?: string
+          health_calculated_at?: string | null
           health_color?: Database["public"]["Enums"]["health_color"] | null
+          health_override?: boolean
+          health_override_reason?: string
+          health_score?: number | null
           id?: string
           logistica_principal?: string
           logo?: string | null
