@@ -3,7 +3,7 @@ import { format, parseISO, isWithinInterval, startOfWeek, endOfWeek, subWeeks, s
 import { ptBR } from 'date-fns/locale';
 import {
   Users, AlertTriangle, TrendingUp, TrendingDown, Activity, DollarSign, UserMinus, UserPlus,
-  CalendarIcon, ArrowUpRight, ArrowDownRight, Shield, Clock, XCircle, Filter, X, ChevronDown, ChevronUp
+  CalendarIcon, ArrowUpRight, ArrowDownRight, Shield, Clock, XCircle, Filter, X, ChevronDown, ChevronUp, Star
 } from 'lucide-react';
 import { useHealthScores } from '@/hooks/useHealthScores';
 import { useTasks } from '@/contexts/TasksContext';
@@ -15,6 +15,7 @@ import { useAppUsersQuery } from '@/hooks/useAppUsersQuery';
 import { usePlatformsQuery } from '@/hooks/usePlatformsQuery';
 import { useClientStatusesQuery } from '@/hooks/useClientStatusesQuery';
 import { useTaskTypesQuery } from '@/hooks/useTaskTypesQuery';
+import { useNpsResponsesQuery, getNpsCategory } from '@/hooks/useNpsResponsesQuery';
 import { PageHeader } from '@/components/ui/shared';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
