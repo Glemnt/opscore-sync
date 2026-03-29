@@ -493,6 +493,10 @@ export function SettingsPage() {
               <Label className="text-xs">Meta anúncios/cliente (plataforma)</Label>
               <Input type="number" min={0} value={goalAnunciosCliente} onChange={e => setGoalAnunciosCliente(Number(e.target.value))} className="h-8 text-sm" />
             </div>
+            <div className="space-y-2 col-span-2">
+              <Label className="text-xs">Capacidade máxima (tarefas simultâneas)</Label>
+              <Input type="number" min={1} max={50} value={maxCapacity} onChange={e => setMaxCapacity(Number(e.target.value))} className="h-8 text-sm" />
+            </div>
           </div>
         </div>
       )}
