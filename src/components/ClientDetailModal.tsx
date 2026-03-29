@@ -10,7 +10,7 @@ import { ptBR } from 'date-fns/locale';
 import { Label } from '@/components/ui/label';
 import { StatusBadge } from '@/components/ui/shared';
 import { taskStatusConfig, taskTypeConfig } from '@/lib/config';
-import { Client, Task, TaskStatus, ClientStatus, ContractType, Platform, Squad } from '@/types';
+import { Client, Task, TaskStatus, ClientStatus, ContractType, Platform, Squad, FaseMacro, PerfilCliente, StatusFinanceiro, RiscoChurn, TipoCliente, PrioridadeGeral } from '@/types';
 import { usePlatformsQuery, PlatformRow } from '@/hooks/usePlatformsQuery';
 import { useTaskTypesMap } from '@/hooks/useTaskTypesQuery';
 import { useClientStatusesQuery, useClientStatusesMap } from '@/hooks/useClientStatusesQuery';
@@ -304,7 +304,7 @@ export function ClientDetailModal({ client, open, onClose }: ClientDetailModalPr
                 {client.contractType === 'mrr' ? 'MRR' : 'TCV'} {client.contractDurationMonths ? `${client.contractDurationMonths}m` : ''}
               </span>
               <button
-                onClick={() => { setEditMode(true); setEditData({ name: client.name, companyName: client.companyName, segment: client.segment, status: client.status, phase: (client as any).phase ?? 'onboarding', platforms: client.platforms ?? (client.platform ? [client.platform] : []), contractType: client.contractType, paymentDay: client.paymentDay, contractDurationMonths: client.contractDurationMonths, notes: client.notes, monthlyRevenue: client.monthlyRevenue, responsible: client.responsible, setupFee: client.setupFee, phone: client.phone, cnpj: client.cnpj, email: client.email, healthColor: client.healthColor ?? 'white', squadId: client.squadId, startDate: client.startDate }); }}
+                onClick={() => { setEditMode(true); setEditData({ name: client.name, companyName: client.companyName, segment: client.segment, status: client.status, phase: (client as any).phase ?? 'onboarding', platforms: client.platforms ?? (client.platform ? [client.platform] : []), contractType: client.contractType, paymentDay: client.paymentDay, contractDurationMonths: client.contractDurationMonths, notes: client.notes, monthlyRevenue: client.monthlyRevenue, responsible: client.responsible, setupFee: client.setupFee, phone: client.phone, cnpj: client.cnpj, email: client.email, healthColor: client.healthColor ?? 'white', squadId: client.squadId, startDate: client.startDate, razaoSocial: client.razaoSocial, perfilCliente: client.perfilCliente, endereco: client.endereco, cidade: client.cidade, estado: client.estado, logisticaPrincipal: client.logisticaPrincipal, nomeProprietario: client.nomeProprietario, cpfResponsavel: client.cpfResponsavel, csResponsavel: client.csResponsavel, manager: client.manager, auxiliar: client.auxiliar, assistente: client.assistente, consultorAtual: client.consultorAtual, vendedor: client.vendedor, statusFinanceiro: client.statusFinanceiro, multaRescisoria: client.multaRescisoria, dataFimPrevista: client.dataFimPrevista, faseMacro: client.faseMacro, subStatus: client.subStatus, riscoChurn: client.riscoChurn, tipoCliente: client.tipoCliente, prioridadeGeral: client.prioridadeGeral, npsUltimo: client.npsUltimo, motivoAtrasoGeral: client.motivoAtrasoGeral }); }}
                 className="p-1.5 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
                 title="Editar cliente"
               >
@@ -332,7 +332,7 @@ export function ClientDetailModal({ client, open, onClose }: ClientDetailModalPr
 
           {/* Edit Mode Form */}
           {editMode && (
-            <div className="mt-4 p-4 bg-muted/50 rounded-lg border border-border space-y-3">
+            <div className="mt-4 p-4 bg-muted/50 rounded-lg border border-border space-y-3 max-h-[50vh] overflow-y-auto">
               <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Editar Cliente</h4>
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -344,38 +344,48 @@ export function ClientDetailModal({ client, open, onClose }: ClientDetailModalPr
                   <Input value={editData.companyName ?? ''} onChange={e => setEditData(p => ({ ...p, companyName: e.target.value }))} className="h-8 text-sm" />
                 </div>
                 <div>
+                  <Label className="text-xs">Razão Social</Label>
+                  <Input value={editData.razaoSocial ?? ''} onChange={e => setEditData(p => ({ ...p, razaoSocial: e.target.value }))} className="h-8 text-sm" />
+                </div>
+                <div>
+                  <Label className="text-xs">Perfil do Cliente</Label>
+                  <select value={editData.perfilCliente ?? 'brasileiro'} onChange={e => setEditData(p => ({ ...p, perfilCliente: e.target.value as PerfilCliente }))} className="w-full h-8 px-2 text-sm bg-background border border-input rounded-md text-foreground">
+                    <option value="brasileiro">Brasileiro</option>
+                    <option value="boliviano">Boliviano</option>
+                    <option value="outro">Outro</option>
+                  </select>
+                </div>
+                <div>
                   <Label className="text-xs">Segmento</Label>
                   <Input value={editData.segment ?? ''} onChange={e => setEditData(p => ({ ...p, segment: e.target.value }))} className="h-8 text-sm" />
                 </div>
                 <div>
-                  <Label className="text-xs">Status</Label>
-                  <select value={editData.status ?? 'active'} onChange={e => setEditData(p => ({ ...p, status: e.target.value as ClientStatus }))} className="w-full h-8 px-2 text-sm bg-background border border-input rounded-md text-foreground">
-                    <option value="active">Ativo</option>
-                    <option value="inativo">Inativo</option>
-                  </select>
-                </div>
-                <div>
-                  <Label className="text-xs">Fase</Label>
-                  <select value={(editData as any).phase ?? 'onboarding'} onChange={e => setEditData(p => ({ ...p, phase: e.target.value }))} className="w-full h-8 px-2 text-sm bg-background border border-input rounded-md text-foreground">
-                    <option value="onboarding">Onboarding</option>
-                    <option value="reuniao_agendada">Reunião Agendada</option>
-                  </select>
-                </div>
-                {isAdmin && (
-                  <div>
-                    <Label className="text-xs">Mensalidade (R$)</Label>
-                    <Input type="number" value={editData.monthlyRevenue ?? ''} onChange={e => setEditData(p => ({ ...p, monthlyRevenue: Number(e.target.value) }))} className="h-8 text-sm" />
-                  </div>
-                )}
-                {isAdmin && (
-                  <div>
-                    <Label className="text-xs">Setup Pago (R$)</Label>
-                    <Input type="number" value={editData.setupFee ?? ''} onChange={e => setEditData(p => ({ ...p, setupFee: Number(e.target.value) }))} className="h-8 text-sm" />
-                  </div>
-                )}
-                <div>
                   <Label className="text-xs">CNPJ</Label>
                   <Input value={editData.cnpj ?? ''} onChange={e => setEditData(p => ({ ...p, cnpj: e.target.value }))} placeholder="00.000.000/0000-00" className="h-8 text-sm" />
+                </div>
+                <div>
+                  <Label className="text-xs">CPF Responsável</Label>
+                  <Input value={editData.cpfResponsavel ?? ''} onChange={e => setEditData(p => ({ ...p, cpfResponsavel: e.target.value }))} className="h-8 text-sm" />
+                </div>
+                <div>
+                  <Label className="text-xs">Nome Proprietário</Label>
+                  <Input value={editData.nomeProprietario ?? ''} onChange={e => setEditData(p => ({ ...p, nomeProprietario: e.target.value }))} className="h-8 text-sm" />
+                </div>
+                <div>
+                  <Label className="text-xs">Endereço</Label>
+                  <Input value={editData.endereco ?? ''} onChange={e => setEditData(p => ({ ...p, endereco: e.target.value }))} className="h-8 text-sm" />
+                </div>
+                <div>
+                  <Label className="text-xs">Cidade</Label>
+                  <Input value={editData.cidade ?? ''} onChange={e => setEditData(p => ({ ...p, cidade: e.target.value }))} className="h-8 text-sm" />
+                </div>
+                <div>
+                  <Label className="text-xs">Estado (UF)</Label>
+                  <Input value={editData.estado ?? ''} onChange={e => setEditData(p => ({ ...p, estado: e.target.value }))} maxLength={2} className="h-8 text-sm" />
+                </div>
+                <div>
+                  <Label className="text-xs">Logística Principal</Label>
+                  <Input value={editData.logisticaPrincipal ?? ''} onChange={e => setEditData(p => ({ ...p, logisticaPrincipal: e.target.value }))} className="h-8 text-sm" />
                 </div>
                 <div>
                   <Label className="text-xs">Telefone</Label>
@@ -385,24 +395,168 @@ export function ClientDetailModal({ client, open, onClose }: ClientDetailModalPr
                   <Label className="text-xs">Email</Label>
                   <Input type="email" value={editData.email ?? ''} onChange={e => setEditData(p => ({ ...p, email: e.target.value }))} placeholder="cliente@empresa.com" className="h-8 text-sm" />
                 </div>
+              </div>
+
+              {/* Equipe Interna */}
+              <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider pt-2">Equipe Interna</h4>
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <Label className="text-xs">Tipo de Contrato</Label>
-                  <select value={editData.contractType ?? 'mrr'} onChange={e => setEditData(p => ({ ...p, contractType: e.target.value as ContractType }))} className="w-full h-8 px-2 text-sm bg-background border border-input rounded-md text-foreground">
-                    <option value="mrr">MRR</option>
-                    <option value="tcv">TCV</option>
+                  <Label className="text-xs">CS Responsável</Label>
+                  <select value={editData.csResponsavel ?? ''} onChange={e => setEditData(p => ({ ...p, csResponsavel: e.target.value }))} className="w-full h-8 px-2 text-sm bg-background border border-input rounded-md text-foreground">
+                    <option value="">—</option>
+                    {appUsers.map(u => <option key={u.id} value={u.name}>{u.name}</option>)}
                   </select>
                 </div>
                 <div>
-                  <Label className="text-xs">Dia de Pagamento</Label>
-                  <Input type="number" min={1} max={31} value={editData.paymentDay ?? 10} onChange={e => setEditData(p => ({ ...p, paymentDay: Number(e.target.value) }))} className="h-8 text-sm" />
+                  <Label className="text-xs">Manager</Label>
+                  <select value={editData.manager ?? ''} onChange={e => setEditData(p => ({ ...p, manager: e.target.value }))} className="w-full h-8 px-2 text-sm bg-background border border-input rounded-md text-foreground">
+                    <option value="">—</option>
+                    {appUsers.map(u => <option key={u.id} value={u.name}>{u.name}</option>)}
+                  </select>
                 </div>
                 <div>
-                    <Label className="text-xs">Duração do Contrato</Label>
-                    <select value={editData.contractDurationMonths ?? 6} onChange={e => setEditData(p => ({ ...p, contractDurationMonths: Number(e.target.value) }))} className="w-full h-8 px-2 text-sm bg-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring text-foreground">
-                      <option value={6}>6 meses</option>
-                      <option value={12}>12 meses</option>
+                  <Label className="text-xs">Auxiliar</Label>
+                  <select value={editData.auxiliar ?? ''} onChange={e => setEditData(p => ({ ...p, auxiliar: e.target.value }))} className="w-full h-8 px-2 text-sm bg-background border border-input rounded-md text-foreground">
+                    <option value="">—</option>
+                    {appUsers.map(u => <option key={u.id} value={u.name}>{u.name}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <Label className="text-xs">Assistente</Label>
+                  <select value={editData.assistente ?? ''} onChange={e => setEditData(p => ({ ...p, assistente: e.target.value }))} className="w-full h-8 px-2 text-sm bg-background border border-input rounded-md text-foreground">
+                    <option value="">—</option>
+                    {appUsers.map(u => <option key={u.id} value={u.name}>{u.name}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <Label className="text-xs">Consultor Atual</Label>
+                  <select value={editData.consultorAtual ?? ''} onChange={e => setEditData(p => ({ ...p, consultorAtual: e.target.value }))} className="w-full h-8 px-2 text-sm bg-background border border-input rounded-md text-foreground">
+                    <option value="">—</option>
+                    {appUsers.map(u => <option key={u.id} value={u.name}>{u.name}</option>)}
+                  </select>
+                </div>
+              </div>
+
+              {/* Financeiro */}
+              {isAdmin && (
+                <>
+                  <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider pt-2">Financeiro</h4>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label className="text-xs">Mensalidade (R$)</Label>
+                      <Input type="number" value={editData.monthlyRevenue ?? ''} onChange={e => setEditData(p => ({ ...p, monthlyRevenue: Number(e.target.value) }))} className="h-8 text-sm" />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Setup Pago (R$)</Label>
+                      <Input type="number" value={editData.setupFee ?? ''} onChange={e => setEditData(p => ({ ...p, setupFee: Number(e.target.value) }))} className="h-8 text-sm" />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Tipo de Contrato</Label>
+                      <select value={editData.contractType ?? 'mrr'} onChange={e => setEditData(p => ({ ...p, contractType: e.target.value as ContractType }))} className="w-full h-8 px-2 text-sm bg-background border border-input rounded-md text-foreground">
+                        <option value="mrr">MRR</option>
+                        <option value="tcv">TCV</option>
+                      </select>
+                    </div>
+                    <div>
+                      <Label className="text-xs">Dia de Pagamento</Label>
+                      <Input type="number" min={1} max={31} value={editData.paymentDay ?? 10} onChange={e => setEditData(p => ({ ...p, paymentDay: Number(e.target.value) }))} className="h-8 text-sm" />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Duração do Contrato</Label>
+                      <select value={editData.contractDurationMonths ?? 6} onChange={e => setEditData(p => ({ ...p, contractDurationMonths: Number(e.target.value) }))} className="w-full h-8 px-2 text-sm bg-background border border-input rounded-md text-foreground">
+                        <option value={6}>6 meses</option>
+                        <option value={12}>12 meses</option>
+                      </select>
+                    </div>
+                    <div>
+                      <Label className="text-xs">Vendedor</Label>
+                      <Input value={editData.vendedor ?? ''} onChange={e => setEditData(p => ({ ...p, vendedor: e.target.value }))} className="h-8 text-sm" />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Status Financeiro</Label>
+                      <select value={editData.statusFinanceiro ?? 'em_dia'} onChange={e => setEditData(p => ({ ...p, statusFinanceiro: e.target.value as StatusFinanceiro }))} className="w-full h-8 px-2 text-sm bg-background border border-input rounded-md text-foreground">
+                        <option value="em_dia">Em dia</option>
+                        <option value="atrasado">Atrasado</option>
+                        <option value="inadimplente">Inadimplente</option>
+                      </select>
+                    </div>
+                    <div>
+                      <Label className="text-xs">Multa Rescisória (R$)</Label>
+                      <Input type="number" value={editData.multaRescisoria ?? ''} onChange={e => setEditData(p => ({ ...p, multaRescisoria: Number(e.target.value) || undefined }))} className="h-8 text-sm" />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Data Fim Prevista</Label>
+                      <Input type="date" value={editData.dataFimPrevista ?? ''} onChange={e => setEditData(p => ({ ...p, dataFimPrevista: e.target.value }))} className="h-8 text-sm" />
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* Prazos e Status */}
+              <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider pt-2">Prazos e Status</h4>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-xs">Fase Macro</Label>
+                  <select value={editData.faseMacro ?? 'implementacao'} onChange={e => setEditData(p => ({ ...p, faseMacro: e.target.value as FaseMacro }))} className="w-full h-8 px-2 text-sm bg-background border border-input rounded-md text-foreground">
+                    <option value="implementacao">Implementação</option>
+                    <option value="performance">Performance</option>
+                    <option value="escala">Escala</option>
+                    <option value="pausado">Pausado</option>
+                    <option value="cancelado">Cancelado</option>
+                    <option value="inativo">Inativo</option>
+                  </select>
+                </div>
+                {(editData.faseMacro ?? 'implementacao') === 'implementacao' && (
+                  <div>
+                    <Label className="text-xs">Sub-Status</Label>
+                    <select value={editData.subStatus ?? ''} onChange={e => setEditData(p => ({ ...p, subStatus: e.target.value || null }))} className="w-full h-8 px-2 text-sm bg-background border border-input rounded-md text-foreground">
+                      <option value="">—</option>
+                      <option value="onboard">Onboard (D1-D15)</option>
+                      <option value="implementacao_ativa">Implementação Ativa</option>
+                      <option value="validacao_final">Validação Final</option>
                     </select>
                   </div>
+                )}
+                <div>
+                  <Label className="text-xs">Risco de Churn</Label>
+                  <select value={editData.riscoChurn ?? 'baixo'} onChange={e => setEditData(p => ({ ...p, riscoChurn: e.target.value as RiscoChurn }))} className="w-full h-8 px-2 text-sm bg-background border border-input rounded-md text-foreground">
+                    <option value="baixo">Baixo</option>
+                    <option value="medio">Médio</option>
+                    <option value="alto">Alto</option>
+                    <option value="critico">Crítico</option>
+                  </select>
+                </div>
+                <div>
+                  <Label className="text-xs">Tipo de Cliente</Label>
+                  <select value={editData.tipoCliente ?? 'seller'} onChange={e => setEditData(p => ({ ...p, tipoCliente: e.target.value as TipoCliente }))} className="w-full h-8 px-2 text-sm bg-background border border-input rounded-md text-foreground">
+                    <option value="seller">Seller</option>
+                    <option value="lojista">Lojista</option>
+                  </select>
+                </div>
+                <div>
+                  <Label className="text-xs">Prioridade Geral</Label>
+                  <select value={editData.prioridadeGeral ?? 'P2'} onChange={e => setEditData(p => ({ ...p, prioridadeGeral: e.target.value as PrioridadeGeral }))} className="w-full h-8 px-2 text-sm bg-background border border-input rounded-md text-foreground">
+                    <option value="P1">P1 - Urgente</option>
+                    <option value="P2">P2 - Alta</option>
+                    <option value="P3">P3 - Normal</option>
+                    <option value="P4">P4 - Baixa</option>
+                  </select>
+                </div>
+                <div>
+                  <Label className="text-xs">NPS (0-10)</Label>
+                  <Input type="number" min={0} max={10} step={0.1} value={editData.npsUltimo ?? ''} onChange={e => setEditData(p => ({ ...p, npsUltimo: Number(e.target.value) || undefined }))} className="h-8 text-sm" />
+                </div>
+                <div>
+                  <Label className="text-xs">Motivo Atraso Geral</Label>
+                  <Input value={editData.motivoAtrasoGeral ?? ''} onChange={e => setEditData(p => ({ ...p, motivoAtrasoGeral: e.target.value }))} className="h-8 text-sm" />
+                </div>
+                <div>
+                  <Label className="text-xs">Status</Label>
+                  <select value={editData.status ?? 'active'} onChange={e => setEditData(p => ({ ...p, status: e.target.value as ClientStatus }))} className="w-full h-8 px-2 text-sm bg-background border border-input rounded-md text-foreground">
+                    <option value="active">Ativo</option>
+                    <option value="inativo">Inativo</option>
+                  </select>
+                </div>
                 <div>
                   <Label className="text-xs">Squad</Label>
                   <select value={editData.squadId ?? ''} onChange={e => setEditData(p => ({ ...p, squadId: e.target.value }))} className="w-full h-8 px-2 text-sm bg-background border border-input rounded-md text-foreground">
