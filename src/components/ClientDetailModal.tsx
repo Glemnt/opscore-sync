@@ -1008,6 +1008,155 @@ function TimelineItem({ task, isLast }: { task: Task; isLast: boolean }) {
   );
 }
 
+// ─── Health Score Section ───
+function HealthScoreSection({ client }: { client: Client }) {
+  const { currentUser } = useAuth();
+  const healthScores = useHealthScores();
+  const overrideMut = useOverrideHealthScore();
+  const removeMut = useRemoveHealthOverride();
+  const isAdmin = currentUser?.accessLevel === 3;
+  const showHealth = canViewHealth(currentUser);
+  const [overrideOpen, setOverrideOpen] = useState(false);
+  const [overrideColor, setOverrideColor] = useState<'green' | 'yellow' | 'red'>('green');
+  const [overrideReason, setOverrideReason] = useState('');
+  const [timelineOpen, setTimelineOpen] = useState(false);
+
+  if (!showHealth) return null;
+
+  const health = healthScores[client.id];
+  if (!health) return null;
+
+  const colorBg: Record<string, string> = { green: 'bg-success/10', yellow: 'bg-warning/10', red: 'bg-destructive/10', white: 'bg-muted' };
+  const colorText: Record<string, string> = { green: 'text-success', yellow: 'text-warning', red: 'text-destructive', white: 'text-muted-foreground' };
+
+  const handleOverride = () => {
+    if (!overrideReason.trim()) return;
+    overrideMut.mutate({
+      clientId: client.id,
+      color: overrideColor,
+      reason: overrideReason,
+      score: health.score,
+      changedBy: currentUser?.name ?? '',
+    }, { onSuccess: () => { setOverrideOpen(false); setOverrideReason(''); } });
+  };
+
+  return (
+    <div className="mt-3">
+      <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1.5">Saúde do Cliente</p>
+      <div className={cn('rounded-lg p-3', colorBg[health.color])}>
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2">
+            <span className="text-lg">{HEALTH_ICONS[health.color]}</span>
+            <span className={cn('text-sm font-bold', colorText[health.color])}>{health.score}/100</span>
+            <span className="text-xs text-muted-foreground">{HEALTH_LABELS[health.color]}</span>
+            {client.healthOverride && (
+              <Badge variant="outline" className="text-[10px]">
+                <Shield className="w-3 h-3 mr-0.5" /> Manual
+              </Badge>
+            )}
+          </div>
+          <div className="flex items-center gap-1">
+            <Button variant="ghost" size="sm" className="h-6 px-2 text-[10px]" onClick={() => setTimelineOpen(true)}>
+              Cronologia
+            </Button>
+            {isAdmin && (
+              <>
+                {client.healthOverride ? (
+                  <Button variant="ghost" size="sm" className="h-6 px-2 text-[10px] text-destructive" onClick={() => removeMut.mutate({ clientId: client.id, changedBy: currentUser?.name ?? '' })}>
+                    Remover override
+                  </Button>
+                ) : (
+                  <Button variant="ghost" size="sm" className="h-6 px-2 text-[10px]" onClick={() => setOverrideOpen(true)}>
+                    Sobrescrever
+                  </Button>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+        {/* Breakdown bars */}
+        {!client.healthOverride && (
+          <div className="space-y-1">
+            {(Object.keys(BREAKDOWN_LABELS) as Array<keyof typeof BREAKDOWN_LABELS>).map(key => (
+              <div key={key} className="flex items-center gap-2">
+                <span className="text-[10px] text-muted-foreground w-28 truncate">{BREAKDOWN_LABELS[key]} ({BREAKDOWN_WEIGHTS[key]}%)</span>
+                <Progress value={health.breakdown[key]} className="h-1.5 flex-1" />
+                <span className="text-[10px] font-mono w-8 text-right">{health.breakdown[key]}</span>
+              </div>
+            ))}
+          </div>
+        )}
+        {client.healthOverride && client.healthOverrideReason && (
+          <p className="text-xs text-muted-foreground mt-1 italic">Justificativa: {client.healthOverrideReason}</p>
+        )}
+      </div>
+
+      {/* Override Dialog */}
+      {overrideOpen && (
+        <div className="mt-2 p-3 border border-border rounded-lg bg-card space-y-2">
+          <p className="text-xs font-semibold text-foreground">Sobrescrever Saúde</p>
+          <select value={overrideColor} onChange={e => setOverrideColor(e.target.value as any)} className="w-full h-8 px-2 text-xs bg-background border border-input rounded-md text-foreground">
+            <option value="green">🟢 Saudável</option>
+            <option value="yellow">🟡 Atenção</option>
+            <option value="red">🔴 Crítico</option>
+          </select>
+          <Input value={overrideReason} onChange={e => setOverrideReason(e.target.value)} placeholder="Justificativa obrigatória..." className="h-8 text-xs" />
+          <div className="flex gap-2">
+            <Button size="sm" className="h-7 text-xs" onClick={handleOverride} disabled={!overrideReason.trim()}>Confirmar</Button>
+            <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setOverrideOpen(false)}>Cancelar</Button>
+          </div>
+        </div>
+      )}
+
+      {/* Timeline Dialog */}
+      <ClientTimelineDialog open={timelineOpen} onOpenChange={setTimelineOpen} client={client} />
+    </div>
+  );
+}
+
+// ─── Client Timeline Dialog (Proof of Value) ───
+function ClientTimelineDialog({ open, onOpenChange, client }: { open: boolean; onOpenChange: (o: boolean) => void; client: Client }) {
+  const { tasks } = useTasks();
+  const { data: journeyItems = [] } = useCsJourneyItemsQuery(client.id);
+
+  const doneTasks = tasks.filter(t => t.clientId === client.id && t.status === 'done');
+  const doneJourney = journeyItems.filter(i => i.status === 'feita');
+
+  const timeline = useMemo(() => {
+    const items: Array<{ date: string; type: 'task' | 'journey' | 'log'; title: string; detail: string }> = [];
+    doneTasks.forEach(t => items.push({ date: t.completedAt || t.deadline, type: 'task', title: t.title, detail: `${t.type} • ${t.responsible}` }));
+    doneJourney.forEach(j => items.push({ date: j.completedAt || j.scheduledDate, type: 'journey', title: j.title, detail: `D${j.dayNumber} • ${j.completedBy}` }));
+    client.changeLogs.forEach(l => items.push({ date: l.changedAt, type: 'log', title: `${l.field}: ${l.oldValue} → ${l.newValue}`, detail: l.changedBy }));
+    return items.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }, [doneTasks, doneJourney, client.changeLogs]);
+
+  const typeIcons: Record<string, string> = { task: '✅', journey: '📅', log: '📝' };
+  const typeLabels: Record<string, string> = { task: 'Tarefa concluída', journey: 'Jornada CS', log: 'Alteração' };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-lg max-h-[70vh] overflow-auto">
+        <DialogTitle>Cronologia — {client.name}</DialogTitle>
+        <div className="space-y-2 mt-2">
+          {timeline.length === 0 && <p className="text-sm text-muted-foreground text-center py-4">Nenhum registro encontrado.</p>}
+          {timeline.map((item, i) => (
+            <div key={i} className="flex items-start gap-2 p-2 rounded-md bg-muted/30 border border-border">
+              <span className="text-sm mt-0.5">{typeIcons[item.type]}</span>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-foreground truncate">{item.title}</p>
+                <p className="text-[10px] text-muted-foreground">{typeLabels[item.type]} • {item.detail}</p>
+              </div>
+              <span className="text-[10px] text-muted-foreground whitespace-nowrap">
+                {new Date(item.date).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}
+              </span>
+            </div>
+          ))}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function ContractSection({ client, updateClientField }: { client: Client; updateClientField: (id: string, field: string, value: any, label: string) => void }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
