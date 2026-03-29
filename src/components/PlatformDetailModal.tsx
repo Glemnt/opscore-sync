@@ -1,5 +1,5 @@
 import { useState, useRef, useMemo } from 'react';
-import { Brain, Send, History, Upload, Eye, Trash2, FileText, User, ShoppingBag, Star, Clock, ListChecks, TrendingUp, MessageCircle, Loader2, Settings2, CheckCircle2, AlertTriangle, ArrowRight, CalendarIcon } from 'lucide-react';
+import { Brain, Send, History, Upload, Eye, Trash2, FileText, User, ShoppingBag, Star, Clock, ListChecks, TrendingUp, MessageCircle, Loader2, Settings2, CheckCircle2, AlertTriangle, ArrowRight, CalendarIcon, Activity, ChevronDown, ChevronUp } from 'lucide-react';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -24,6 +24,8 @@ import { useClientPlatformChecklistQuery, useSeedChecklist, useToggleChecklistIt
 import { usePlatformCatalogQuery } from '@/hooks/usePlatformCatalogQuery';
 import { PLATFORM_STATUS_OPTIONS, MOTIVO_ATRASO_OPTIONS, computeDiasEmAtraso } from '@/lib/platformUtils';
 import { useActiveDelayReasons } from '@/hooks/useDelayReasonsQuery';
+import { useTimelineByPlatform } from '@/hooks/useTimelineQuery';
+import { TimelineFeed } from '@/components/TimelineFeed';
 
 interface PlatformDetailModalProps {
   open: boolean;
