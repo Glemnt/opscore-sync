@@ -96,6 +96,15 @@ export function useAddActionPlan() {
         created_by: plan.createdBy,
       });
       if (error) throw error;
+
+      // Timeline: action_plan_created
+      const { logTimelineEvent } = await import('@/hooks/useTimelineQuery');
+      logTimelineEvent({
+        clientId: plan.clientId,
+        eventType: 'action_plan_created',
+        description: `Plano de ação criado: ${plan.issueDescription.slice(0, 80)}`,
+        triggeredBy: plan.createdBy || 'Sistema',
+      });
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['action_plans'] }),
   });
