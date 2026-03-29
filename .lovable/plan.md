@@ -1,102 +1,105 @@
 
 
-## Relatórios Gerenciais — Reestruturação Completa
+## Timeline de Eventos — Cronologia Completa do Cliente
 
 ### Resumo
 
-Reescrever `ReportsPage.tsx` com 4 abas de relatórios (Operação, Equipe, Cliente, Executivo), cada uma com gráficos Recharts interativos, tabelas com dados reais, filtros independentes e exportação PDF/CSV. Atualizar `reportGenerators.ts` com novos geradores.
+Criar tabela `timeline_events` no banco, hook `useTimelineQuery`, e integrar visualizacao de timeline no ClientDetailModal (aba "Timeline") e PlatformDetailModal (timeline filtrada). Eventos sao registrados automaticamente nos pontos de mutacao existentes (contexts e hooks).
 
 ---
 
-### 1. Estrutura da Página
+### 1. Migration — Tabela `timeline_events`
 
-Tabs no topo: **Operação** | **Equipe** | **Cliente** | **Executivo**
+```sql
+CREATE TABLE public.timeline_events (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  client_id uuid NOT NULL,
+  platform_id uuid,
+  task_id uuid,
+  event_type text NOT NULL,
+  description text NOT NULL DEFAULT '',
+  old_value text,
+  new_value text,
+  triggered_by text NOT NULL DEFAULT 'Sistema',
+  created_at timestamptz NOT NULL DEFAULT now()
+);
 
-Cada aba tem:
-- Barra de filtros: Período (presets + custom), Squad, Responsável, Plataforma, Cliente
-- Gráficos + tabelas conforme especificação
-- Botões "Exportar PDF" e "Exportar CSV" por seção
+ALTER TABLE public.timeline_events ENABLE ROW LEVEL SECURITY;
 
----
+CREATE POLICY "Auth users can read timeline_events" ON public.timeline_events FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Auth users can insert timeline_events" ON public.timeline_events FOR INSERT TO authenticated WITH CHECK (true);
 
-### 2. Aba Operação
+CREATE INDEX idx_timeline_client ON public.timeline_events(client_id);
+CREATE INDEX idx_timeline_platform ON public.timeline_events(platform_id);
+CREATE INDEX idx_timeline_created ON public.timeline_events(created_at DESC);
+```
 
-- Clientes por fase: `BarChart` + tabela (dados de `useClients` agrupados por `faseMacro`)
-- Plataformas por fase: `BarChart` + tabela (`useClientPlatformsQuery` agrupado por `phase`)
-- Plataformas por consultor: tabela com contagem (`responsible`)
-- Plataformas atrasadas por consultor: tabela alerta (deadline < hoje, phase != done)
-- Top 10 motivos de atraso: `BarChart` horizontal (`motivoAtraso` de tasks + client_platforms)
-- Tempo médio de onboarding/implementação/performance: calculado como diferença entre `startDate` e `dataRealPassagem`, agrupado por plataforma e consultor
-
----
-
-### 3. Aba Equipe
-
-- Tarefas por colaborador semana/mês: `BarChart` (tasks done filtradas por período)
-- Tarefas atrasadas por colaborador: tabela alerta
-- Passagens para performance por colaborador: tasks tipo passagem
-- Produtividade semanal: `LineChart` (tasks concluídas por semana nas últimas 12 semanas)
-- Gargalos: quem tem mais tasks com `depende_cliente || aguardando_cliente`
-- Retrabalho: soma de `rejectionCount` por colaborador
-- Nota média: média de `notaEntrega` por colaborador
+Event types: `client_created`, `contract_started`, `platform_added`, `platform_removed`, `client_phase_changed`, `platform_phase_changed`, `platform_status_changed`, `responsible_changed`, `task_created`, `task_completed`, `task_rejected`, `task_overdue`, `client_contact`, `client_no_response`, `block_registered`, `platform_to_performance`, `platform_to_scale`, `client_paused`, `client_churn`, `health_score_changed`, `nps_registered`, `action_plan_created`, `journey_meeting`, `general_change`.
 
 ---
 
-### 4. Aba Cliente
+### 2. Hook `src/hooks/useTimelineQuery.ts` (novo)
 
-- Seletor de cliente no topo
-- Timeline do histórico (change_logs + tasks done + jornada CS)
-- Plataformas do cliente com fases
-- Tarefas abertas vs concluídas: `PieChart`
-- Motivos de atraso: lista
-- Evolução da saúde: `LineChart` (health_score ao longo do tempo — change_logs de health)
-- Risco de churn: badge + indicadores
+- `useTimelineEventsQuery(clientId)` — busca eventos do cliente ordenados por `created_at DESC`
+- `useTimelineByPlatform(platformId)` — filtra por platform_id
+- `useAddTimelineEvent()` — mutation para inserir evento
+- Funcao helper `logTimelineEvent(supabase, { clientId, platformId?, taskId?, eventType, description, oldValue?, newValue?, triggeredBy })`
 
 ---
 
-### 5. Aba Executivo (accessLevel >= 2)
+### 3. Inserir eventos automaticamente nos pontos de mutacao
 
-- Backlog total / por squad / por plataforma: `BarChart`
-- MRR por plataforma: `BarChart` (clients.monthlyRevenue cruzado com client_platforms)
-- Churn rate mensal: contagem de clientes que entraram em churn no mês
-- NPS consolidado: Score = % Promotores (9-10) - % Detratores (0-6) de `npsUltimo`
-- Saúde da carteira: `PieChart` (distribuição green/yellow/red via `useHealthScores`)
-- Clientes em risco de churn: tabela clicável
+**ClientsContext.tsx** — `addClient`: log `client_created`; `updateClient`: para campos chave (phase, status, responsible, faseMacro), log eventos especificos como `client_phase_changed`, `client_paused`, `client_churn`, `responsible_changed`.
 
----
+**useClientPlatformsQuery.ts** — `useAddClientPlatform`: log `platform_added`; `useDeleteClientPlatform`: log `platform_removed`; `useUpdateClientPlatform`: detectar mudancas em `phase` (log `platform_phase_changed`, `platform_to_performance`, `platform_to_scale`), `platform_status` (log `platform_status_changed`), `responsible` (log `responsible_changed`).
 
-### 6. Exportação PDF
+**TasksContext.tsx** — `addTask`: log `task_created`; `updateTask`: detectar status mudando para `done` (log `task_completed`), status para `rejected` ou `rejectionCount` incrementado (log `task_rejected`).
 
-Atualizar `reportGenerators.ts` com novas funções:
-- `generateOperationReport(filteredClients, filteredPlatforms, filteredTasks)`
-- `generateTeamPerformanceReport(filteredTasks, appUsers)`
-- `generateClientDetailedReport(client, tasks, platforms, changeLogs, journeyItems)`
-- `generateExecutiveReport(clients, platforms, tasks, healthScores)`
+**useHealthScores.ts** — `useOverrideHealthScore`: log `health_score_changed`.
 
-Cada uma gera PDF A4 landscape com header Grupo TG, KPIs, tabelas e paginação.
+**useCsJourneyQuery.ts** — `useUpdateJourneyItem`: quando status muda para `feita`, log `journey_meeting`.
+
+**useActionPlansQuery.ts** — ao criar plano, log `action_plan_created`.
+
+Cada log usa `supabase.from('timeline_events').insert(...)` diretamente no `onSuccess` ou dentro da mutationFn, passando `currentUser?.name` como `triggered_by`.
 
 ---
 
-### 7. Exportação CSV
+### 4. ClientDetailModal — Aba "Timeline"
 
-Função utilitária `downloadCsv(headers, rows, filename)` que gera e baixa arquivo CSV. Botão ao lado de cada tabela.
+Nova aba ao lado das existentes. Exibe feed cronologico reverso com:
+- Icone colorido por tipo (azul=criacao, verde=conclusao, vermelho=alerta/rejeicao, amarelo=mudanca, roxo=health)
+- Data/hora formatada
+- Tipo (label legivel) + descricao
+- Quem realizou
+- Filtros no topo: tipo de evento (select multi), periodo, plataforma
 
 ---
 
-### Hooks reutilizados (sem alteração)
+### 5. PlatformDetailModal — Secao Timeline
 
-- `useClients` (ClientsContext), `useTasksQuery` (TasksContext)
-- `useClientPlatformsQuery`, `useAppUsersQuery`, `useSquadsQuery`
-- `usePlatformsQuery`, `useHealthScores`, `useDelayReasonsQuery`
-- `useCsJourneyQuery`
+Nova aba/secao mostrando `useTimelineByPlatform(clientPlatform.id)` com o mesmo formato visual do ClientDetailModal, sem filtro de plataforma.
+
+---
 
 ### Arquivos
 
-- `src/pages/ReportsPage.tsx` — reescrita completa com 4 tabs
-- `src/lib/reportGenerators.ts` — novos geradores PDF + CSV utility
+- `supabase/migrations/` — CREATE TABLE timeline_events
+- `src/hooks/useTimelineQuery.ts` (novo)
+- `src/contexts/ClientsContext.tsx` — adicionar logs de timeline
+- `src/hooks/useClientPlatformsQuery.ts` — adicionar logs de timeline
+- `src/contexts/TasksContext.tsx` — adicionar logs de timeline
+- `src/hooks/useHealthScores.ts` — adicionar log
+- `src/hooks/useCsJourneyQuery.ts` — adicionar log
+- `src/hooks/useActionPlansQuery.ts` — adicionar log
+- `src/components/ClientDetailModal.tsx` — nova aba Timeline
+- `src/components/PlatformDetailModal.tsx` — nova secao Timeline
 
 ### Ordem
 
-1. ReportsPage.tsx (4 abas com gráficos e tabelas)
-2. reportGenerators.ts (novos geradores + CSV)
+1. Migration
+2. useTimelineQuery.ts (hook + helper)
+3. Instrumentar mutacoes (ClientsContext, TasksContext, useClientPlatformsQuery, useHealthScores, useCsJourneyQuery, useActionPlansQuery)
+4. ClientDetailModal (aba Timeline)
+5. PlatformDetailModal (secao Timeline)
 
