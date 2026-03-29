@@ -589,9 +589,31 @@ export function ProjectsPage() {
             onChange={(e) => setSquadPriorityFilter(e.target.value)}
             className="px-3 py-2 text-sm bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition text-foreground">
             <option value="all">Prioridade</option>
-            <option value="high">🔴 Alta</option>
-            <option value="medium">🟡 Média</option>
-            <option value="low">🟢 Baixa</option>
+            <option value="P1">🔴 P1</option>
+            <option value="P2">🟠 P2</option>
+            <option value="P3">🟡 P3</option>
+            <option value="P4">⚪ P4</option>
+          </select>
+
+          <select
+            value={squadFaseMacroFilter}
+            onChange={(e) => setSquadFaseMacroFilter(e.target.value)}
+            className="px-3 py-2 text-sm bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition text-foreground">
+            <option value="all">Fase Macro</option>
+            <option value="implementacao">🔧 Implementação</option>
+            <option value="performance">📈 Performance</option>
+            <option value="escala">🚀 Escala</option>
+            <option value="auxiliar">⚠️ Auxiliares</option>
+          </select>
+
+          <select
+            value={squadDiasAtrasoFilter}
+            onChange={(e) => setSquadDiasAtrasoFilter(e.target.value)}
+            className="px-3 py-2 text-sm bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition text-foreground">
+            <option value="all">Dias Atraso</option>
+            <option value=">0">{'> 0 dias'}</option>
+            <option value=">3">{'> 3 dias'}</option>
+            <option value=">7">{'> 7 dias'}</option>
           </select>
 
           <div className="flex items-center gap-2">
