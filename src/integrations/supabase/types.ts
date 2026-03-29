@@ -787,6 +787,54 @@ export type Database = {
         }
         Relationships: []
       }
+      nps_responses: {
+        Row: {
+          action_plan: string
+          category: string | null
+          client_id: string
+          created_at: string
+          created_by: string
+          id: string
+          improve: string
+          liked_most: string
+          manager_notified: boolean
+          responded_at: string | null
+          score: number | null
+          sent_at: string
+          would_recommend: boolean | null
+        }
+        Insert: {
+          action_plan?: string
+          category?: string | null
+          client_id: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          improve?: string
+          liked_most?: string
+          manager_notified?: boolean
+          responded_at?: string | null
+          score?: number | null
+          sent_at?: string
+          would_recommend?: boolean | null
+        }
+        Update: {
+          action_plan?: string
+          category?: string | null
+          client_id?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          improve?: string
+          liked_most?: string
+          manager_notified?: boolean
+          responded_at?: string | null
+          score?: number | null
+          sent_at?: string
+          would_recommend?: boolean | null
+        }
+        Relationships: []
+      }
       onboarding_checklist_items: {
         Row: {
           client_id: string
@@ -1610,6 +1658,48 @@ export type Database = {
           platform_id?: string | null
           task_id?: string | null
           triggered_by?: string
+        }
+        Relationships: []
+      }
+      user_goals: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          meta_anuncios_cliente: number
+          meta_anuncios_dia: number
+          meta_destravamentos: number
+          meta_passagens: number
+          meta_reducao_backlog: number
+          period: string
+          period_start: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          meta_anuncios_cliente?: number
+          meta_anuncios_dia?: number
+          meta_destravamentos?: number
+          meta_passagens?: number
+          meta_reducao_backlog?: number
+          period?: string
+          period_start?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          meta_anuncios_cliente?: number
+          meta_anuncios_dia?: number
+          meta_destravamentos?: number
+          meta_passagens?: number
+          meta_reducao_backlog?: number
+          period?: string
+          period_start?: string
+          user_id?: string
         }
         Relationships: []
       }

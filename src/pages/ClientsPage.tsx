@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Workflow, AlertTriangle } from 'lucide-react';
 import { useClientPlatformsQuery } from '@/hooks/useClientPlatformsQuery';
 import { Plus, Search, Building2, Calendar, User, X, Users, Circle, ShoppingBag, Settings2, Trash2, Phone, Mail, FileText } from 'lucide-react';
-import { mockAnalysisData } from '@/components/ClientAIAnalysis';
+
 import { getPlatformAttributeSummary } from '@/components/PlatformAttributesEditor';
 import { useHealthScores } from '@/hooks/useHealthScores';
 import { canViewHealth, HEALTH_ICONS } from '@/lib/healthScore';

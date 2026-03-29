@@ -3,7 +3,7 @@ import { format, parseISO, isWithinInterval, startOfWeek, endOfWeek, subWeeks, s
 import { ptBR } from 'date-fns/locale';
 import {
   Users, AlertTriangle, TrendingUp, TrendingDown, Activity, DollarSign, UserMinus, UserPlus,
-  CalendarIcon, ArrowUpRight, ArrowDownRight, Shield, Clock, XCircle, Filter, X, ChevronDown, ChevronUp
+  CalendarIcon, ArrowUpRight, ArrowDownRight, Shield, Clock, XCircle, Filter, X, ChevronDown, ChevronUp, Star
 } from 'lucide-react';
 import { useHealthScores } from '@/hooks/useHealthScores';
 import { useTasks } from '@/contexts/TasksContext';
@@ -15,6 +15,7 @@ import { useAppUsersQuery } from '@/hooks/useAppUsersQuery';
 import { usePlatformsQuery } from '@/hooks/usePlatformsQuery';
 import { useClientStatusesQuery } from '@/hooks/useClientStatusesQuery';
 import { useTaskTypesQuery } from '@/hooks/useTaskTypesQuery';
+import { useNpsResponsesQuery, getNpsCategory } from '@/hooks/useNpsResponsesQuery';
 import { PageHeader } from '@/components/ui/shared';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -142,6 +143,7 @@ export function DashboardPage() {
   const { data: platformsList = [] } = usePlatformsQuery();
   const { data: clientStatuses = [] } = useClientStatusesQuery('clients');
   const { data: taskTypes = [] } = useTaskTypesQuery();
+  const { data: allNpsResponses = [] } = useNpsResponsesQuery();
 
   const platformLabels = useMemo(() => {
     const m: Record<string, string> = {};
@@ -327,6 +329,17 @@ export function DashboardPage() {
   }, [activeClients, allHealthScores]);
 
   const churnRiskClients = activeClients.filter(c => c.riscoChurn && c.riscoChurn !== 'baixo');
+
+  // NPS Consolidated
+  const npsStats = useMemo(() => {
+    const scored = allNpsResponses.filter(r => r.score != null);
+    if (scored.length === 0) return { score: 0, promoters: 0, neutrals: 0, detractors: 0, total: 0 };
+    const promoters = scored.filter(r => r.score! >= 9).length;
+    const detractors = scored.filter(r => r.score! <= 6).length;
+    const neutrals = scored.length - promoters - detractors;
+    const npsScore = Math.round(((promoters - detractors) / scored.length) * 100);
+    return { score: npsScore, promoters, neutrals, detractors, total: scored.length };
+  }, [allNpsResponses]);
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
@@ -694,6 +707,69 @@ export function DashboardPage() {
                         <span className="font-semibold">{item.count}</span>
                       </div>
                     ))}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      )}
+
+      {/* ── BLOCO 6: NPS CONSOLIDADO ──────────────────────────────────────── */}
+      {isAdmin && npsStats.total > 0 && (
+        <div>
+          <SectionTitle icon={<Star className="w-4 h-4" />}>NPS Consolidado</SectionTitle>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <Card>
+              <CardContent className="p-6 flex flex-col items-center justify-center">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">NPS Score</p>
+                <div className="relative w-24 h-24 mb-2">
+                  <svg className="w-24 h-24 -rotate-90" viewBox="0 0 96 96">
+                    <circle cx="48" cy="48" r="40" fill="none" className="stroke-border" strokeWidth="8" />
+                    <circle
+                      cx="48" cy="48" r="40" fill="none"
+                      className={npsStats.score >= 50 ? 'stroke-success' : npsStats.score >= 0 ? 'stroke-warning' : 'stroke-destructive'}
+                      strokeWidth="8"
+                      strokeLinecap="round"
+                      strokeDasharray={`${Math.max(0, ((npsStats.score + 100) / 200) * 251.3)} 251.3`}
+                    />
+                  </svg>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <span className={cn('text-2xl font-bold', npsStats.score >= 50 ? 'text-success' : npsStats.score >= 0 ? 'text-warning' : 'text-destructive')}>
+                      {npsStats.score}
+                    </span>
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground">{npsStats.total} respostas</p>
+              </CardContent>
+            </Card>
+
+            <Card className="lg:col-span-2">
+              <CardHeader className="pb-2 pt-4 px-4">
+                <CardTitle className="text-sm">Distribuição NPS</CardTitle>
+              </CardHeader>
+              <CardContent className="px-4 pb-4">
+                <div className="space-y-3">
+                  <div>
+                    <div className="flex justify-between mb-1">
+                      <span className="text-xs font-medium text-success">🟢 Promotores (9-10)</span>
+                      <span className="text-xs font-bold">{npsStats.promoters} ({npsStats.total > 0 ? Math.round((npsStats.promoters / npsStats.total) * 100) : 0}%)</span>
+                    </div>
+                    <Progress value={npsStats.total > 0 ? (npsStats.promoters / npsStats.total) * 100 : 0} className="h-2" />
+                  </div>
+                  <div>
+                    <div className="flex justify-between mb-1">
+                      <span className="text-xs font-medium text-warning">🟡 Neutros (7-8)</span>
+                      <span className="text-xs font-bold">{npsStats.neutrals} ({npsStats.total > 0 ? Math.round((npsStats.neutrals / npsStats.total) * 100) : 0}%)</span>
+                    </div>
+                    <Progress value={npsStats.total > 0 ? (npsStats.neutrals / npsStats.total) * 100 : 0} className="h-2" />
+                  </div>
+                  <div>
+                    <div className="flex justify-between mb-1">
+                      <span className="text-xs font-medium text-destructive">🔴 Detratores (0-6)</span>
+                      <span className="text-xs font-bold">{npsStats.detractors} ({npsStats.total > 0 ? Math.round((npsStats.detractors / npsStats.total) * 100) : 0}%)</span>
+                    </div>
+                    <Progress value={npsStats.total > 0 ? (npsStats.detractors / npsStats.total) * 100 : 0} className="h-2" />
                   </div>
                 </div>
               </CardContent>

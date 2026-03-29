@@ -4,7 +4,9 @@ import { useTasksQuery } from '@/hooks/useTasksQuery';
 import { useTaskPausesQuery } from '@/hooks/useTaskPausesQuery';
 import { useClientPlatformsQuery } from '@/hooks/useClientPlatformsQuery';
 import { useSquadsQuery } from '@/hooks/useSquadsQuery';
+import { useUserGoalsQuery } from '@/hooks/useUserGoalsQuery';
 import { PageHeader, StatCard, Avatar } from '@/components/ui/shared';
+import { Progress } from '@/components/ui/progress';
 import { teamRoleConfig } from '@/lib/config';
 import { cn } from '@/lib/utils';
 import {
@@ -23,6 +25,7 @@ export function ProductivityPage() {
   const { data: pauses = [] } = useTaskPausesQuery();
   const { data: clientPlatforms = [] } = useClientPlatformsQuery();
   const { data: squads = [] } = useSquadsQuery();
+  const { data: allGoals = [] } = useUserGoalsQuery();
 
   const [period, setPeriod] = useState<PeriodFilter>('month');
   const [squadFilter, setSquadFilter] = useState('all');
@@ -258,6 +261,82 @@ export function ProductivityPage() {
               <Line type="monotone" dataKey="noPrazo" stroke="hsl(var(--success))" strokeWidth={2} name="No Prazo" dot={{ r: 4 }} />
             </LineChart>
           </ResponsiveContainer>
+        </div>
+      </div>
+
+      {/* Goals Progress */}
+      <div className="bg-card rounded-xl border border-border p-5 shadow-sm-custom">
+        <div className="flex items-center gap-2 mb-4">
+          <Target className="w-5 h-5 text-primary" />
+          <h3 className="text-sm font-semibold text-foreground">Progresso vs Metas Semanais</h3>
+        </div>
+        <div className="space-y-4">
+          {sorted.map(member => {
+            const goal = allGoals.find(g => g.userId === member.id && g.period === 'weekly');
+            if (!goal) return null;
+
+            const metrics = [
+              { label: 'Passagens', current: member.passagens, target: goal.metaPassagens },
+              { label: 'Plataformas', current: member.platformCount, target: goal.metaAnunciosCliente },
+            ];
+
+            return (
+              <div key={member.id} className="p-3 bg-muted/30 rounded-lg">
+                <div className="flex items-center gap-2 mb-3">
+                  <Avatar name={member.name} size="sm" />
+                  <span className="text-sm font-medium text-foreground">{member.name}</span>
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  {/* Passagens */}
+                  {(() => {
+                    const pct = goal.metaPassagens > 0 ? Math.round((member.passagens / goal.metaPassagens) * 100) : 0;
+                    const emoji = pct >= 100 ? '🟢' : pct >= 60 ? '🟡' : '🔴';
+                    return (
+                      <div>
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-xs text-muted-foreground">Passagens</span>
+                          <span className="text-xs font-medium">{emoji} {member.passagens}/{goal.metaPassagens}</span>
+                        </div>
+                        <Progress value={Math.min(100, pct)} className="h-2" />
+                      </div>
+                    );
+                  })()}
+                  {/* Destravamentos (use completedTasks as proxy) */}
+                  {(() => {
+                    const pct = goal.metaDestravamentos > 0 ? Math.round((member.completedTasks / goal.metaDestravamentos) * 100) : 0;
+                    const emoji = pct >= 100 ? '🟢' : pct >= 60 ? '🟡' : '🔴';
+                    return (
+                      <div>
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-xs text-muted-foreground">Destravamentos</span>
+                          <span className="text-xs font-medium">{emoji} {member.completedTasks}/{goal.metaDestravamentos}</span>
+                        </div>
+                        <Progress value={Math.min(100, pct)} className="h-2" />
+                      </div>
+                    );
+                  })()}
+                  {/* Backlog reduction */}
+                  {(() => {
+                    const backlogReduced = Math.max(0, member.completedTasks - member.lateTasks);
+                    const pct = goal.metaReducaoBacklog > 0 ? Math.round((backlogReduced / goal.metaReducaoBacklog) * 100) : 0;
+                    const emoji = pct >= 100 ? '🟢' : pct >= 60 ? '🟡' : '🔴';
+                    return (
+                      <div>
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-xs text-muted-foreground">Red. Backlog</span>
+                          <span className="text-xs font-medium">{emoji} {backlogReduced}/{goal.metaReducaoBacklog}</span>
+                        </div>
+                        <Progress value={Math.min(100, pct)} className="h-2" />
+                      </div>
+                    );
+                  })()}
+                </div>
+              </div>
+            );
+          })}
+          {sorted.every(m => !allGoals.find(g => g.userId === m.id && g.period === 'weekly')) && (
+            <p className="text-sm text-muted-foreground text-center py-4">Nenhuma meta definida. Configure metas na página de Configurações.</p>
+          )}
         </div>
       </div>
 

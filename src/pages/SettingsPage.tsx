@@ -1,8 +1,10 @@
-import { useState } from 'react';
-import { Plus, Shield, ShieldCheck, ShieldAlert, Pencil, Trash2, CalendarIcon, Cake, Route, Save, X } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Plus, Shield, ShieldCheck, ShieldAlert, Pencil, Trash2, CalendarIcon, Cake, Route, Save, X, Target } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSquads } from '@/contexts/SquadsContext';
 import { useAppUsersQuery, useCreateAppUser, useUpdateAppUser, useDeleteAppUser } from '@/hooks/useAppUsersQuery';
+import { useUserGoalsQuery, useUpsertUserGoal } from '@/hooks/useUserGoalsQuery';
+import { useClientPlatformsQuery } from '@/hooks/useClientPlatformsQuery';
 import { usePlatformsQuery, useAddPlatform, useDeletePlatform } from '@/hooks/usePlatformsQuery';
 import { useTaskTypesQuery, useAddTaskType, useDeleteTaskType } from '@/hooks/useTaskTypesQuery';
 import { useDelayReasonsQuery, useAddDelayReason, useUpdateDelayReason, useDeleteDelayReason } from '@/hooks/useDelayReasonsQuery';
@@ -215,6 +217,17 @@ export function SettingsPage() {
   // Delete confirm
   const [deletingUser, setDeletingUser] = useState<AppUserProfile | null>(null);
 
+  // Goals state
+  const [goalPassagens, setGoalPassagens] = useState(5);
+  const [goalDestravamentos, setGoalDestravamentos] = useState(3);
+  const [goalReducaoBacklog, setGoalReducaoBacklog] = useState(5);
+  const [goalAnunciosDia, setGoalAnunciosDia] = useState(24);
+  const [goalAnunciosCliente, setGoalAnunciosCliente] = useState(75);
+
+  const { data: allGoals = [] } = useUserGoalsQuery();
+  const upsertGoal = useUpsertUserGoal();
+  const { data: clientPlatforms = [] } = useClientPlatformsQuery();
+
   // Form state
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -238,6 +251,13 @@ export function SettingsPage() {
     setSelectedSquads(u.squadIds);
     setHireDate(u.hireDate ? parseISO(u.hireDate) : undefined);
     setBirthday(u.birthday ? parseISO(u.birthday) : undefined);
+    // Load goals
+    const userGoal = allGoals.find(g => g.userId === u.id && g.period === 'weekly');
+    setGoalPassagens(userGoal?.metaPassagens ?? 5);
+    setGoalDestravamentos(userGoal?.metaDestravamentos ?? 3);
+    setGoalReducaoBacklog(userGoal?.metaReducaoBacklog ?? 5);
+    setGoalAnunciosDia(userGoal?.metaAnunciosDia ?? 24);
+    setGoalAnunciosCliente(userGoal?.metaAnunciosCliente ?? 75);
   };
 
   const handleCreate = () => {
@@ -262,7 +282,22 @@ export function SettingsPage() {
         hireDate: hireDate ? format(hireDate, 'yyyy-MM-dd') : null,
         birthday: birthday ? format(birthday, 'yyyy-MM-dd') : null,
       },
-      { onSuccess: () => { setEditingUser(null); resetForm(); } }
+      {
+        onSuccess: () => {
+          // Save goals
+          upsertGoal.mutate({
+            userId: editingUser.id,
+            period: 'weekly',
+            metaPassagens: goalPassagens,
+            metaDestravamentos: goalDestravamentos,
+            metaReducaoBacklog: goalReducaoBacklog,
+            metaAnunciosDia: goalAnunciosDia,
+            metaAnunciosCliente: goalAnunciosCliente,
+            createdBy: currentUser?.name || '',
+          });
+          setEditingUser(null); resetForm();
+        },
+      }
     );
   };
 
@@ -414,6 +449,50 @@ export function SettingsPage() {
           </div>
         )}
       </div>
+
+      {/* Section: Metas */}
+      {isEdit && editingUser && (
+        <div>
+          <h4 className="text-sm font-semibold text-foreground mb-3 border-b border-border pb-1.5 flex items-center gap-2">
+            <Target className="w-4 h-4" /> Metas do Colaborador
+          </h4>
+          {/* Auto-calculated readonly fields */}
+          <div className="grid grid-cols-2 gap-3 mb-3">
+            <div className="p-3 bg-muted/50 rounded-lg">
+              <span className="text-[10px] text-muted-foreground uppercase font-medium">Plataformas sob responsabilidade</span>
+              <p className="text-lg font-bold text-foreground">{clientPlatforms.filter(p => p.responsible === editingUser.name).length}</p>
+            </div>
+            <div className="p-3 bg-muted/50 rounded-lg">
+              <span className="text-[10px] text-muted-foreground uppercase font-medium">Plataformas em atraso</span>
+              <p className="text-lg font-bold text-destructive">
+                {clientPlatforms.filter(p => p.responsible === editingUser.name && p.deadline && new Date(p.deadline) < new Date() && !['performance', 'escala', 'done'].includes(p.phase)).length}
+              </p>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <Label className="text-xs">Meta semanal de passagens</Label>
+              <Input type="number" min={0} value={goalPassagens} onChange={e => setGoalPassagens(Number(e.target.value))} className="h-8 text-sm" />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs">Meta diária destravamentos</Label>
+              <Input type="number" min={0} value={goalDestravamentos} onChange={e => setGoalDestravamentos(Number(e.target.value))} className="h-8 text-sm" />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs">Meta redução backlog</Label>
+              <Input type="number" min={0} value={goalReducaoBacklog} onChange={e => setGoalReducaoBacklog(Number(e.target.value))} className="h-8 text-sm" />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs">Meta anúncios/dia</Label>
+              <Input type="number" min={0} value={goalAnunciosDia} onChange={e => setGoalAnunciosDia(Number(e.target.value))} className="h-8 text-sm" />
+            </div>
+            <div className="space-y-2 col-span-2">
+              <Label className="text-xs">Meta anúncios/cliente (plataforma)</Label>
+              <Input type="number" min={0} value={goalAnunciosCliente} onChange={e => setGoalAnunciosCliente(Number(e.target.value))} className="h-8 text-sm" />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 
