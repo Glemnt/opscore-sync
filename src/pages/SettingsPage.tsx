@@ -251,6 +251,13 @@ export function SettingsPage() {
     setSelectedSquads(u.squadIds);
     setHireDate(u.hireDate ? parseISO(u.hireDate) : undefined);
     setBirthday(u.birthday ? parseISO(u.birthday) : undefined);
+    // Load goals
+    const userGoal = allGoals.find(g => g.userId === u.id && g.period === 'weekly');
+    setGoalPassagens(userGoal?.metaPassagens ?? 5);
+    setGoalDestravamentos(userGoal?.metaDestravamentos ?? 3);
+    setGoalReducaoBacklog(userGoal?.metaReducaoBacklog ?? 5);
+    setGoalAnunciosDia(userGoal?.metaAnunciosDia ?? 24);
+    setGoalAnunciosCliente(userGoal?.metaAnunciosCliente ?? 75);
   };
 
   const handleCreate = () => {
