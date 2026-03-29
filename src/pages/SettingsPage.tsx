@@ -5,6 +5,7 @@ import { useSquads } from '@/contexts/SquadsContext';
 import { useAppUsersQuery, useCreateAppUser, useUpdateAppUser, useDeleteAppUser } from '@/hooks/useAppUsersQuery';
 import { usePlatformsQuery, useAddPlatform, useDeletePlatform } from '@/hooks/usePlatformsQuery';
 import { useTaskTypesQuery, useAddTaskType, useDeleteTaskType } from '@/hooks/useTaskTypesQuery';
+import { useDelayReasonsQuery, useAddDelayReason, useUpdateDelayReason, useDeleteDelayReason } from '@/hooks/useDelayReasonsQuery';
 import { AccessLevel, TeamRole } from '@/types';
 import type { AppUserProfile } from '@/types/database';
 import { PageHeader } from '@/components/ui/shared';
@@ -74,6 +75,12 @@ export function SettingsPage() {
   const addTaskType = useAddTaskType();
   const deleteTaskType = useDeleteTaskType();
   const [newTaskTypeLabel, setNewTaskTypeLabel] = useState('');
+
+  const { data: delayReasons = [], isLoading: delayReasonsLoading } = useDelayReasonsQuery();
+  const addDelayReason = useAddDelayReason();
+  const updateDelayReason = useUpdateDelayReason();
+  const deleteDelayReason = useDeleteDelayReason();
+  const [newDelayReasonLabel, setNewDelayReasonLabel] = useState('');
 
   // Create dialog
   const [openCreate, setOpenCreate] = useState(false);
@@ -482,6 +489,78 @@ export function SettingsPage() {
                     onClick={() => deleteTaskType.mutate(t.id, { onSuccess: () => toast.success('Tipo removido') })}
                     className="ml-1 text-muted-foreground hover:text-destructive transition-colors"
                     title="Remover tipo"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Delay Reasons Section */}
+      <div className="mt-8">
+        <h3 className="text-lg font-semibold text-foreground mb-4">Motivos de Atraso</h3>
+        <div className="bg-card rounded-xl border border-border shadow-sm-custom p-5">
+          <div className="flex items-center gap-2 mb-4">
+            <Input
+              value={newDelayReasonLabel}
+              onChange={(e) => setNewDelayReasonLabel(e.target.value)}
+              placeholder="Nome do novo motivo"
+              className="max-w-xs"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  const label = newDelayReasonLabel.trim();
+                  if (!label) return;
+                  addDelayReason.mutate({ label, sortOrder: delayReasons.length + 1 }, {
+                    onSuccess: () => { setNewDelayReasonLabel(''); toast.success('Motivo adicionado'); },
+                    onError: (err: any) => toast.error(err.message || 'Erro ao adicionar'),
+                  });
+                }
+              }}
+            />
+            <Button
+              onClick={() => {
+                const label = newDelayReasonLabel.trim();
+                if (!label) return;
+                addDelayReason.mutate({ label, sortOrder: delayReasons.length + 1 }, {
+                  onSuccess: () => { setNewDelayReasonLabel(''); toast.success('Motivo adicionado'); },
+                  onError: (err: any) => toast.error(err.message || 'Erro ao adicionar'),
+                });
+              }}
+              disabled={!newDelayReasonLabel.trim() || addDelayReason.isPending}
+              className="gradient-primary shadow-primary"
+            >
+              <Plus className="w-4 h-4 mr-1" />
+              Adicionar
+            </Button>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {delayReasonsLoading ? (
+              Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-8 w-36" />)
+            ) : delayReasons.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Nenhum motivo cadastrado</p>
+            ) : (
+              delayReasons.map((r) => (
+                <div key={r.id} className={cn(
+                  'flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-sm font-medium',
+                  r.isActive ? 'border-border bg-muted/50 text-foreground' : 'border-border/50 bg-muted/20 text-muted-foreground line-through'
+                )}>
+                  <button
+                    onClick={() => updateDelayReason.mutate({ id: r.id, updates: { is_active: !r.isActive } }, {
+                      onSuccess: () => toast.success(r.isActive ? 'Motivo desativado' : 'Motivo ativado'),
+                    })}
+                    className="text-muted-foreground hover:text-primary transition-colors"
+                    title={r.isActive ? 'Desativar' : 'Ativar'}
+                  >
+                    {r.isActive ? '●' : '○'}
+                  </button>
+                  {r.label}
+                  <button
+                    onClick={() => deleteDelayReason.mutate(r.id, { onSuccess: () => toast.success('Motivo removido') })}
+                    className="ml-1 text-muted-foreground hover:text-destructive transition-colors"
+                    title="Remover motivo"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
