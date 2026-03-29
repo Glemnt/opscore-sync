@@ -61,9 +61,8 @@ export function GenerateAutoDemandsDialog({ open, onOpenChange, clientId, client
   }, [open, checklistItems.length]);
 
   const findBestResponsible = (role: string): string => {
-    // Try to find squad member with matching role and lowest load
     const squadMembers = squadId
-      ? teamMembers.filter(m => m.squad_id === squadId)
+      ? teamMembers.filter(m => m.squadId === squadId)
       : teamMembers;
     
     const roleMap: Record<string, string[]> = {
@@ -78,16 +77,14 @@ export function GenerateAutoDemandsDialog({ open, onOpenChange, clientId, client
     const candidates = squadMembers.filter(m => allowedRoles.includes(m.role));
     
     if (candidates.length === 0) {
-      // Fallback: any squad member
       if (squadMembers.length > 0) {
-        const sorted = [...squadMembers].sort((a, b) => a.current_load - b.current_load);
+        const sorted = [...squadMembers].sort((a, b) => a.currentLoad - b.currentLoad);
         return sorted[0].name;
       }
-      // Last fallback: any app user
       return appUsers[0]?.name ?? '';
     }
     
-    const sorted = [...candidates].sort((a, b) => a.current_load - b.current_load);
+    const sorted = [...candidates].sort((a, b) => a.currentLoad - b.currentLoad);
     return sorted[0].name;
   };
 
