@@ -1574,6 +1574,45 @@ export type Database = {
           },
         ]
       }
+      timeline_events: {
+        Row: {
+          client_id: string
+          created_at: string
+          description: string
+          event_type: string
+          id: string
+          new_value: string | null
+          old_value: string | null
+          platform_id: string | null
+          task_id: string | null
+          triggered_by: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          description?: string
+          event_type: string
+          id?: string
+          new_value?: string | null
+          old_value?: string | null
+          platform_id?: string | null
+          task_id?: string | null
+          triggered_by?: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          description?: string
+          event_type?: string
+          id?: string
+          new_value?: string | null
+          old_value?: string | null
+          platform_id?: string | null
+          task_id?: string | null
+          triggered_by?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           id: string
