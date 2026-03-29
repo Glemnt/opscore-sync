@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
-import { Building2, Calendar as CalendarIcon, Clock, User, CheckCircle2, AlertCircle, ClipboardList, Circle, Send, History, Edit3, Save, X, FileText, Upload, Eye, Trash2, Pencil, Plus, Workflow, ShoppingBag, ChevronDown, ChevronUp } from 'lucide-react';
+import { Building2, Calendar as CalendarIcon, Clock, User, CheckCircle2, AlertCircle, ClipboardList, Circle, Send, History, Edit3, Save, X, FileText, Upload, Eye, Trash2, Pencil, Plus, Workflow, ShoppingBag, ChevronDown, ChevronUp, AlertTriangle } from 'lucide-react';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Calendar } from '@/components/ui/calendar';
@@ -27,10 +27,26 @@ import { useClientPlatformsQuery, useAddClientPlatform, useUpdateClientPlatform,
 import type { ClientPlatform } from '@/hooks/useClientPlatformsQuery';
 import { PlatformAttributesEditor } from '@/components/PlatformAttributesEditor';
 import { useAuth } from '@/contexts/AuthContext';
+import { useClientPlatformChecklistQuery } from '@/hooks/useClientPlatformChecklistQuery';
+import { PLATFORM_STATUS_OPTIONS, computeDiasEmAtraso } from '@/lib/platformUtils';
+import { Progress } from '@/components/ui/progress';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+
+// ─── Checklist Progress Mini Component ───
+function ChecklistProgressBar({ clientPlatformId }: { clientPlatformId: string }) {
+  const { data: items = [] } = useClientPlatformChecklistQuery(clientPlatformId);
+  if (items.length === 0) return <span className="text-[10px] text-muted-foreground">Sem checklist</span>;
+  const pct = Math.round((items.filter(i => i.done).length / items.length) * 100);
+  return (
+    <div className="flex items-center gap-2 w-full">
+      <Progress value={pct} className="h-1.5 flex-1" />
+      <span className="text-[10px] font-bold text-primary">{pct}%</span>
+    </div>
+  );
+}
 
 // ─── Platform Operational Panel ───
 function PlatformOperationalPanel({ client, platformOptions, squads, appUsers, tasks, clientStatuses }: {
@@ -55,7 +71,6 @@ function PlatformOperationalPanel({ client, platformOptions, squads, appUsers, t
     return map;
   }, [clientPlatforms, client.id]);
 
-  // Auto-seed missing platform records
   useEffect(() => {
     for (const slug of platforms) {
       if (!cpMap[slug]) {
@@ -64,9 +79,33 @@ function PlatformOperationalPanel({ client, platformOptions, squads, appUsers, t
     }
   }, [platforms.join(','), Object.keys(cpMap).join(',')]);
 
+  const allCPs = Object.values(cpMap);
+  const readyCount = allCPs.filter(cp => cp.prontaPerformance).length;
+  const delayedCount = allCPs.filter(cp => computeDiasEmAtraso(cp.deadline) > 0).length;
+  const blockedCount = allCPs.filter(cp => cp.dependeCliente).length;
+
   return (
     <div className="mt-3">
       <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1.5">Plataformas (Operacional)</p>
+
+      {allCPs.length > 0 && (
+        <div className="flex items-center gap-3 mb-2 flex-wrap">
+          <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-semibold">
+            {readyCount} pronta{readyCount !== 1 ? 's' : ''}
+          </span>
+          {delayedCount > 0 && (
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-destructive/10 text-destructive font-semibold">
+              {delayedCount} atrasada{delayedCount !== 1 ? 's' : ''}
+            </span>
+          )}
+          {blockedCount > 0 && (
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-orange-100 text-orange-700 font-semibold">
+              {blockedCount} aguardando cliente
+            </span>
+          )}
+        </div>
+      )}
+
       <div className="space-y-2">
         {platforms.map((slug) => {
           const plat = platformOptions.find(p => p.slug === slug);
@@ -75,6 +114,8 @@ function PlatformOperationalPanel({ client, platformOptions, squads, appUsers, t
           const pendingCount = platTasks.filter(t => t.status !== 'done').length;
           const isExpanded = expandedSlug === slug;
           const platSquad = cp?.squadId ? squads.find(s => s.id === cp.squadId) : null;
+          const statusOpt = cp ? PLATFORM_STATUS_OPTIONS.find(o => o.value === cp.platformStatus) : null;
+          const dias = cp ? computeDiasEmAtraso(cp.deadline) : 0;
 
           return (
             <div key={slug} className="border border-border rounded-lg bg-muted/30 overflow-hidden">
@@ -82,12 +123,12 @@ function PlatformOperationalPanel({ client, platformOptions, squads, appUsers, t
                 onClick={() => setExpandedSlug(isExpanded ? null : slug)}
                 className="w-full flex items-center justify-between p-3 hover:bg-muted/50 transition-colors text-left"
               >
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <ShoppingBag className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
                   <span className="text-sm font-semibold text-foreground">{plat?.name ?? slug}</span>
-                  {cp && (
-                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary font-medium">
-                      {clientStatuses.find(s => s.key === cp.phase)?.label ?? cp.phase}
+                  {cp && statusOpt && (
+                    <span className={cn('text-[10px] px-1.5 py-0.5 rounded-full font-medium', statusOpt.color)}>
+                      {statusOpt.label}
                     </span>
                   )}
                   {pendingCount > 0 && (
@@ -95,9 +136,26 @@ function PlatformOperationalPanel({ client, platformOptions, squads, appUsers, t
                       {pendingCount} pendente{pendingCount > 1 ? 's' : ''}
                     </span>
                   )}
+                  {dias > 0 && (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-destructive/10 text-destructive font-medium">
+                      {dias}d atraso
+                    </span>
+                  )}
+                  {cp?.dependeCliente && (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-700 font-medium">⏳ Cliente</span>
+                  )}
+                  {cp?.prontaPerformance && (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-medium">✅</span>
+                  )}
                 </div>
                 {isExpanded ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
               </button>
+
+              {cp && (
+                <div className="px-3 pb-2">
+                  <ChecklistProgressBar clientPlatformId={cp.id} />
+                </div>
+              )}
 
               {isExpanded && cp && (
                 <div className="px-3 pb-3 space-y-2 border-t border-border pt-2">
@@ -135,18 +193,6 @@ function PlatformOperationalPanel({ client, platformOptions, squads, appUsers, t
                       </select>
                     </div>
                     <div>
-                      <label className="text-[10px] text-muted-foreground uppercase">Tempo de Contrato</label>
-                      <select
-                        value={cp.platformAttributes?.tempo_contrato ?? ''}
-                        onChange={e => updatePlatform.mutate({ id: cp.id, updates: { platformAttributes: { ...cp.platformAttributes, tempo_contrato: e.target.value || '' } } })}
-                        className="w-full h-8 px-2 text-xs bg-background border border-input rounded-md text-foreground"
-                      >
-                        <option value="">—</option>
-                        <option value="6">6 meses</option>
-                        <option value="12">12 meses</option>
-                      </select>
-                    </div>
-                    <div>
                       <label className="text-[10px] text-muted-foreground uppercase">Nível de Qualidade</label>
                       <select
                         value={cp.qualityLevel ?? ''}
@@ -159,7 +205,7 @@ function PlatformOperationalPanel({ client, platformOptions, squads, appUsers, t
                       </select>
                     </div>
                     <div>
-                      <label className="text-[10px] text-muted-foreground uppercase">Saúde da Plataforma</label>
+                      <label className="text-[10px] text-muted-foreground uppercase">Saúde</label>
                       <select
                         value={cp.healthColor ?? ''}
                         onChange={e => updatePlatform.mutate({ id: cp.id, updates: { healthColor: e.target.value || null } })}
@@ -200,6 +246,9 @@ function PlatformOperationalPanel({ client, platformOptions, squads, appUsers, t
     </div>
   );
 }
+
+
+
 
 interface ClientDetailModalProps {
   client: Client | null;
