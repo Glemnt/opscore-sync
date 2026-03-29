@@ -152,6 +152,7 @@ export function mapDbTask(
     createdAt: row.created_at,
     platforms: (row as any).platform ?? undefined,
     flowId: (row as any).flow_id ?? undefined,
+    motivoAtraso: (row as any).motivo_atraso ?? '',
     subtasks: subtasks.map(mapDbSubtask),
     chatNotes: chatNotes.map(mapDbChatNote),
   };
