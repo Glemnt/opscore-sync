@@ -6,6 +6,7 @@ import { useAppUsersQuery, useCreateAppUser, useUpdateAppUser, useDeleteAppUser 
 import { usePlatformsQuery, useAddPlatform, useDeletePlatform } from '@/hooks/usePlatformsQuery';
 import { useTaskTypesQuery, useAddTaskType, useDeleteTaskType } from '@/hooks/useTaskTypesQuery';
 import { useDelayReasonsQuery, useAddDelayReason, useUpdateDelayReason, useDeleteDelayReason } from '@/hooks/useDelayReasonsQuery';
+import { useCsJourneyTemplatesQuery, useAddJourneyTemplate, useUpdateJourneyTemplate, useDeleteJourneyTemplate, PHASE_LABELS, PHASE_OPTIONS } from '@/hooks/useCsJourneyQuery';
 import { AccessLevel, TeamRole } from '@/types';
 import type { AppUserProfile } from '@/types/database';
 import { PageHeader } from '@/components/ui/shared';
