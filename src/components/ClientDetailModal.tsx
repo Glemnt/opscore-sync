@@ -509,7 +509,7 @@ export function ClientDetailModal({ client, open, onClose }: ClientDetailModalPr
                 {(editData.faseMacro ?? 'implementacao') === 'implementacao' && (
                   <div>
                     <Label className="text-xs">Sub-Status</Label>
-                    <select value={editData.subStatus ?? ''} onChange={e => setEditData(p => ({ ...p, subStatus: e.target.value || null }))} className="w-full h-8 px-2 text-sm bg-background border border-input rounded-md text-foreground">
+                    <select value={editData.subStatus ?? ''} onChange={e => setEditData(p => ({ ...p, subStatus: (e.target.value || null) as any }))} className="w-full h-8 px-2 text-sm bg-background border border-input rounded-md text-foreground">
                       <option value="">—</option>
                       <option value="onboard">Onboard (D1-D15)</option>
                       <option value="implementacao_ativa">Implementação Ativa</option>
