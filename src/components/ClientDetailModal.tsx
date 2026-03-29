@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
-import { Building2, Calendar as CalendarIcon, Clock, User, CheckCircle2, AlertCircle, ClipboardList, Circle, Send, History, Edit3, Save, X, FileText, Upload, Eye, Trash2, Pencil, Plus, Workflow, ShoppingBag, ChevronDown, ChevronUp, AlertTriangle, Route } from 'lucide-react';
+import { Building2, Calendar as CalendarIcon, Clock, User, CheckCircle2, AlertCircle, ClipboardList, Circle, Send, History, Edit3, Save, X, FileText, Upload, Eye, Trash2, Pencil, Plus, Workflow, ShoppingBag, ChevronDown, ChevronUp, AlertTriangle, Route, Shield } from 'lucide-react';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Calendar } from '@/components/ui/calendar';
@@ -32,6 +32,8 @@ import { useCsJourneyItemsQuery, useUpdateJourneyItem, PHASE_LABELS } from '@/ho
 import { useClientPlatformChecklistQuery } from '@/hooks/useClientPlatformChecklistQuery';
 import { PLATFORM_STATUS_OPTIONS, computeDiasEmAtraso } from '@/lib/platformUtils';
 import { Progress } from '@/components/ui/progress';
+import { useHealthScores, useOverrideHealthScore, useRemoveHealthOverride } from '@/hooks/useHealthScores';
+import { canViewHealth, HEALTH_ICONS, HEALTH_LABELS, BREAKDOWN_LABELS, BREAKDOWN_WEIGHTS, type HealthResult } from '@/lib/healthScore';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
