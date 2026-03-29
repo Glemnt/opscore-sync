@@ -15,8 +15,10 @@ import { useAppUsersQuery } from '@/hooks/useAppUsersQuery';
 import { usePlatformsQuery } from '@/hooks/usePlatformsQuery';
 import { priorityConfig } from '@/lib/config';
 import { useTaskTypesQuery, useTaskTypesMap } from '@/hooks/useTaskTypesQuery';
+import { useActiveDelayReasons } from '@/hooks/useDelayReasonsQuery';
+import { MOTIVO_ATRASO_OPTIONS } from '@/lib/platformUtils';
 import { cn, hoursToHM, hmToHours } from '@/lib/utils';
-import { Send, Clock, User, CalendarDays, Flag, MessageSquare, Trash2, Briefcase, ShoppingBag, Workflow, Pencil, Save, X } from 'lucide-react';
+import { Send, Clock, User, CalendarDays, Flag, MessageSquare, Trash2, Briefcase, ShoppingBag, Workflow, Pencil, Save, X, AlertTriangle } from 'lucide-react';
 import { Avatar } from '@/components/ui/shared';
 import { supabase } from '@/integrations/supabase/client';
 import { useQueryClient } from '@tanstack/react-query';
@@ -38,6 +40,7 @@ export function TaskDetailModal({ task, open, onOpenChange }: TaskDetailModalPro
   const { data: taskTypes = [] } = useTaskTypesQuery();
   const taskTypeMap = useTaskTypesMap();
   const queryClient = useQueryClient();
+  const activeDelayReasons = useActiveDelayReasons();
   const [newNote, setNewNote] = useState('');
   const chatEndRef = useRef<HTMLDivElement>(null);
 
@@ -339,6 +342,34 @@ export function TaskDetailModal({ task, open, onOpenChange }: TaskDetailModalPro
                 )}
               </div>
             </div>
+
+            {/* Motivo de Atraso — visible when late */}
+            {isLate && (
+              <div className="bg-destructive/5 rounded-xl p-3 space-y-1.5 col-span-2 border border-destructive/20">
+                <div className="flex items-center gap-1.5 text-xs text-destructive font-medium uppercase tracking-wide">
+                  <AlertTriangle className="w-3.5 h-3.5" />
+                  Motivo de Atraso
+                </div>
+                <select
+                  value={(task as any).motivoAtraso ?? ''}
+                  onChange={e => {
+                    const val = e.target.value;
+                    // Save immediately via supabase
+                    supabase.from('tasks').update({ motivo_atraso: val }).eq('id', task.id)
+                      .then(({ error }) => {
+                        if (error) { toast.error('Erro ao salvar motivo'); return; }
+                        queryClient.invalidateQueries({ queryKey: ['tasks'] });
+                      });
+                  }}
+                  className="w-full h-8 px-2 text-xs bg-background border border-input rounded-md text-foreground"
+                >
+                  <option value="">— Selecione o motivo —</option>
+                  {(activeDelayReasons.length > 0 ? activeDelayReasons.map(r => r.label) : MOTIVO_ATRASO_OPTIONS as unknown as string[]).map(o =>
+                    <option key={o} value={o}>{o}</option>
+                  )}
+                </select>
+              </div>
+            )}
 
             {/* Tempo */}
             <div className="bg-muted/50 rounded-xl p-3 space-y-1.5">

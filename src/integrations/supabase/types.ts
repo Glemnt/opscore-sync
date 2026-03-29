@@ -14,6 +14,63 @@ export type Database = {
   }
   public: {
     Tables: {
+      action_plans: {
+        Row: {
+          action_plan_text: string
+          client_id: string
+          created_at: string
+          created_by: string
+          crisis_type: string
+          days_delayed: number
+          id: string
+          identified_at: string
+          issue_description: string
+          manager_aware: boolean
+          new_deadline: string | null
+          platform_id: string | null
+          resolution_status: string
+          responsible_for_delay: string
+          root_cause: string
+          updated_at: string
+        }
+        Insert: {
+          action_plan_text?: string
+          client_id: string
+          created_at?: string
+          created_by?: string
+          crisis_type?: string
+          days_delayed?: number
+          id?: string
+          identified_at?: string
+          issue_description?: string
+          manager_aware?: boolean
+          new_deadline?: string | null
+          platform_id?: string | null
+          resolution_status?: string
+          responsible_for_delay?: string
+          root_cause?: string
+          updated_at?: string
+        }
+        Update: {
+          action_plan_text?: string
+          client_id?: string
+          created_at?: string
+          created_by?: string
+          crisis_type?: string
+          days_delayed?: number
+          id?: string
+          identified_at?: string
+          issue_description?: string
+          manager_aware?: boolean
+          new_deadline?: string | null
+          platform_id?: string | null
+          resolution_status?: string
+          responsible_for_delay?: string
+          root_cause?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       app_users: {
         Row: {
           access_level: number
@@ -538,6 +595,30 @@ export type Database = {
           id?: string
           name?: string
           subtasks?: string[]
+        }
+        Relationships: []
+      }
+      delay_reasons: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          label: string
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          label: string
+          sort_order?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          label?: string
+          sort_order?: number
         }
         Relationships: []
       }
@@ -1070,6 +1151,7 @@ export type Database = {
           estimated_time: number
           flow_id: string | null
           id: string
+          motivo_atraso: string
           platform: string[] | null
           priority: Database["public"]["Enums"]["priority_level"]
           project_id: string | null
@@ -1090,6 +1172,7 @@ export type Database = {
           estimated_time?: number
           flow_id?: string | null
           id?: string
+          motivo_atraso?: string
           platform?: string[] | null
           priority?: Database["public"]["Enums"]["priority_level"]
           project_id?: string | null
@@ -1110,6 +1193,7 @@ export type Database = {
           estimated_time?: number
           flow_id?: string | null
           id?: string
+          motivo_atraso?: string
           platform?: string[] | null
           priority?: Database["public"]["Enums"]["priority_level"]
           project_id?: string | null

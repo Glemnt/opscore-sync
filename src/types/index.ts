@@ -138,6 +138,7 @@ export interface Task {
   createdAt: string;
   platforms?: string[];
   flowId?: string;
+  motivoAtraso?: string;
   subtasks?: SubTask[];
   chatNotes?: ChatNote[];
 }

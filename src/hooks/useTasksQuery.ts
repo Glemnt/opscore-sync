@@ -78,6 +78,7 @@ export function useUpdateTask() {
         projectId: 'project_id', projectName: 'project_name',
         estimatedTime: 'estimated_time', realTime: 'real_time',
         createdAt: 'created_at', platforms: 'platform', flowId: 'flow_id',
+        motivoAtraso: 'motivo_atraso',
       };
       for (const [k, v] of Object.entries(updates)) {
         if (k === 'subtasks' || k === 'chatNotes') continue;

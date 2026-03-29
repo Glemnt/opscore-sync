@@ -23,6 +23,7 @@ import { PlatformAttributesEditor } from '@/components/PlatformAttributesEditor'
 import { useClientPlatformChecklistQuery, useSeedChecklist, useToggleChecklistItem } from '@/hooks/useClientPlatformChecklistQuery';
 import { usePlatformCatalogQuery } from '@/hooks/usePlatformCatalogQuery';
 import { PLATFORM_STATUS_OPTIONS, MOTIVO_ATRASO_OPTIONS, computeDiasEmAtraso } from '@/lib/platformUtils';
+import { useActiveDelayReasons } from '@/hooks/useDelayReasonsQuery';
 
 interface PlatformDetailModalProps {
   open: boolean;
@@ -75,6 +76,7 @@ export function PlatformDetailModal({ open, onClose, clientPlatform, client, pla
   const updatePlatform = useUpdateClientPlatform();
   const { data: phaseStatuses = [] } = usePlatformPhaseStatusesQuery();
   const { data: appUsers = [] } = useAppUsersQuery();
+  const activeDelayReasons = useActiveDelayReasons();
   const { squads } = useSquads();
   const { tasks } = useTasks();
 
@@ -243,7 +245,7 @@ export function PlatformDetailModal({ open, onClose, clientPlatform, client, pla
                   className="w-full h-8 px-2 text-xs bg-background border border-input rounded-md text-foreground"
                 >
                   <option value="">—</option>
-                  {MOTIVO_ATRASO_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
+                   {(activeDelayReasons.length > 0 ? activeDelayReasons.map(r => r.label) : MOTIVO_ATRASO_OPTIONS as unknown as string[]).map(o => <option key={o} value={o}>{o}</option>)}
                 </select>
               </div>
               <div>
