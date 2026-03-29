@@ -282,7 +282,22 @@ export function SettingsPage() {
         hireDate: hireDate ? format(hireDate, 'yyyy-MM-dd') : null,
         birthday: birthday ? format(birthday, 'yyyy-MM-dd') : null,
       },
-      { onSuccess: () => { setEditingUser(null); resetForm(); } }
+      {
+        onSuccess: () => {
+          // Save goals
+          upsertGoal.mutate({
+            userId: editingUser.id,
+            period: 'weekly',
+            metaPassagens: goalPassagens,
+            metaDestravamentos: goalDestravamentos,
+            metaReducaoBacklog: goalReducaoBacklog,
+            metaAnunciosDia: goalAnunciosDia,
+            metaAnunciosCliente: goalAnunciosCliente,
+            createdBy: currentUser?.name || '',
+          });
+          setEditingUser(null); resetForm();
+        },
+      }
     );
   };
 
