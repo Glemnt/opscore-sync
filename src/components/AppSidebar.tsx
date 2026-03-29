@@ -10,7 +10,8 @@ import {
   Shield,
   Layers,
   ClipboardCheck,
-  AlertTriangle } from
+  AlertTriangle,
+  Headset } from
 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
@@ -27,6 +28,10 @@ const navItems = [
 
 const managerNavItems = [
 { id: 'action-plans', label: 'Plano de Ação', icon: AlertTriangle },
+];
+
+const csNavItems = [
+{ id: 'cs-dashboard', label: 'Painel CS', icon: Headset },
 ];
 
 
