@@ -1,107 +1,78 @@
 
 
-## Motivos de Atraso + Plano de Acao
+## Reestruturar Kanban de Squads — Plataformas com Fases Macro
 
 ### Resumo
 
-Criar tabela de motivos de atraso configuravel, integrar dropdown nos modais de plataforma e tarefa, e criar nova pagina "Plano de Acao" com registro e acompanhamento de crises.
+Expandir o Kanban de Squads para exibir ~25 colunas organizadas em 4 grupos colapsaveis (Implementacao, Performance, Escala, Auxiliares), enriquecer os cards com mais informacoes operacionais, e adicionar filtros de fase macro e dias em atraso.
 
 ---
 
-### 1. Migration — Duas novas tabelas
+### 1. Migration — Tabela `kanban_column_configs` + Seed de colunas
 
-**`delay_reasons`:**
+Criar tabela `kanban_column_configs`:
 - `id uuid PK DEFAULT gen_random_uuid()`
+- `key text NOT NULL UNIQUE`
 - `label text NOT NULL`
-- `is_active boolean NOT NULL DEFAULT true`
+- `group_key text NOT NULL` (implementacao, performance, escala, auxiliar)
+- `group_label text NOT NULL`
 - `sort_order integer NOT NULL DEFAULT 0`
+- `is_active boolean NOT NULL DEFAULT true`
 - `created_at timestamptz NOT NULL DEFAULT now()`
 
-Seed com os 20 motivos listados no prompt.
+Seed com as 25 colunas especificadas, organizadas nos 4 grupos. RLS: authenticated full CRUD.
 
-**`action_plans`:**
-- `id uuid PK DEFAULT gen_random_uuid()`
-- `client_id uuid NOT NULL`
-- `platform_id uuid` (nullable, FK -> client_platforms)
-- `identified_at date NOT NULL DEFAULT CURRENT_DATE`
-- `days_delayed integer NOT NULL DEFAULT 0`
-- `issue_description text NOT NULL DEFAULT ''`
-- `crisis_type text NOT NULL DEFAULT 'atraso_tarefa'`
-- `root_cause text NOT NULL DEFAULT ''`
-- `responsible_for_delay text NOT NULL DEFAULT ''`
-- `action_plan_text text NOT NULL DEFAULT ''`
-- `new_deadline date`
-- `resolution_status text NOT NULL DEFAULT 'aberto'` (aberto, em_andamento, escalado_diretoria, resolvido)
-- `manager_aware boolean NOT NULL DEFAULT false`
-- `created_by text NOT NULL DEFAULT ''`
-- `created_at timestamptz NOT NULL DEFAULT now()`
-- `updated_at timestamptz NOT NULL DEFAULT now()`
-
-RLS: authenticated full CRUD em ambas.
+Tambem: DELETE dos registros atuais de `platform_phase_statuses` e INSERT das mesmas 25 colunas para manter compatibilidade com o Kanban existente que usa essa tabela.
 
 ---
 
-### 2. Hooks
+### 2. Hook — `useKanbanColumnConfigsQuery.ts` (novo)
 
-**`useDelayReasonsQuery.ts`** (novo): query all active reasons sorted, add/update/delete mutations.
-
-**`useActionPlansQuery.ts`** (novo): query all action plans (join client name), add/update/delete mutations.
+Query todas as colunas ativas ordenadas, agrupadas por `group_key`. Mutations para add/update/delete/reorder.
 
 ---
 
-### 3. Substituir MOTIVO_ATRASO_OPTIONS por dados do banco
+### 3. Cards expandidos
 
-Atualizar `PlatformDetailModal.tsx`: o select de motivo de atraso passa a usar dados de `useDelayReasonsQuery` em vez do array estatico em `platformUtils.ts`. Manter o array como fallback.
-
-Atualizar `TaskDetailModal.tsx`: adicionar campo "Motivo de Atraso" (select) visivel quando tarefa esta atrasada ou com status bloqueado. Salvar no campo `comments` ou em novo campo — como a tabela `tasks` nao tem coluna `motivo_atraso`, adicionar coluna `motivo_atraso text DEFAULT ''` na migration.
-
----
-
-### 4. Configuracoes — Secao "Motivos de Atraso"
-
-Adicionar nova secao na `SettingsPage.tsx` (visivel apenas level 3): lista de motivos com toggle ativo/inativo, botao adicionar, botao excluir. Mesmo padrao visual das secoes de Plataformas e Tipos de Demanda ja existentes.
+Adicionar ao card existente no Kanban:
+- Badge de prioridade (P1 vermelho, P2 laranja, P3 amarelo, P4 cinza) — puxa de `client.prioridadeGeral`
+- Dias em atraso (vermelho, visivel se > 0) — `computeDiasEmAtraso(cp.deadline)`
+- Motivo do atraso (texto curto) — `cp.motivoAtraso`
+- Prazo — `cp.deadline`
+- Badges operacionais condicionais: seller/lojista, full/flex/turbo, depende_cliente, pronta_performance
+- Cores de plataforma no badge: ML=verde, Shopee=laranja, Shein=roxo, TikTok=preto (mapa estatico)
 
 ---
 
-### 5. Nova pagina — `ActionPlansPage.tsx`
+### 4. Colunas agrupadas e colapsaveis
 
-Tabela com colunas: Cliente, Data Identificacao, Dias Atraso, Problema, Tipo Crise (dropdown: Atraso de tarefa, Bloqueio externo, Erro interno, Risco de churn, Crise de comunicacao, Problema tecnico, Problema financeiro, Outro), Causa Raiz, Responsavel, Plano de Acao, Novo Prazo, Status Resolucao, Manager Ciente.
-
-Filtros: Status resolucao, Tipo de crise, Responsavel.
-
-Contadores: Total abertos, Em andamento, Escalados, Resolvidos.
-
-Botao "Novo Plano de Acao" abre dialog com todos os campos. Edicao inline na tabela.
+Renderizar as colunas do Kanban agrupadas por `group_key`. Cada grupo tem um header clicavel que colapsa/expande as colunas daquele grupo. Estado de collapse em `useState<Record<string, boolean>>`.
 
 ---
 
-### 6. Navegacao
+### 5. Novos filtros
 
-Adicionar "Plano de Acao" no `AppSidebar.tsx` (icone `AlertTriangle`), visivel para accessLevel >= 2 (Managers + Admins).
+Adicionar ao painel de filtros existente:
+- **Fase macro** (Implementacao, Performance, Escala, Auxiliar) — filtra por grupo da coluna
+- **Dias em atraso** (> 0, > 3, > 7) — filtra cards com `computeDiasEmAtraso > threshold`
 
-Adicionar case `'action-plans'` no `Index.tsx`.
+---
+
+### 6. Historico ao arrastar
+
+Ao dropar um card em nova coluna, alem de atualizar `phase`, inserir registro em `platform_change_logs` com campo='phase', old/new values.
 
 ---
 
 ### Arquivos
 
-- `supabase/migrations/` — nova migration (2 tabelas + seed + coluna tasks.motivo_atraso)
-- `src/hooks/useDelayReasonsQuery.ts` (novo)
-- `src/hooks/useActionPlansQuery.ts` (novo)
-- `src/pages/ActionPlansPage.tsx` (novo)
-- `src/components/PlatformDetailModal.tsx` (usar delay_reasons do banco)
-- `src/components/TaskDetailModal.tsx` (adicionar campo motivo_atraso)
-- `src/pages/SettingsPage.tsx` (secao motivos de atraso)
-- `src/components/AppSidebar.tsx` (nav item)
-- `src/pages/Index.tsx` (route case)
-- `src/lib/platformUtils.ts` (manter MOTIVO_ATRASO_OPTIONS como fallback)
+- `supabase/migrations/` — nova migration (CREATE TABLE kanban_column_configs + seed + update platform_phase_statuses)
+- `src/hooks/useKanbanColumnConfigsQuery.ts` (novo)
+- `src/pages/ProjectsPage.tsx` — cards expandidos, colunas agrupadas/colapsaveis, novos filtros, log de historico no drop
 
 ### Ordem
 
-1. Migration (tabelas + seed + coluna tasks)
-2. Hooks (delay_reasons + action_plans)
-3. SettingsPage (secao motivos)
-4. PlatformDetailModal + TaskDetailModal (dropdown dinamico)
-5. ActionPlansPage
-6. Sidebar + rota
+1. Migration
+2. Hook
+3. ProjectsPage (colunas agrupadas + cards + filtros + historico)
 
