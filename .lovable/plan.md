@@ -1,128 +1,121 @@
 
 
-## Metas por Colaborador + Modulo NPS Funcional
+## Capacidade da Equipe + Agendamento Automatico de Marcos
 
 ### Resumo
 
-Criar tabela `user_goals` para metas editaveis por colaborador, tabela `nps_responses` para NPS real substituindo mock. Integrar metas na Produtividade com barras de progresso e semaforo. Substituir ClientAIAnalysis mock por NPS funcional. Adicionar NPS consolidado no Dashboard.
+Adicionar coluna `max_capacity` na tabela `app_users`, criar tabela `scheduled_milestones` para marcos automaticos. Nova pagina `/capacidade` com painel de carga, simulador e calendario. Ao cadastrar cliente, gerar milestones automaticamente baseados na jornada CS.
 
 ---
 
-### 1. Migration — Duas novas tabelas
+### 1. Migration
 
 ```sql
-CREATE TABLE public.user_goals (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid NOT NULL,
-  period text NOT NULL DEFAULT 'weekly',
-  period_start date NOT NULL DEFAULT CURRENT_DATE,
-  meta_passagens integer NOT NULL DEFAULT 5,
-  meta_destravamentos integer NOT NULL DEFAULT 3,
-  meta_reducao_backlog integer NOT NULL DEFAULT 5,
-  meta_anuncios_dia integer NOT NULL DEFAULT 24,
-  meta_anuncios_cliente integer NOT NULL DEFAULT 75,
-  created_by text NOT NULL DEFAULT '',
-  created_at timestamptz NOT NULL DEFAULT now(),
-  UNIQUE(user_id, period, period_start)
-);
+-- Add max_capacity to app_users
+ALTER TABLE public.app_users ADD COLUMN max_capacity integer NOT NULL DEFAULT 8;
 
-CREATE TABLE public.nps_responses (
+-- Scheduled milestones table
+CREATE TABLE public.scheduled_milestones (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   client_id uuid NOT NULL,
-  sent_at date NOT NULL DEFAULT CURRENT_DATE,
-  responded_at date,
-  score integer,
-  category text, -- auto: promotor/neutro/detrator
-  liked_most text NOT NULL DEFAULT '',
-  improve text NOT NULL DEFAULT '',
-  would_recommend boolean,
-  manager_notified boolean NOT NULL DEFAULT false,
-  action_plan text NOT NULL DEFAULT '',
-  created_by text NOT NULL DEFAULT '',
+  platform_id uuid,
+  milestone_type text NOT NULL, -- reuniao_onboard, reuniao_implementacao, reuniao_entrega, checkpoint_30, checkpoint_60, checkpoint_90
+  scheduled_date date NOT NULL,
+  actual_date date,
+  status text NOT NULL DEFAULT 'pendente', -- pendente, realizado, reagendado, cancelado
+  responsible text NOT NULL DEFAULT '',
+  notes text NOT NULL DEFAULT '',
+  title text NOT NULL DEFAULT '',
   created_at timestamptz NOT NULL DEFAULT now()
 );
+
+ALTER TABLE public.scheduled_milestones ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Auth users can read scheduled_milestones" ON public.scheduled_milestones FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Auth users can insert scheduled_milestones" ON public.scheduled_milestones FOR INSERT TO authenticated WITH CHECK (true);
+CREATE POLICY "Auth users can update scheduled_milestones" ON public.scheduled_milestones FOR UPDATE TO authenticated USING (true);
+CREATE POLICY "Auth users can delete scheduled_milestones" ON public.scheduled_milestones FOR DELETE TO authenticated USING (true);
+
+CREATE INDEX idx_milestones_client ON public.scheduled_milestones(client_id);
+CREATE INDEX idx_milestones_date ON public.scheduled_milestones(scheduled_date);
+CREATE INDEX idx_milestones_responsible ON public.scheduled_milestones(responsible);
 ```
 
-RLS: authenticated can CRUD both tables.
+---
+
+### 2. Hook `useScheduledMilestonesQuery.ts` (novo)
+
+- `useMilestonesQuery(filters?)` — busca milestones com filtros por responsavel, periodo, status
+- `useAddMilestone()` — insercao
+- `useUpdateMilestone()` — atualizar status, reagendar
+- `useDeleteMilestone()`
+- `generateMilestonesForClient(clientId, startDate, responsible)` — helper que cria os 6 marcos padrao calculando dias uteis
 
 ---
 
-### 2. Hook `useUserGoalsQuery.ts` (novo)
+### 3. Atualizar `mapDbAppUser` e `AppUserProfile`
 
-- `useUserGoalsQuery(userId?)` — busca metas
-- `useUpsertUserGoal()` — mutation para criar/atualizar meta
-- Helper para buscar meta ativa do periodo atual
-
-### 3. Hook `useNpsResponsesQuery.ts` (novo)
-
-- `useNpsResponsesQuery(clientId?)` — busca respostas NPS
-- `useAddNpsResponse()` — mutation para registrar NPS
-- `useUpdateNpsResponse()` — para marcar manager_notified, action_plan
-- Calculo automatico de `category` baseado no score
+Adicionar campo `maxCapacity: number` ao `AppUserProfile` e ao mapper, usando `row.max_capacity`.
 
 ---
 
-### 4. SettingsPage.tsx — Secao Metas no dialog de edicao de usuario
+### 4. ClientsContext — Auto-gerar milestones ao cadastrar cliente
 
-Ao editar um usuario, nova secao "Metas" com campos numericos editaveis:
-- Meta semanal de passagens (default 5)
-- Meta diaria de destravamentos (default 3)
-- Meta reducao backlog (default 5)
-- Meta anuncios/dia (default 24)
-- Meta anuncios/cliente (default 75)
-
-Mostra tambem dados automaticos (readonly): plataformas sob responsabilidade, plataformas em atraso.
+No `addClient` onSuccess, apos gerar jornada CS, chamar `generateMilestonesForClient` passando `client.id`, `client.startDate`, `client.responsible || client.csResponsavel`.
 
 ---
 
-### 5. ProductivityPage.tsx — Progresso vs Meta
+### 5. Nova pagina `CapacityPage.tsx` + rota `/capacidade`
 
-Para cada colaborador, buscar meta ativa via `useUserGoalsQuery`. Exibir:
-- Barra de progresso: "3/5 passagens esta semana"
-- Semaforo: verde (>=100%), amarelo (>=60%), vermelho (<60%)
-- Indicadores para cada meta definida
+**Visao por colaborador (tabela):**
+- Nome, carga atual (tasks ativas count), capacidade max, % ocupacao, semaforo
+- Carga projetada 7/15/30 dias (tasks com deadline no periodo)
 
----
+**Visao de equipe (graficos):**
+- `BarChart` horizontal: carga atual vs max por membro
+- Projecao textual baseada em media de tasks por novo cliente
 
-### 6. ClientAIAnalysis.tsx — Substituir mock por NPS funcional
+**Simulador:**
+- Input numerico "Quantos clientes novos?"
+- Calcula impacto: media de tasks por cliente * N, distribui por membro, mostra quem fica sobrecarregado
 
-Remover `mockAnalysisData`. Novo layout:
-- Formulario para registrar NPS (score 0-10, campos texto)
-- Historico de NPS do cliente (lista cronologica)
-- Categoria calculada automaticamente (0-6=Detrator, 7-8=Neutro, 9-10=Promotor)
-- Alerta visual para notas 0-6 (Manager precisa acionar em 24h)
-- Sugestao de indicacao para notas 9-10
-- Botao "Manager acionou" + campo plano de acao
-
-Manter secoes de resumo do projeto e proximos passos como estao, alimentadas pelo health score e tasks.
+**Calendario de marcos:**
+- Grid mensal mostrando milestones agendados por dia
+- Densidade (contagem por dia) com cores
+- Filtro por responsavel e periodo
 
 ---
 
-### 7. DashboardPage.tsx — NPS Consolidado
+### 6. Sidebar — adicionar link /capacidade
 
-Adicionar card de NPS no bloco executivo:
-- Score = %Promotores - %Detratores
-- Gauge visual com o score
-- Drill-down com lista de respostas
+Adicionar item "Capacidade" no `AppSidebar.tsx`.
+
+---
+
+### 7. SettingsPage — campo max_capacity
+
+No dialog de edicao de usuario, adicionar campo "Capacidade maxima" (number, default 8). Passar no update via edge function `manage-users`.
 
 ---
 
 ### Arquivos
 
-- `supabase/migrations/` — CREATE TABLE user_goals + nps_responses
-- `src/hooks/useUserGoalsQuery.ts` (novo)
-- `src/hooks/useNpsResponsesQuery.ts` (novo)
-- `src/pages/SettingsPage.tsx` — secao metas no dialog de usuario
-- `src/pages/ProductivityPage.tsx` — barras de progresso vs meta
-- `src/components/ClientAIAnalysis.tsx` — reescrita com NPS funcional
-- `src/pages/DashboardPage.tsx` — card NPS consolidado
+- `supabase/migrations/` — ALTER app_users + CREATE scheduled_milestones
+- `src/hooks/useScheduledMilestonesQuery.ts` (novo)
+- `src/types/database.ts` — AppUserProfile + mapper com maxCapacity
+- `src/contexts/ClientsContext.tsx` — auto-gerar milestones
+- `src/pages/CapacityPage.tsx` (novo)
+- `src/components/AppSidebar.tsx` — link capacidade
+- `src/pages/SettingsPage.tsx` — campo max_capacity
+- `src/App.tsx` ou `Index.tsx` — rota /capacidade
+- `supabase/functions/manage-users/index.ts` — suportar max_capacity no update
 
 ### Ordem
 
-1. Migration (2 tabelas)
-2. useUserGoalsQuery + useNpsResponsesQuery (hooks)
-3. SettingsPage (metas)
-4. ProductivityPage (progresso vs meta)
-5. ClientAIAnalysis (NPS funcional)
-6. DashboardPage (NPS consolidado)
+1. Migration (app_users + scheduled_milestones)
+2. Hook useScheduledMilestonesQuery
+3. Types + mapper (maxCapacity)
+4. manage-users edge function (max_capacity)
+5. SettingsPage (campo capacidade)
+6. ClientsContext (auto-gerar milestones)
+7. CapacityPage + rota + sidebar
 
