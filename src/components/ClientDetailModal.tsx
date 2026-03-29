@@ -1222,3 +1222,27 @@ function ContractSection({ client, updateClientField }: { client: Client; update
     </div>
   );
 }
+
+// ─── Client Timeline Section ───
+function ClientTimelineSection({ clientId }: { clientId: string }) {
+  const [expanded, setExpanded] = useState(false);
+  const { useTimelineEventsQuery } = require('@/hooks/useTimelineQuery');
+  const { data: events = [], isLoading } = useTimelineEventsQuery(clientId);
+  const { TimelineFeed } = require('@/components/TimelineFeed');
+
+  return (
+    <div className="px-6 py-4 border-b border-border">
+      <button onClick={() => setExpanded(!expanded)} className="flex items-center justify-between w-full">
+        <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+          <Activity className="w-3.5 h-3.5" /> Timeline de Eventos ({events.length})
+        </h4>
+        {expanded ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
+      </button>
+      {expanded && (
+        <div className="mt-4 max-h-[400px] overflow-y-auto">
+          <TimelineFeed events={events} isLoading={isLoading} showPlatformFilter />
+        </div>
+      )}
+    </div>
+  );
+}
