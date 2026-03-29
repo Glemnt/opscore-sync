@@ -4,6 +4,8 @@ import { useClientPlatformsQuery } from '@/hooks/useClientPlatformsQuery';
 import { Plus, Search, Building2, Calendar, User, X, Users, Circle, ShoppingBag, Settings2, Trash2, Phone, Mail, FileText } from 'lucide-react';
 import { mockAnalysisData } from '@/components/ClientAIAnalysis';
 import { getPlatformAttributeSummary } from '@/components/PlatformAttributesEditor';
+import { useHealthScores } from '@/hooks/useHealthScores';
+import { canViewHealth, HEALTH_ICONS } from '@/lib/healthScore';
 import { useSquads } from '@/contexts/SquadsContext';
 import { usePlatformsQuery } from '@/hooks/usePlatformsQuery';
 import { useProjectsQuery } from '@/hooks/useProjectsQuery';
@@ -229,7 +231,7 @@ export function ClientsPage() {
       {/* Grid */}
       <div className="grid grid-cols-3 gap-4">
         {filtered.map((client) => (
-          <ClientCard key={client.id} client={client} statusMap={statusMap} clientFlows={clientFlowsMap[client.id] ?? []} onClick={() => setSelectedClient(client)} isAdmin={isAdmin} />
+          <ClientCard key={client.id} client={client} statusMap={statusMap} clientFlows={clientFlowsMap[client.id] ?? []} onClick={() => setSelectedClient(client)} isAdmin={isAdmin} currentUser={currentUser} />
         ))}
       </div>
 
@@ -320,14 +322,17 @@ export function ClientsPage() {
   );
 }
 
-function ClientCard({ client, statusMap, clientFlows, onClick, isAdmin }: { client: Client; statusMap: Record<string, { label: string; className: string }>; clientFlows: { flowId: string; flowName: string }[]; onClick: () => void; isAdmin: boolean }) {
+function ClientCard({ client, statusMap, clientFlows, onClick, isAdmin, currentUser }: { client: Client; statusMap: Record<string, { label: string; className: string }>; clientFlows: { flowId: string; flowName: string }[]; onClick: () => void; isAdmin: boolean; currentUser: any }) {
   const { squads } = useSquads();
   const { tasks } = useTasks();
   const { data: platforms = [] } = usePlatformsQuery();
   const { data: allClientPlatforms = [] } = useClientPlatformsQuery();
+  const healthScores = useHealthScores();
+  const showHealth = canViewHealth(currentUser);
   const squad = squads.find((s) => s.id === client.squadId);
   const pendingTasks = tasks.filter((t) => t.clientId === client.id && t.status !== 'done');
   const clientCPs = allClientPlatforms.filter(cp => cp.clientId === client.id);
+  const health = healthScores[client.id];
 
   const healthColorMap: Record<string, string> = {
     green: 'bg-success',
@@ -427,13 +432,12 @@ function ClientCard({ client, statusMap, clientFlows, onClick, isAdmin }: { clie
             {client.riscoChurn === 'critico' ? 'Crítico' : client.riscoChurn === 'alto' ? 'Alto' : 'Médio'}
           </span>
         )}
-        <div
-          className={cn(
-            'w-3.5 h-3.5 rounded-full border border-border shrink-0 ml-auto',
-            healthColorMap[client.healthColor ?? 'white']
-          )}
-          title={`Saúde: ${client.healthColor ?? 'não avaliado'}`}
-        />
+        {showHealth && health && (
+          <div className="flex items-center gap-1 ml-auto" title={`Saúde: ${health.score}/100`}>
+            <span className="text-xs">{HEALTH_ICONS[health.color]}</span>
+            <span className="text-[10px] font-bold text-muted-foreground">{health.score}</span>
+          </div>
+        )}
       </div>
 
       {/* Metadata line */}

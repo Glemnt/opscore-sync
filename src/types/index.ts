@@ -87,6 +87,10 @@ export interface Client {
   dataRealPassagem?: string;
   prioridadeGeral?: PrioridadeGeral;
   npsUltimo?: number;
+  healthScore?: number;
+  healthCalculatedAt?: string;
+  healthOverride?: boolean;
+  healthOverrideReason?: string;
   changeLogs: ChangeLogEntry[];
   chatNotes: ChatNote[];
 }
