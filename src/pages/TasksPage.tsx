@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Plus, Search, Clock, MessageSquare, AlertTriangle, Trash2, Workflow, ChevronDown, ShoppingBag, X, CalendarDays, Lock, Link } from 'lucide-react';
+import { Plus, Search, Clock, MessageSquare, AlertTriangle, Trash2, Workflow, ChevronDown, ShoppingBag, X, CalendarDays, Lock, Link, CheckCircle, XCircle, RotateCcw } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTasks } from '@/contexts/TasksContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -358,7 +358,8 @@ export function TasksPage() {
                 col.status === 'backlog' ? 'border-b-slate-300' :
                   col.status === 'in_progress' ? 'border-b-info' :
                     col.status === 'waiting_client' ? 'border-b-warning' :
-                      col.status === 'done' ? 'border-b-success' : 'border-b-primary/40'
+                      col.status === 'aguardando_aprovacao' ? 'border-b-amber-500' :
+                        col.status === 'done' ? 'border-b-success' : 'border-b-primary/40'
               )}>
                 {editingCol === col.status ? (
                   <EditableColInput
@@ -486,7 +487,10 @@ export function TasksPage() {
   );
 }
 
-function TaskCard({ task, isLate, onClick, canDelete, onDelete }: { task: Task; isLate: boolean; onClick: () => void; canDelete: boolean; onDelete: () => void }) {
+function TaskCard({ task, isLate, onClick, canDelete, onDelete, allTasks, onApprove, onReject }: { 
+  task: Task; isLate: boolean; onClick: () => void; canDelete: boolean; onDelete: () => void;
+  allTasks?: Task[]; onApprove?: (taskId: string) => void; onReject?: (taskId: string) => void;
+}) {
   const taskTypeMap = useTaskTypesMap();
   const typeConf = taskTypeMap[task.type] ?? { label: task.type, color: 'bg-gray-100 text-gray-700' };
   const { data: platforms = [] } = usePlatformsQuery();
