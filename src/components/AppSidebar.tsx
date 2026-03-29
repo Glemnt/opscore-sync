@@ -28,6 +28,7 @@ const navItems = [
 
 const managerNavItems = [
 { id: 'action-plans', label: 'Plano de Ação', icon: AlertTriangle },
+{ id: 'coordenador-dashboard', label: 'Painel Coordenador', icon: Shield },
 ];
 
 const csNavItems = [
