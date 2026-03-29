@@ -562,6 +562,44 @@ export type Database = {
         }
         Relationships: []
       }
+      onboarding_checklist_items: {
+        Row: {
+          client_id: string
+          completed_at: string | null
+          completed_by: string | null
+          created_at: string
+          id: string
+          status: string
+          task_key: string
+        }
+        Insert: {
+          client_id: string
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          id?: string
+          status?: string
+          task_key: string
+        }
+        Update: {
+          client_id?: string
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          id?: string
+          status?: string
+          task_key?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "onboarding_checklist_items_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       phase_demand_templates: {
         Row: {
           created_at: string
