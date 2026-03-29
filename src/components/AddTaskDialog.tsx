@@ -88,6 +88,7 @@ export function AddTaskDialog({ open, onOpenChange, defaultStatus = 'backlog', d
   const handleClientChange = (v: string) => {
     setClientId(v);
     setResponsible('');
+    setPlatformId('');
     setTitle(generateTitle(v, type));
   };
 
@@ -122,6 +123,10 @@ export function AddTaskDialog({ open, onOpenChange, defaultStatus = 'backlog', d
 
   const resetForm = () => {
     setClientId(defaultClientId ?? '');
+    setPlatformId(defaultPlatformId ?? '');
+    setEtapa('');
+    setBloqueiaPassagem(false);
+    setDependeCliente(false);
     setType('anuncio');
     setTitle('');
     setDeadline(undefined);
@@ -142,6 +147,7 @@ export function AddTaskDialog({ open, onOpenChange, defaultStatus = 'backlog', d
     }
 
     const client = visibleClients.find((c) => c.id === clientId)!;
+    const selectedCp = filteredClientPlatforms.find(cp => cp.id === platformId);
 
     const newTask: Task = {
       id: crypto.randomUUID(),
@@ -156,7 +162,12 @@ export function AddTaskDialog({ open, onOpenChange, defaultStatus = 'backlog', d
       priority,
       comments,
       createdAt: new Date().toISOString().split('T')[0],
-      platforms: selectedPlatforms.length > 0 ? selectedPlatforms : undefined,
+      platforms: selectedPlatforms.length > 0 ? selectedPlatforms : (selectedCp ? [selectedCp.platformSlug] : undefined),
+      platformId: platformId || undefined,
+      etapa,
+      bloqueiaPassagem,
+      dependeCliente,
+      origemTarefa: 'manual',
       subtasks: subtasks.map((label) => ({
         id: crypto.randomUUID(),
         label,
