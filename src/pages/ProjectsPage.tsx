@@ -185,19 +185,26 @@ export function ProjectsPage() {
   // Stable key based on platform phases for orphan detection in Squads kanban
   const platformPhaseKey = clientPlatformsData.map(cp => `${cp.id}:${cp.phase}`).sort().join(',');
 
-  // Sync kanban columns from platform_phase_statuses (the real operational phases)
+  // Sync kanban columns from kanban_column_configs (grouped operational phases)
   useEffect(() => {
-    if (platformPhaseStatuses.length > 0) {
-      const baseCols = [...platformPhaseStatuses]
-        .sort((a, b) => a.sort_order - b.sort_order)
-        .map((s) => ({ id: s.key, label: s.label, status: s.key }));
+    if (kanbanColumns.length > 0) {
+      const baseCols = kanbanColumns.map((c) => ({ id: c.key, label: c.label, status: c.key }));
       const knownKeys = new Set(baseCols.map(c => c.status));
       // Orphan detection: phases present in data but not in config
       const orphanStatuses = [...new Set(clientPlatformsData.map(cp => cp.phase))].filter(s => s && !knownKeys.has(s));
       const extraCols = orphanStatuses.map(s => ({ id: s, label: s.charAt(0).toUpperCase() + s.slice(1).replace(/_/g, ' '), status: s }));
       setClientCols([...baseCols, ...extraCols]);
+    } else if (platformPhaseStatuses.length > 0) {
+      // Fallback to platform_phase_statuses
+      const baseCols = [...platformPhaseStatuses]
+        .sort((a, b) => a.sort_order - b.sort_order)
+        .map((s) => ({ id: s.key, label: s.label, status: s.key }));
+      const knownKeys = new Set(baseCols.map(c => c.status));
+      const orphanStatuses = [...new Set(clientPlatformsData.map(cp => cp.phase))].filter(s => s && !knownKeys.has(s));
+      const extraCols = orphanStatuses.map(s => ({ id: s, label: s.charAt(0).toUpperCase() + s.slice(1).replace(/_/g, ' '), status: s }));
+      setClientCols([...baseCols, ...extraCols]);
     }
-  }, [platformPhaseStatuses, platformPhaseKey]);
+  }, [kanbanColumns, platformPhaseStatuses, platformPhaseKey]);
   const [dragOverClientCol, setDragOverClientCol] = useState<string | null>(null);
 
   // Auto-select first platform when entering client detail view
