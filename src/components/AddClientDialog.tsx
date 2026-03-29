@@ -6,11 +6,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { useSquads } from '@/contexts/SquadsContext';
 import { useClients } from '@/contexts/ClientsContext';
 import { useTasks } from '@/contexts/TasksContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { ContractType, Client, Task, TaskType, SubTask, Platform } from '@/types';
+import { ContractType, Client, Task, TaskType, SubTask, Platform, FaseMacro, PerfilCliente, StatusFinanceiro, RiscoChurn, TipoCliente, PrioridadeGeral } from '@/types';
 import { usePlatformsQuery } from '@/hooks/usePlatformsQuery';
 import { useAddClientPlatform } from '@/hooks/useClientPlatformsQuery';
 import { useAppUsersQuery } from '@/hooks/useAppUsersQuery';
@@ -35,34 +36,66 @@ export function AddClientDialog({ open, onClose, hideFields = [], defaultSquadId
   const { addClient } = useClients();
   const { addTask, customTemplates, flows } = useTasks();
   const { currentUser } = useAuth();
+  const isAdmin = currentUser?.accessLevel === 3;
 
   const [tab, setTab] = useState<'dados' | 'fluxo'>('dados');
 
-  // Client fields
+  // Client fields - basic
   const [name, setName] = useState('');
   const [companyName, setCompanyName] = useState('');
+  const [razaoSocial, setRazaoSocial] = useState('');
+  const [perfilCliente, setPerfilCliente] = useState<PerfilCliente>('brasileiro');
+  const [segment, setSegment] = useState('');
   const [contractType, setContractType] = useState<ContractType>('mrr');
   const [paymentDay, setPaymentDay] = useState('10');
   const [contractDuration, setContractDuration] = useState('6');
-  const [segment, setSegment] = useState('');
   const { squads } = useSquads();
   const [squadId, setSquadId] = useState(defaultSquadId ?? squads[0]?.id ?? '');
   const [monthlyRevenue, setMonthlyRevenue] = useState('');
   const [setupFee, setSetupFee] = useState('');
+  const [platforms, setPlatforms] = useState<Platform[]>([]);
+  const [responsible, setResponsible] = useState('');
+
+  // Contact
   const [phone, setPhone] = useState('');
   const [cnpj, setCnpj] = useState('');
   const [email, setEmail] = useState('');
-  const [platforms, setPlatforms] = useState<Platform[]>([]);
-  const [responsible, setResponsible] = useState('');
+
+  // Company data
+  const [endereco, setEndereco] = useState('');
+  const [cidade, setCidade] = useState('');
+  const [estado, setEstado] = useState('');
+  const [logisticaPrincipal, setLogisticaPrincipal] = useState('');
+  const [nomeProprietario, setNomeProprietario] = useState('');
+  const [cpfResponsavel, setCpfResponsavel] = useState('');
+
+  // Internal team
+  const [csResponsavel, setCsResponsavel] = useState('');
+  const [manager, setManager] = useState('');
+  const [auxiliar, setAuxiliar] = useState('');
+  const [assistente, setAssistente] = useState('');
+  const [consultorAtual, setConsultorAtual] = useState('');
+
+  // Financial
+  const [vendedor, setVendedor] = useState('');
+  const [statusFinanceiro, setStatusFinanceiro] = useState<StatusFinanceiro>('em_dia');
+  const [multaRescisoria, setMultaRescisoria] = useState('');
+  const [dataFimPrevista, setDataFimPrevista] = useState('');
+
+  // Operational
+  const [faseMacro, setFaseMacro] = useState<FaseMacro>('implementacao');
+  const [subStatus, setSubStatus] = useState('');
+  const [riscoChurn, setRiscoChurn] = useState<RiscoChurn>('baixo');
+  const [tipoCliente, setTipoCliente] = useState<TipoCliente>('seller');
+  const [prioridadeGeral, setPrioridadeGeral] = useState<PrioridadeGeral>('P2');
+  const [npsUltimo, setNpsUltimo] = useState('');
+
   const { data: platformOptions = [] } = usePlatformsQuery();
   const { data: appUsers = [] } = useAppUsersQuery();
   const addClientFlowMutation = useAddClientFlow();
   const addClientPlatformMut = useAddClientPlatform();
 
-  // Selected templates for auto-creation
   const [selectedTemplateIds, setSelectedTemplateIds] = useState<string[]>([]);
-
-  // Merge default templates, custom templates, and flows into a single list
   const flowsAsTemplates = flows.map(f => ({ id: f.id, name: f.name, subtasks: f.steps }));
   const allTemplates = [...DEFAULT_TEMPLATES, ...customTemplates, ...flowsAsTemplates];
 
@@ -73,11 +106,17 @@ export function AddClientDialog({ open, onClose, hideFields = [], defaultSquadId
   };
 
   const resetForm = () => {
-    setName(''); setCompanyName(''); setContractType('mrr');
-    setPaymentDay('10'); setContractDuration('3'); setSegment('');
-    setSquadId(squads[0]?.id ?? ''); setMonthlyRevenue(''); setSetupFee('');
+    setName(''); setCompanyName(''); setRazaoSocial(''); setPerfilCliente('brasileiro');
+    setContractType('mrr'); setPaymentDay('10'); setContractDuration('6'); setSegment('');
+    setSquadId(defaultSquadId ?? squads[0]?.id ?? ''); setMonthlyRevenue(''); setSetupFee('');
     setPlatforms([]); setResponsible('');
     setPhone(''); setCnpj(''); setEmail('');
+    setEndereco(''); setCidade(''); setEstado(''); setLogisticaPrincipal('');
+    setNomeProprietario(''); setCpfResponsavel('');
+    setCsResponsavel(''); setManager(''); setAuxiliar(''); setAssistente(''); setConsultorAtual('');
+    setVendedor(''); setStatusFinanceiro('em_dia'); setMultaRescisoria(''); setDataFimPrevista('');
+    setFaseMacro('implementacao'); setSubStatus(''); setRiscoChurn('baixo');
+    setTipoCliente('seller'); setPrioridadeGeral('P2'); setNpsUltimo('');
     setSelectedTemplateIds([]);
     setTab('dados');
   };
@@ -93,10 +132,10 @@ export function AddClientDialog({ open, onClose, hideFields = [], defaultSquadId
       name: clientName,
       companyName: companyName.trim(),
       segment: segment.trim() || 'Geral',
-      responsible: responsible,
+      responsible,
       squadId,
       startDate: new Date().toISOString().split('T')[0],
-      status: 'onboarding',
+      status: faseMacro === 'implementacao' ? 'onboarding' : faseMacro,
       notes: '',
       monthlyRevenue: monthlyRevenue ? Number(monthlyRevenue) : undefined,
       setupFee: setupFee ? Number(setupFee) : undefined,
@@ -110,23 +149,44 @@ export function AddClientDialog({ open, onClose, hideFields = [], defaultSquadId
       phone: phone.trim() || undefined,
       cnpj: cnpj.trim() || undefined,
       email: email.trim() || undefined,
+      razaoSocial: razaoSocial.trim(),
+      perfilCliente,
+      endereco: endereco.trim(),
+      cidade: cidade.trim(),
+      estado: estado.trim(),
+      logisticaPrincipal: logisticaPrincipal.trim(),
+      nomeProprietario: nomeProprietario.trim(),
+      cpfResponsavel: cpfResponsavel.trim(),
+      csResponsavel,
+      manager,
+      auxiliar,
+      assistente,
+      consultorAtual,
+      vendedor: vendedor.trim(),
+      statusFinanceiro,
+      multaRescisoria: multaRescisoria ? Number(multaRescisoria) : undefined,
+      dataFimPrevista: dataFimPrevista || undefined,
+      faseMacro,
+      subStatus: faseMacro === 'implementacao' && subStatus ? subStatus as any : null,
+      riscoChurn,
+      tipoCliente,
+      prioridadeGeral,
+      npsUltimo: npsUltimo ? Number(npsUltimo) : undefined,
       changeLogs: [],
       chatNotes: [],
     };
 
     addClient(newClient);
 
-    // Auto-create client_platforms records for each selected platform
     platforms.forEach(slug => {
       addClientPlatformMut.mutate({
-        clientId: clientId,
+        clientId,
         platformSlug: slug,
         phase: 'onboarding',
         squadId: squadId || null,
       });
     });
 
-    // Persist flow associations for selected flows (not default/custom templates)
     const flowIds = flows.map(f => f.id);
     selectedTemplateIds
       .filter(id => flowIds.includes(id))
@@ -134,15 +194,14 @@ export function AddClientDialog({ open, onClose, hideFields = [], defaultSquadId
         addClientFlowMutation.mutate({ clientId, flowId });
       });
 
-    // Auto-create tasks from selected templates
     const squad = squads.find(s => s.id === squadId);
     const defaultResponsible = squad?.leader ?? currentUser?.name ?? '';
 
-    selectedTemplateIds.forEach((tplId, idx) => {
+    selectedTemplateIds.forEach((tplId) => {
       const tpl = allTemplates.find(t => t.id === tplId);
       if (!tpl) return;
 
-      const subtasks: SubTask[] = tpl.subtasks.map((label, i) => ({
+      const subtasks: SubTask[] = tpl.subtasks.map((label) => ({
         id: crypto.randomUUID(),
         label,
         done: false,
@@ -172,9 +231,11 @@ export function AddClientDialog({ open, onClose, hideFields = [], defaultSquadId
     onClose();
   };
 
+  const selectClass = "w-full h-8 px-2 text-sm bg-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring text-foreground";
+
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) { resetForm(); onClose(); } }}>
-      <DialogContent className="sm:max-w-md max-h-[85vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto">
         <DialogHeader className="pb-2">
           <DialogTitle>Novo Cliente</DialogTitle>
         </DialogHeader>
@@ -186,106 +247,326 @@ export function AddClientDialog({ open, onClose, hideFields = [], defaultSquadId
           </TabsList>
         </Tabs>
 
-        {/* TAB: Dados do Cliente */}
         {tab === 'dados' && (
-          <div className="space-y-3">
-            <div>
-              <Label className="text-xs">Nome do Cliente</Label>
-              <Input value={name} onChange={e => setName(e.target.value)} placeholder="Ex: João Silva" className="h-8 text-sm" />
-            </div>
-            <div>
-              <Label className="text-xs">Nome da Empresa</Label>
-              <Input value={companyName} onChange={e => setCompanyName(e.target.value)} placeholder="Ex: Empresa XYZ LTDA" className="h-8 text-sm" />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label className="text-xs">Segmento</Label>
-                <Input value={segment} onChange={e => setSegment(e.target.value)} placeholder="Moda..." className="h-8 text-sm" />
-              </div>
-              <div>
-                <Label className="text-xs">Mensalidade (R$)</Label>
-                <Input type="number" value={monthlyRevenue} onChange={e => setMonthlyRevenue(e.target.value)} placeholder="3500" className="h-8 text-sm" />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-            {!hideFields.includes('setupFee') && (
-            <div>
-              <Label className="text-xs">Setup Pago (R$)</Label>
-              <Input type="number" value={setupFee} onChange={e => setSetupFee(e.target.value)} placeholder="1500" className="h-8 text-sm" />
-            </div>
-            )}
-              <div>
-                <Label className="text-xs">CNPJ</Label>
-                <Input value={cnpj} onChange={e => setCnpj(e.target.value)} placeholder="00.000.000/0000-00" className="h-8 text-sm" />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label className="text-xs">Telefone</Label>
-                <Input value={phone} onChange={e => setPhone(e.target.value)} placeholder="(11) 99999-9999" className="h-8 text-sm" />
-              </div>
-              <div>
-                <Label className="text-xs">Email</Label>
-                <Input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="cliente@empresa.com" className="h-8 text-sm" />
-              </div>
-            </div>
-            <div>
-              <Label className="text-xs">Plataformas</Label>
-              <div className="flex flex-wrap gap-2 mt-1.5">
-                {platformOptions.map((plat) => {
-                  const selected = platforms.includes(plat.slug);
-                  return (
-                    <button
-                      key={plat.id}
-                      type="button"
-                      onClick={() => setPlatforms(prev => selected ? prev.filter(p => p !== plat.slug) : [...prev, plat.slug])}
-                      className={cn(
-                        'px-3 py-1.5 text-xs rounded-lg border transition-all font-medium',
-                        selected
-                          ? 'border-primary bg-primary/10 text-primary ring-1 ring-primary/30'
-                          : 'border-border bg-card text-muted-foreground hover:border-primary/40'
+          <div className="space-y-2">
+            <Accordion type="multiple" defaultValue={['identificacao', 'plataformas']} className="w-full">
+              {/* IDENTIFICAÇÃO */}
+              <AccordionItem value="identificacao">
+                <AccordionTrigger className="text-xs font-semibold uppercase tracking-wider py-2">Identificação</AccordionTrigger>
+                <AccordionContent>
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Label className="text-xs">Nome do Cliente *</Label>
+                        <Input value={name} onChange={e => setName(e.target.value)} placeholder="Ex: João Silva" className="h-8 text-sm" />
+                      </div>
+                      <div>
+                        <Label className="text-xs">Nome da Empresa *</Label>
+                        <Input value={companyName} onChange={e => setCompanyName(e.target.value)} placeholder="Ex: Empresa XYZ LTDA" className="h-8 text-sm" />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Label className="text-xs">Razão Social</Label>
+                        <Input value={razaoSocial} onChange={e => setRazaoSocial(e.target.value)} placeholder="Razão Social" className="h-8 text-sm" />
+                      </div>
+                      <div>
+                        <Label className="text-xs">Perfil do Cliente</Label>
+                        <select value={perfilCliente} onChange={e => setPerfilCliente(e.target.value as PerfilCliente)} className={selectClass}>
+                          <option value="brasileiro">Brasileiro</option>
+                          <option value="boliviano">Boliviano</option>
+                          <option value="outro">Outro</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div>
+                      <Label className="text-xs">Segmento</Label>
+                      <Input value={segment} onChange={e => setSegment(e.target.value)} placeholder="Moda, Eletrônicos..." className="h-8 text-sm" />
+                    </div>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+
+              {/* DADOS DA EMPRESA */}
+              <AccordionItem value="empresa">
+                <AccordionTrigger className="text-xs font-semibold uppercase tracking-wider py-2">Dados da Empresa</AccordionTrigger>
+                <AccordionContent>
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Label className="text-xs">CNPJ</Label>
+                        <Input value={cnpj} onChange={e => setCnpj(e.target.value)} placeholder="00.000.000/0000-00" className="h-8 text-sm" />
+                      </div>
+                      <div>
+                        <Label className="text-xs">CPF Responsável</Label>
+                        <Input value={cpfResponsavel} onChange={e => setCpfResponsavel(e.target.value)} placeholder="000.000.000-00" className="h-8 text-sm" />
+                      </div>
+                    </div>
+                    <div>
+                      <Label className="text-xs">Nome do Proprietário</Label>
+                      <Input value={nomeProprietario} onChange={e => setNomeProprietario(e.target.value)} className="h-8 text-sm" />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Endereço</Label>
+                      <Input value={endereco} onChange={e => setEndereco(e.target.value)} className="h-8 text-sm" />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Label className="text-xs">Cidade</Label>
+                        <Input value={cidade} onChange={e => setCidade(e.target.value)} className="h-8 text-sm" />
+                      </div>
+                      <div>
+                        <Label className="text-xs">Estado (UF)</Label>
+                        <Input value={estado} onChange={e => setEstado(e.target.value)} placeholder="SP" maxLength={2} className="h-8 text-sm" />
+                      </div>
+                    </div>
+                    <div>
+                      <Label className="text-xs">Logística Principal</Label>
+                      <Input value={logisticaPrincipal} onChange={e => setLogisticaPrincipal(e.target.value)} className="h-8 text-sm" />
+                    </div>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+
+              {/* CONTATO */}
+              <AccordionItem value="contato">
+                <AccordionTrigger className="text-xs font-semibold uppercase tracking-wider py-2">Contato</AccordionTrigger>
+                <AccordionContent>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label className="text-xs">Telefone / WhatsApp</Label>
+                      <Input value={phone} onChange={e => setPhone(e.target.value)} placeholder="(11) 99999-9999" className="h-8 text-sm" />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Email</Label>
+                      <Input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="cliente@empresa.com" className="h-8 text-sm" />
+                    </div>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+
+              {/* EQUIPE INTERNA */}
+              <AccordionItem value="equipe">
+                <AccordionTrigger className="text-xs font-semibold uppercase tracking-wider py-2">Equipe Interna</AccordionTrigger>
+                <AccordionContent>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label className="text-xs">Responsável</Label>
+                      <select value={responsible} onChange={e => setResponsible(e.target.value)} className={selectClass}>
+                        <option value="">—</option>
+                        {appUsers.map(u => <option key={u.id} value={u.name}>{u.name}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <Label className="text-xs">CS Responsável</Label>
+                      <select value={csResponsavel} onChange={e => setCsResponsavel(e.target.value)} className={selectClass}>
+                        <option value="">—</option>
+                        {appUsers.map(u => <option key={u.id} value={u.name}>{u.name}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <Label className="text-xs">Manager</Label>
+                      <select value={manager} onChange={e => setManager(e.target.value)} className={selectClass}>
+                        <option value="">—</option>
+                        {appUsers.map(u => <option key={u.id} value={u.name}>{u.name}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <Label className="text-xs">Auxiliar</Label>
+                      <select value={auxiliar} onChange={e => setAuxiliar(e.target.value)} className={selectClass}>
+                        <option value="">—</option>
+                        {appUsers.map(u => <option key={u.id} value={u.name}>{u.name}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <Label className="text-xs">Assistente</Label>
+                      <select value={assistente} onChange={e => setAssistente(e.target.value)} className={selectClass}>
+                        <option value="">—</option>
+                        {appUsers.map(u => <option key={u.id} value={u.name}>{u.name}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <Label className="text-xs">Consultor Atual</Label>
+                      <select value={consultorAtual} onChange={e => setConsultorAtual(e.target.value)} className={selectClass}>
+                        <option value="">—</option>
+                        {appUsers.map(u => <option key={u.id} value={u.name}>{u.name}</option>)}
+                      </select>
+                    </div>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+
+              {/* FINANCEIRO */}
+              {isAdmin && (
+                <AccordionItem value="financeiro">
+                  <AccordionTrigger className="text-xs font-semibold uppercase tracking-wider py-2">Financeiro</AccordionTrigger>
+                  <AccordionContent>
+                    <div className="space-y-3">
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <Label className="text-xs">Mensalidade (R$)</Label>
+                          <Input type="number" value={monthlyRevenue} onChange={e => setMonthlyRevenue(e.target.value)} placeholder="3500" className="h-8 text-sm" />
+                        </div>
+                        <div>
+                          <Label className="text-xs">Setup (R$)</Label>
+                          <Input type="number" value={setupFee} onChange={e => setSetupFee(e.target.value)} placeholder="1500" className="h-8 text-sm" />
+                        </div>
+                      </div>
+                      <div>
+                        <Label className="text-xs mb-1.5 block">Tipo de Contrato</Label>
+                        <RadioGroup value={contractType} onValueChange={v => setContractType(v as ContractType)} className="flex gap-4">
+                          <div className="flex items-center gap-2">
+                            <RadioGroupItem value="mrr" id="mrr-client" className="w-3.5 h-3.5" />
+                            <Label htmlFor="mrr-client" className="text-xs cursor-pointer">MRR (Mensal)</Label>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <RadioGroupItem value="tcv" id="tcv-client" className="w-3.5 h-3.5" />
+                            <Label htmlFor="tcv-client" className="text-xs cursor-pointer">TCV (Contrato)</Label>
+                          </div>
+                        </RadioGroup>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <Label className="text-xs">Dia de Pagamento</Label>
+                          <Input type="number" min={1} max={31} value={paymentDay} onChange={e => setPaymentDay(e.target.value)} className="h-8 text-sm" />
+                        </div>
+                        <div>
+                          <Label className="text-xs">Duração do Contrato</Label>
+                          <select value={contractDuration} onChange={e => setContractDuration(e.target.value)} className={selectClass}>
+                            <option value="6">6 meses</option>
+                            <option value="12">12 meses</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <Label className="text-xs">Vendedor</Label>
+                          <Input value={vendedor} onChange={e => setVendedor(e.target.value)} className="h-8 text-sm" />
+                        </div>
+                        <div>
+                          <Label className="text-xs">Status Financeiro</Label>
+                          <select value={statusFinanceiro} onChange={e => setStatusFinanceiro(e.target.value as StatusFinanceiro)} className={selectClass}>
+                            <option value="em_dia">Em dia</option>
+                            <option value="atrasado">Atrasado</option>
+                            <option value="inadimplente">Inadimplente</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <Label className="text-xs">Multa Rescisória (R$)</Label>
+                          <Input type="number" value={multaRescisoria} onChange={e => setMultaRescisoria(e.target.value)} className="h-8 text-sm" />
+                        </div>
+                        <div>
+                          <Label className="text-xs">Data Fim Prevista</Label>
+                          <Input type="date" value={dataFimPrevista} onChange={e => setDataFimPrevista(e.target.value)} className="h-8 text-sm" />
+                        </div>
+                      </div>
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              )}
+
+              {/* PRAZOS E STATUS */}
+              <AccordionItem value="status">
+                <AccordionTrigger className="text-xs font-semibold uppercase tracking-wider py-2">Prazos e Status</AccordionTrigger>
+                <AccordionContent>
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Label className="text-xs">Fase Macro</Label>
+                        <select value={faseMacro} onChange={e => setFaseMacro(e.target.value as FaseMacro)} className={selectClass}>
+                          <option value="implementacao">Implementação</option>
+                          <option value="performance">Performance</option>
+                          <option value="escala">Escala</option>
+                          <option value="pausado">Pausado</option>
+                          <option value="cancelado">Cancelado</option>
+                          <option value="inativo">Inativo</option>
+                        </select>
+                      </div>
+                      {faseMacro === 'implementacao' && (
+                        <div>
+                          <Label className="text-xs">Sub-Status</Label>
+                          <select value={subStatus} onChange={e => setSubStatus(e.target.value)} className={selectClass}>
+                            <option value="">—</option>
+                            <option value="onboard">Onboard (D1-D15)</option>
+                            <option value="implementacao_ativa">Implementação Ativa</option>
+                            <option value="validacao_final">Validação Final</option>
+                          </select>
+                        </div>
                       )}
-                    >
-                      {plat.name}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label className="text-xs">Squad</Label>
-                <select value={squadId} onChange={e => setSquadId(e.target.value)} className="w-full h-8 px-2 text-sm bg-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring text-foreground">
-                  {squads.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                </select>
-              </div>
-            </div>
-            <div>
-              <Label className="text-xs">Dia de Pagamento</Label>
-              <Input type="number" min={1} max={31} value={paymentDay} onChange={e => setPaymentDay(e.target.value)} className="h-8 text-sm" />
-            </div>
-            {!hideFields.includes('contractType') && (
-            <div>
-              <Label className="text-xs mb-1.5 block">Tipo de Contrato</Label>
-              <RadioGroup value={contractType} onValueChange={v => setContractType(v as ContractType)} className="flex gap-4">
-                <div className="flex items-center gap-2">
-                  <RadioGroupItem value="mrr" id="mrr-client" className="w-3.5 h-3.5" />
-                  <Label htmlFor="mrr-client" className="text-xs cursor-pointer">MRR (Mensal)</Label>
-                </div>
-                <div className="flex items-center gap-2">
-                  <RadioGroupItem value="tcv" id="tcv-client" className="w-3.5 h-3.5" />
-                  <Label htmlFor="tcv-client" className="text-xs cursor-pointer">TCV (Contrato)</Label>
-                </div>
-              </RadioGroup>
-            </div>
-            )}
-            <div>
-              <Label className="text-xs">Duração do Contrato</Label>
-              <select value={contractDuration} onChange={e => setContractDuration(e.target.value)} className="w-full h-8 px-2 text-sm bg-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring text-foreground">
-                <option value="6">6 meses</option>
-                <option value="12">12 meses</option>
-              </select>
-            </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Label className="text-xs">Risco de Churn</Label>
+                        <select value={riscoChurn} onChange={e => setRiscoChurn(e.target.value as RiscoChurn)} className={selectClass}>
+                          <option value="baixo">Baixo</option>
+                          <option value="medio">Médio</option>
+                          <option value="alto">Alto</option>
+                          <option value="critico">Crítico</option>
+                        </select>
+                      </div>
+                      <div>
+                        <Label className="text-xs">Tipo de Cliente</Label>
+                        <select value={tipoCliente} onChange={e => setTipoCliente(e.target.value as TipoCliente)} className={selectClass}>
+                          <option value="seller">Seller</option>
+                          <option value="lojista">Lojista</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Label className="text-xs">Prioridade Geral</Label>
+                        <select value={prioridadeGeral} onChange={e => setPrioridadeGeral(e.target.value as PrioridadeGeral)} className={selectClass}>
+                          <option value="P1">P1 - Urgente</option>
+                          <option value="P2">P2 - Alta</option>
+                          <option value="P3">P3 - Normal</option>
+                          <option value="P4">P4 - Baixa</option>
+                        </select>
+                      </div>
+                      <div>
+                        <Label className="text-xs">NPS (0-10)</Label>
+                        <Input type="number" min={0} max={10} step={0.1} value={npsUltimo} onChange={e => setNpsUltimo(e.target.value)} className="h-8 text-sm" />
+                      </div>
+                    </div>
+                    {/* Non-admin: show squad here */}
+                    <div>
+                      <Label className="text-xs">Squad</Label>
+                      <select value={squadId} onChange={e => setSquadId(e.target.value)} className={selectClass}>
+                        {squads.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                      </select>
+                    </div>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+
+              {/* PLATAFORMAS */}
+              <AccordionItem value="plataformas">
+                <AccordionTrigger className="text-xs font-semibold uppercase tracking-wider py-2">Plataformas</AccordionTrigger>
+                <AccordionContent>
+                  <div className="flex flex-wrap gap-2">
+                    {platformOptions.map((plat) => {
+                      const selected = platforms.includes(plat.slug);
+                      return (
+                        <button
+                          key={plat.id}
+                          type="button"
+                          onClick={() => setPlatforms(prev => selected ? prev.filter(p => p !== plat.slug) : [...prev, plat.slug])}
+                          className={cn(
+                            'px-3 py-1.5 text-xs rounded-lg border transition-all font-medium',
+                            selected
+                              ? 'border-primary bg-primary/10 text-primary ring-1 ring-primary/30'
+                              : 'border-border bg-card text-muted-foreground hover:border-primary/40'
+                          )}
+                        >
+                          {plat.name}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
 
             {/* Summary of selected templates */}
             {selectedTemplateIds.length > 0 && (
@@ -364,7 +645,6 @@ export function AddClientDialog({ open, onClose, hideFields = [], defaultSquadId
             )}
           </div>
         )}
-
       </DialogContent>
     </Dialog>
   );
