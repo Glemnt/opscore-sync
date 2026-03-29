@@ -1,8 +1,10 @@
-import { useState } from 'react';
-import { Plus, Shield, ShieldCheck, ShieldAlert, Pencil, Trash2, CalendarIcon, Cake, Route, Save, X } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Plus, Shield, ShieldCheck, ShieldAlert, Pencil, Trash2, CalendarIcon, Cake, Route, Save, X, Target } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSquads } from '@/contexts/SquadsContext';
 import { useAppUsersQuery, useCreateAppUser, useUpdateAppUser, useDeleteAppUser } from '@/hooks/useAppUsersQuery';
+import { useUserGoalsQuery, useUpsertUserGoal } from '@/hooks/useUserGoalsQuery';
+import { useClientPlatformsQuery } from '@/hooks/useClientPlatformsQuery';
 import { usePlatformsQuery, useAddPlatform, useDeletePlatform } from '@/hooks/usePlatformsQuery';
 import { useTaskTypesQuery, useAddTaskType, useDeleteTaskType } from '@/hooks/useTaskTypesQuery';
 import { useDelayReasonsQuery, useAddDelayReason, useUpdateDelayReason, useDeleteDelayReason } from '@/hooks/useDelayReasonsQuery';
