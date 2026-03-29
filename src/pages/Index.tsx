@@ -9,6 +9,7 @@ import { ProductivityPage } from '@/pages/ProductivityPage';
 import { ReportsPage } from '@/pages/ReportsPage';
 import { SettingsPage } from '@/pages/SettingsPage';
 import { PlatformCatalogPage } from '@/pages/PlatformCatalogPage';
+import { OnboardingChecklistPage } from '@/pages/OnboardingChecklistPage';
 import { LoginPage } from '@/pages/LoginPage';
 import { TasksProvider } from '@/contexts/TasksContext';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
@@ -46,6 +47,7 @@ function AppContent() {
       case 'tasks': return <TasksPage />;
       case 'productivity': return <ProductivityPage />;
       case 'reports': return <ReportsPage />;
+      case 'onboarding-checklist': return <OnboardingChecklistPage />;
       case 'platform-catalog': return currentUser?.accessLevel === 3 ? <PlatformCatalogPage /> : <DashboardPage />;
       case 'settings': return currentUser?.accessLevel === 3 ? <SettingsPage /> : <DashboardPage />;
       default: return <DashboardPage />;

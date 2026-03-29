@@ -8,7 +8,8 @@ import {
   Settings,
   LogOut,
   Shield,
-  Layers } from
+  Layers,
+  ClipboardCheck } from
 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
@@ -20,7 +21,8 @@ const navItems = [
 { id: 'projects', label: 'Squads', icon: FolderKanban },
 { id: 'tasks', label: 'Demandas', icon: CheckSquare },
 { id: 'productivity', label: 'Produtividade', icon: BarChart3 },
-{ id: 'reports', label: 'Relatórios', icon: FileText }];
+{ id: 'reports', label: 'Relatórios', icon: FileText },
+{ id: 'onboarding-checklist', label: 'Checklist Onboarding', icon: ClipboardCheck }];
 
 
 interface AppSidebarProps {
