@@ -156,19 +156,79 @@ export type Database = {
           },
         ]
       }
+      client_platform_checklist: {
+        Row: {
+          bloqueia_passagem: boolean
+          catalog_item_id: string
+          checked_at: string | null
+          checked_by: string
+          client_platform_id: string
+          created_at: string
+          done: boolean
+          etapa: string
+          id: string
+          label: string
+          sort_order: number
+        }
+        Insert: {
+          bloqueia_passagem?: boolean
+          catalog_item_id: string
+          checked_at?: string | null
+          checked_by?: string
+          client_platform_id: string
+          created_at?: string
+          done?: boolean
+          etapa?: string
+          id?: string
+          label: string
+          sort_order?: number
+        }
+        Update: {
+          bloqueia_passagem?: boolean
+          catalog_item_id?: string
+          checked_at?: string | null
+          checked_by?: string
+          client_platform_id?: string
+          created_at?: string
+          done?: boolean
+          etapa?: string
+          id?: string
+          label?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_platform_checklist_client_platform_id_fkey"
+            columns: ["client_platform_id"]
+            isOneToOne: false
+            referencedRelation: "client_platforms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_platforms: {
         Row: {
           client_id: string
           created_at: string
+          data_prevista_passagem: string | null
+          data_real_passagem: string | null
           deadline: string | null
+          depende_cliente: boolean
           health_color: string | null
           id: string
+          motivo_atraso: string
           notes: string
+          observacao_passagem: string
           origin: string
+          pendencias_remanescentes: string
           phase: string
           platform_attributes: Json
           platform_slug: string
+          platform_status: string
+          prazo_interno: string | null
+          pronta_performance: boolean
           quality_level: string | null
+          quem_aprovou_passagem: string
           responsible: string
           revenue_tier: string | null
           sales_responsible: string
@@ -179,15 +239,25 @@ export type Database = {
         Insert: {
           client_id: string
           created_at?: string
+          data_prevista_passagem?: string | null
+          data_real_passagem?: string | null
           deadline?: string | null
+          depende_cliente?: boolean
           health_color?: string | null
           id?: string
+          motivo_atraso?: string
           notes?: string
+          observacao_passagem?: string
           origin?: string
+          pendencias_remanescentes?: string
           phase?: string
           platform_attributes?: Json
           platform_slug: string
+          platform_status?: string
+          prazo_interno?: string | null
+          pronta_performance?: boolean
           quality_level?: string | null
+          quem_aprovou_passagem?: string
           responsible?: string
           revenue_tier?: string | null
           sales_responsible?: string
@@ -198,15 +268,25 @@ export type Database = {
         Update: {
           client_id?: string
           created_at?: string
+          data_prevista_passagem?: string | null
+          data_real_passagem?: string | null
           deadline?: string | null
+          depende_cliente?: boolean
           health_color?: string | null
           id?: string
+          motivo_atraso?: string
           notes?: string
+          observacao_passagem?: string
           origin?: string
+          pendencias_remanescentes?: string
           phase?: string
           platform_attributes?: Json
           platform_slug?: string
+          platform_status?: string
+          prazo_interno?: string | null
+          pronta_performance?: boolean
           quality_level?: string | null
+          quem_aprovou_passagem?: string
           responsible?: string
           revenue_tier?: string | null
           sales_responsible?: string
