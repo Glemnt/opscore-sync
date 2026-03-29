@@ -413,6 +413,33 @@ export function TasksPage() {
                       onClick={() => setSelectedTask(task)}
                       canDelete={canDel}
                       onDelete={() => deleteTask(task.id)}
+                      allTasks={allTasks}
+                      onApprove={(id) => {
+                        const nota = prompt('Nota de 0-10:');
+                        if (nota == null) return;
+                        const n = Number(nota);
+                        if (isNaN(n) || n < 0 || n > 10) { toast.error('Nota inválida'); return; }
+                        updateTask(id, {
+                          status: 'done' as TaskStatus,
+                          approvalStatus: 'approved',
+                          approvedBy: currentUser?.name ?? 'Coordenador',
+                          approvedAt: new Date().toISOString(),
+                          notaEntrega: n,
+                        } as any);
+                        toast.success('Demanda aprovada! ✅');
+                      }}
+                      onReject={(id) => {
+                        const reason = prompt('Motivo da reprovação:');
+                        if (!reason?.trim()) { toast.error('Informe o motivo'); return; }
+                        const t = allTasks.find(x => x.id === id);
+                        updateTask(id, {
+                          status: 'in_progress' as TaskStatus,
+                          approvalStatus: 'rejected',
+                          rejectionReason: reason.trim(),
+                          rejectionCount: ((t?.rejectionCount ?? 0) + 1),
+                        } as any);
+                        toast.info('Demanda reprovada e devolvida');
+                      }}
                     />
                   );
                 })}
