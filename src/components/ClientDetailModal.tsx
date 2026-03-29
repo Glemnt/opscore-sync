@@ -246,13 +246,6 @@ function PlatformOperationalPanel({ client, platformOptions, squads, appUsers, t
     </div>
   );
 }
-  const { data: clientPlatforms = [] } = useClientPlatformsQuery();
-  const addPlatform = useAddClientPlatform();
-  const updatePlatform = useUpdateClientPlatform();
-  const [expandedSlug, setExpandedSlug] = useState<string | null>(null);
-
-  const platforms = client.platforms ?? [];
-  const cpMap = useMemo(() => {
     const map: Record<string, ClientPlatform> = {};
     for (const cp of clientPlatforms) {
       if (cp.clientId === client.id) map[cp.platformSlug] = cp;
