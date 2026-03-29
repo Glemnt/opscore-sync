@@ -409,8 +409,20 @@ export function AddTaskDialog({ open, onOpenChange, defaultStatus = 'backlog', d
             <Label>Observação</Label>
             <Textarea value={comments} onChange={(e) => setComments(e.target.value)} placeholder="Notas adicionais sobre a demanda..." rows={3} />
           </div>
+          {/* Flags operacionais */}
+          <div className="space-y-2 sm:col-span-2">
+            <div className="flex items-center gap-4">
+              <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <Checkbox checked={bloqueiaPassagem} onCheckedChange={(v) => setBloqueiaPassagem(!!v)} />
+                Bloqueia passagem
+              </label>
+              <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <Checkbox checked={dependeCliente} onCheckedChange={(v) => setDependeCliente(!!v)} />
+                Depende do cliente
+              </label>
+            </div>
+          </div>
 
-          {/* Subtarefas */}
           <div className="space-y-1.5 sm:col-span-2">
             <Label>Subtarefas iniciais</Label>
             <div className="flex gap-2">
