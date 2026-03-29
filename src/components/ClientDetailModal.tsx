@@ -248,16 +248,6 @@ function PlatformOperationalPanel({ client, platformOptions, squads, appUsers, t
 }
 
 
-    for (const slug of platforms) {
-      if (!cpMap[slug]) {
-        addPlatform.mutate({ clientId: client.id, platformSlug: slug, squadId: client.squadId || null });
-      }
-    }
-  }, [platforms.join(','), Object.keys(cpMap).join(',')]);
-
-  return (
-    <div className="mt-3">
-      <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1.5">Plataformas (Operacional)</p>
       <div className="space-y-2">
         {platforms.map((slug) => {
           const plat = platformOptions.find(p => p.slug === slug);
