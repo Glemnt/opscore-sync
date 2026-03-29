@@ -217,8 +217,40 @@ export function AddTaskDialog({ open, onOpenChange, defaultStatus = 'backlog', d
             </div>
           )}
 
+          {/* Plataforma do cliente */}
+          <div className="space-y-1.5">
+            <Label>Plataforma do cliente</Label>
+            <Select value={platformId} onValueChange={setPlatformId}>
+              <SelectTrigger><SelectValue placeholder="Selecione a plataforma" /></SelectTrigger>
+              <SelectContent>
+                {filteredClientPlatforms.map((cp) => {
+                  const pName = platforms.find(p => p.slug === cp.platformSlug)?.name ?? cp.platformSlug;
+                  return (
+                    <SelectItem key={cp.id} value={cp.id}>{pName}</SelectItem>
+                  );
+                })}
+                {filteredClientPlatforms.length === 0 && (
+                  <SelectItem value="__none" disabled>Nenhuma plataforma vinculada</SelectItem>
+                )}
+              </SelectContent>
+            </Select>
+          </div>
 
-          {/* Tipo de demanda */}
+          {/* Etapa */}
+          <div className="space-y-1.5">
+            <Label>Etapa</Label>
+            <Select value={etapa} onValueChange={setEtapa}>
+              <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="onboard">Onboard</SelectItem>
+                <SelectItem value="implementacao">Implementação</SelectItem>
+                <SelectItem value="performance">Performance</SelectItem>
+                <SelectItem value="escala">Escala</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+
           <div className="space-y-1.5">
             <Label>Tipo de demanda *</Label>
             {showNewType ? (
