@@ -1,119 +1,93 @@
 
 
-## Expandir client_platforms como Unidade Operacional Central
+## Checklist Onboarding — Nova Tela de Esteira D1-D15
 
 ### Resumo
 
-Adicionar campos operacionais a `client_platforms`, criar tabela de checklist por plataforma do cliente, expandir o `PlatformDetailModal` com checklist interativo e seção de passagem para performance, e calcular automaticamente a `faseMacro` do cliente.
+Criar uma nova pagina "Checklist Onboarding" com grid horizontal mostrando clientes em onboarding como linhas e tarefas D1-D15 como colunas. Cada celula e clicavel para alternar status. Semaforo automatico baseado em prazos.
 
 ---
 
-### 1. Migration — Novos campos e tabela de checklist
+### 1. Migration — Tabela `onboarding_checklist_items`
 
-**Novas colunas em `client_platforms`:**
-- `platform_status text DEFAULT 'nao_iniciada'` (nao_iniciada, onboard, implementacao_ativa, aguardando_cliente, bloqueada, pronta_performance, em_performance, escalada, pausada, cancelada)
-- `motivo_atraso text DEFAULT ''`
-- `prazo_interno date DEFAULT NULL`
-- `data_prevista_passagem date DEFAULT NULL`
-- `data_real_passagem date DEFAULT NULL`
-- `depende_cliente boolean DEFAULT false`
-- `pronta_performance boolean DEFAULT false`
-- `quem_aprovou_passagem text DEFAULT ''`
-- `observacao_passagem text DEFAULT ''`
-- `pendencias_remanescentes text DEFAULT ''`
+```sql
+CREATE TABLE onboarding_checklist_items (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  client_id uuid NOT NULL,
+  task_key text NOT NULL,
+  status text NOT NULL DEFAULT 'pendente', -- feito, pendente, atrasado, nao_aplica
+  completed_by text DEFAULT '',
+  completed_at timestamptz DEFAULT NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  UNIQUE(client_id, task_key)
+);
+```
 
-**Nova tabela `client_platform_checklist`:**
-- `id uuid PK DEFAULT gen_random_uuid()`
-- `client_platform_id uuid NOT NULL` (FK -> client_platforms ON DELETE CASCADE)
-- `catalog_item_id text NOT NULL` — referência ao id do item no JSONB do catálogo
-- `label text NOT NULL`
-- `etapa text DEFAULT ''`
-- `bloqueia_passagem boolean DEFAULT false`
-- `done boolean DEFAULT false`
-- `checked_by text DEFAULT ''`
-- `checked_at timestamptz DEFAULT NULL`
-- `sort_order integer DEFAULT 0`
-- `created_at timestamptz DEFAULT now()`
-
-RLS: authenticated full CRUD em ambas.
+RLS: authenticated full CRUD.
 
 ---
 
-### 2. Hook — `useClientPlatformChecklistQuery.ts` (novo)
+### 2. Hook — `useOnboardingChecklistQuery.ts`
 
-CRUD: query por `client_platform_id`, toggle item (update done/checked_by/checked_at), seed checklist a partir do `platform_catalog`.
-
----
-
-### 3. Expandir `ClientPlatform` interface e hook
-
-Adicionar os novos campos ao `ClientPlatform` interface e ao `mapRow`/`keyMap` no `useClientPlatformsQuery.ts`.
+- Query: busca todos os items, agrupados por `client_id`
+- Mutation `upsertItem`: upsert por `(client_id, task_key)` — alterna status ciclicamente (pendente → feito → atrasado → nao_aplica → pendente), registra `completed_by` e `completed_at`
 
 ---
 
-### 4. PlatformDetailModal — Novas seções
+### 3. Pagina — `OnboardingChecklistPage.tsx`
 
-**Checklist da plataforma:**
-- Puxa itens de `client_platform_checklist` para o `client_platform_id`
-- Se vazio, botão "Inicializar Checklist" copia do `platform_catalog`
-- Cada item: checkbox, label, etapa badge, quem marcou, quando
-- Barra de progresso (% concluído)
-- Itens que `bloqueia_passagem=true` destacados em vermelho se não feitos
+**Contadores no topo:** Total no checklist, Em onboarding (≤20 dias), Carteira base (>20 dias), Ativos, Churn, Risco — computados dos clientes filtrados.
 
-**Seção de Passagem para Performance:**
-- Visível quando fase é implementação
-- Mostra requisitos: checklist obrigatórios completos + sem tarefas bloqueadoras
-- Botão "Marcar como Pronta para Performance" (habilitado quando requisitos atendidos)
-- Campos: data prevista, data real, quem aprovou, observação, pendências
+**Filtros:** CS Responsavel, Status geral (semaforo), Perfil cliente, Periodo de entrada.
 
-**Campos operacionais editáveis:**
-- `platform_status` (select)
-- `motivo_atraso` (select com opções padrão)
-- `depende_cliente` (switch)
-- `prazo_interno` (date picker)
-- Dias em atraso (calculado: hoje - deadline, se > 0)
+**Grid com scroll horizontal:**
+- Colunas fixas a esquerda: ID, Nome, CS, Perfil, Data Entrada, Prazo D15, Prazo D20, Semaforo Geral
+- Colunas D1-D3 (9 tarefas): Reuniao Onboarding, Link Gravacao, Duracao, Briefing, Acessos, Cronograma, Impressora Termica, Modelo Anuncio, Equipe Definida
+- Colunas D2-D3 (3 tarefas): Kit Entregue, Video 1, Reuniao Implementacao
+- Colunas D3-D9 Auxiliar (8 tarefas): 3/7/11/15/22/25+ Anuncios, Termometro, Logistica
+- Colunas D4-D9 Assistente (5 tarefas): Termometro, Promocoes, Envio, Campanha, Emissor
+- Colunas Entrega (2 tarefas): Reuniao Entrega, NPS
+
+**Cada celula:** Icone colorido (✅🟢/❌🔴/⚠️🟡/—⚫). Click cicla o status via upsert.
+
+**Semaforo automatico:** Para cada tarefa, calcula o dia util esperado a partir da `start_date` do cliente. Se o dia ja passou e status != 'feito', exibe indicador vermelho. Se faltam ≤2 dias, amarelo. Se feito, azul. Caso contrario, verde.
+
+**Prazo D15/D20:** Calculados como start_date + 15/20 dias uteis (funcao utilitaria que pula fins de semana).
 
 ---
 
-### 5. ClientDetailModal — Cards de plataforma expandidos
+### 4. Definicao das task_keys
 
-Atualizar `PlatformOperationalPanel` para exibir em cada card:
-- Status da plataforma (badge colorido)
-- Barra de progresso do checklist
-- Dias em atraso (vermelho se > 0)
-- Flag `depende_cliente` / `pronta_performance`
-- Indicadores agregados no topo: plataformas prontas, atrasadas, passaram na semana
+Array constante com ~27 tarefas, cada uma com: `key`, `label`, `group` (d1d3_cs, d2d3_trans, d3d9_aux, d4d9_asst, entrega), `expectedDay` (numero 1-15 para calculo do semaforo).
 
 ---
 
-### 6. Cálculo automático da faseMacro do cliente
+### 5. Navegacao
 
-Criar função utilitária `computeClientFaseMacro(platforms: ClientPlatform[]): FaseMacro` que aplica as regras:
-- Todas em onboard/implementacao_ativa → `implementacao`
-- Todas em em_performance/escalada → `performance`
-- Todas escaladas → `escala`
-- Todas pausadas/canceladas → `pausado`/`cancelado`
-- Mix → fase da plataforma mais atrasada
+- Adicionar "Checklist Onboarding" no `AppSidebar.tsx` (icone `ClipboardCheck`), visivel para todos
+- Adicionar case `'onboarding-checklist'` no `Index.tsx`
 
-Chamar esta função ao salvar mudanças de `platform_status` e atualizar `clients.fase_macro` automaticamente.
+---
+
+### 6. Funcao utilitaria — dias uteis
+
+`addBusinessDays(date, days)`: soma N dias uteis (pula sabado/domingo). Usada para calcular prazos D15 e D20 e o semaforo de cada tarefa.
 
 ---
 
 ### Arquivos
 
 - `supabase/migrations/` — nova migration
-- `src/hooks/useClientPlatformChecklistQuery.ts` (novo)
-- `src/hooks/useClientPlatformsQuery.ts` (expandir interface + keyMap)
-- `src/components/PlatformDetailModal.tsx` (checklist, passagem, campos operacionais)
-- `src/components/ClientDetailModal.tsx` (cards expandidos, indicadores)
-- `src/lib/platformUtils.ts` (novo — computeClientFaseMacro)
+- `src/hooks/useOnboardingChecklistQuery.ts` (novo)
+- `src/pages/OnboardingChecklistPage.tsx` (novo)
+- `src/components/AppSidebar.tsx` (add nav item)
+- `src/pages/Index.tsx` (add route case)
 
 ### Ordem
 
 1. Migration
-2. Checklist hook
-3. ClientPlatform interface/hook
-4. platformUtils
-5. PlatformDetailModal
-6. ClientDetailModal cards
+2. Hook
+3. Constantes de tarefas + utilitario dias uteis
+4. Pagina com grid
+5. Sidebar + rota
 
