@@ -81,6 +81,8 @@ export function PlatformDetailModal({ open, onClose, clientPlatform, client, pla
   const activeDelayReasons = useActiveDelayReasons();
   const { squads } = useSquads();
   const { tasks } = useTasks();
+  const { data: timelineEvents = [], isLoading: timelineLoading } = useTimelineByPlatform(cp.id);
+  const [showTimeline, setShowTimeline] = useState(false);
 
   // Checklist
   const { data: checklistItems = [] } = useClientPlatformChecklistQuery(cp.id);
@@ -554,6 +556,20 @@ export function PlatformDetailModal({ open, onClose, clientPlatform, client, pla
               className="flex items-center gap-2 w-full bg-muted/50 rounded-lg p-3 text-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
               <Upload className="w-4 h-4" />Anexar documento
             </button>
+          </div>
+
+          {/* Timeline de Eventos */}
+          <div className="px-6 py-4 border-b border-border">
+            <button onClick={() => setShowTimeline(!showTimeline)}
+              className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground transition-colors">
+              <Activity className="w-3.5 h-3.5" />Timeline de Eventos ({timelineEvents.length})
+              {showTimeline ? <ChevronUp className="w-3.5 h-3.5 ml-1" /> : <ChevronDown className="w-3.5 h-3.5 ml-1" />}
+            </button>
+            {showTimeline && (
+              <div className="mt-3 max-h-[300px] overflow-y-auto">
+                <TimelineFeed events={timelineEvents} isLoading={timelineLoading} />
+              </div>
+            )}
           </div>
 
           {/* Change Logs */}
