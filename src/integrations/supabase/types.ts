@@ -264,87 +264,171 @@ export type Database = {
       clients: {
         Row: {
           active_projects: number
+          assistente: string
+          auxiliar: string
+          cidade: string
           cnpj: string
           company_name: string
+          consultor_atual: string
           contract_duration_months: number | null
           contract_type: Database["public"]["Enums"]["contract_type"]
+          cpf_responsavel: string
           created_at: string
+          cs_responsavel: string
+          data_fim_prevista: string | null
+          data_prevista_passagem: string | null
+          data_real_passagem: string | null
           email: string
+          endereco: string
+          estado: string
+          fase_macro: string
           health_color: Database["public"]["Enums"]["health_color"] | null
           id: string
+          logistica_principal: string
           logo: string | null
+          manager: string
           monthly_revenue: number | null
+          motivo_atraso_geral: string
+          multa_rescisoria: number | null
           name: string
+          nome_proprietario: string
           notes: string
+          nps_ultimo: number | null
           origin: string
           payment_day: number
           pending_tasks: number
+          perfil_cliente: string
           phase: string
           phone: string
           platforms: string[] | null
+          prioridade_geral: string
+          razao_social: string
           responsible: string
+          risco_churn: string
           segment: string
           setup_fee: number | null
           squad_id: string | null
           start_date: string
           status: string
+          status_financeiro: string
+          sub_status: string | null
+          tipo_cliente: string
+          ultima_resposta_cliente: string | null
+          ultimo_contato: string | null
           updated_at: string
+          vendedor: string
         }
         Insert: {
           active_projects?: number
+          assistente?: string
+          auxiliar?: string
+          cidade?: string
           cnpj?: string
           company_name: string
+          consultor_atual?: string
           contract_duration_months?: number | null
           contract_type?: Database["public"]["Enums"]["contract_type"]
+          cpf_responsavel?: string
           created_at?: string
+          cs_responsavel?: string
+          data_fim_prevista?: string | null
+          data_prevista_passagem?: string | null
+          data_real_passagem?: string | null
           email?: string
+          endereco?: string
+          estado?: string
+          fase_macro?: string
           health_color?: Database["public"]["Enums"]["health_color"] | null
           id?: string
+          logistica_principal?: string
           logo?: string | null
+          manager?: string
           monthly_revenue?: number | null
+          motivo_atraso_geral?: string
+          multa_rescisoria?: number | null
           name: string
+          nome_proprietario?: string
           notes?: string
+          nps_ultimo?: number | null
           origin?: string
           payment_day?: number
           pending_tasks?: number
+          perfil_cliente?: string
           phase?: string
           phone?: string
           platforms?: string[] | null
+          prioridade_geral?: string
+          razao_social?: string
           responsible?: string
+          risco_churn?: string
           segment?: string
           setup_fee?: number | null
           squad_id?: string | null
           start_date?: string
           status?: string
+          status_financeiro?: string
+          sub_status?: string | null
+          tipo_cliente?: string
+          ultima_resposta_cliente?: string | null
+          ultimo_contato?: string | null
           updated_at?: string
+          vendedor?: string
         }
         Update: {
           active_projects?: number
+          assistente?: string
+          auxiliar?: string
+          cidade?: string
           cnpj?: string
           company_name?: string
+          consultor_atual?: string
           contract_duration_months?: number | null
           contract_type?: Database["public"]["Enums"]["contract_type"]
+          cpf_responsavel?: string
           created_at?: string
+          cs_responsavel?: string
+          data_fim_prevista?: string | null
+          data_prevista_passagem?: string | null
+          data_real_passagem?: string | null
           email?: string
+          endereco?: string
+          estado?: string
+          fase_macro?: string
           health_color?: Database["public"]["Enums"]["health_color"] | null
           id?: string
+          logistica_principal?: string
           logo?: string | null
+          manager?: string
           monthly_revenue?: number | null
+          motivo_atraso_geral?: string
+          multa_rescisoria?: number | null
           name?: string
+          nome_proprietario?: string
           notes?: string
+          nps_ultimo?: number | null
           origin?: string
           payment_day?: number
           pending_tasks?: number
+          perfil_cliente?: string
           phase?: string
           phone?: string
           platforms?: string[] | null
+          prioridade_geral?: string
+          razao_social?: string
           responsible?: string
+          risco_churn?: string
           segment?: string
           setup_fee?: number | null
           squad_id?: string | null
           start_date?: string
           status?: string
+          status_financeiro?: string
+          sub_status?: string | null
+          tipo_cliente?: string
+          ultima_resposta_cliente?: string | null
+          ultimo_contato?: string | null
           updated_at?: string
+          vendedor?: string
         }
         Relationships: [
           {
