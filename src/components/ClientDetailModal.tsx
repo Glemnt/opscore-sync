@@ -35,6 +35,19 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 
+// ─── Checklist Progress Mini Component ───
+function ChecklistProgressBar({ clientPlatformId }: { clientPlatformId: string }) {
+  const { data: items = [] } = useClientPlatformChecklistQuery(clientPlatformId);
+  if (items.length === 0) return <span className="text-[10px] text-muted-foreground">Sem checklist</span>;
+  const pct = Math.round((items.filter(i => i.done).length / items.length) * 100);
+  return (
+    <div className="flex items-center gap-2 w-full">
+      <Progress value={pct} className="h-1.5 flex-1" />
+      <span className="text-[10px] font-bold text-primary">{pct}%</span>
+    </div>
+  );
+}
+
 // ─── Platform Operational Panel ───
 function PlatformOperationalPanel({ client, platformOptions, squads, appUsers, tasks, clientStatuses }: {
   client: Client;
@@ -44,6 +57,195 @@ function PlatformOperationalPanel({ client, platformOptions, squads, appUsers, t
   tasks: Task[];
   clientStatuses: any[];
 }) {
+  const { data: clientPlatforms = [] } = useClientPlatformsQuery();
+  const addPlatform = useAddClientPlatform();
+  const updatePlatform = useUpdateClientPlatform();
+  const [expandedSlug, setExpandedSlug] = useState<string | null>(null);
+
+  const platforms = client.platforms ?? [];
+  const cpMap = useMemo(() => {
+    const map: Record<string, ClientPlatform> = {};
+    for (const cp of clientPlatforms) {
+      if (cp.clientId === client.id) map[cp.platformSlug] = cp;
+    }
+    return map;
+  }, [clientPlatforms, client.id]);
+
+  useEffect(() => {
+    for (const slug of platforms) {
+      if (!cpMap[slug]) {
+        addPlatform.mutate({ clientId: client.id, platformSlug: slug, squadId: client.squadId || null });
+      }
+    }
+  }, [platforms.join(','), Object.keys(cpMap).join(',')]);
+
+  const allCPs = Object.values(cpMap);
+  const readyCount = allCPs.filter(cp => cp.prontaPerformance).length;
+  const delayedCount = allCPs.filter(cp => computeDiasEmAtraso(cp.deadline) > 0).length;
+  const blockedCount = allCPs.filter(cp => cp.dependeCliente).length;
+
+  return (
+    <div className="mt-3">
+      <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1.5">Plataformas (Operacional)</p>
+
+      {allCPs.length > 0 && (
+        <div className="flex items-center gap-3 mb-2 flex-wrap">
+          <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-semibold">
+            {readyCount} pronta{readyCount !== 1 ? 's' : ''}
+          </span>
+          {delayedCount > 0 && (
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-destructive/10 text-destructive font-semibold">
+              {delayedCount} atrasada{delayedCount !== 1 ? 's' : ''}
+            </span>
+          )}
+          {blockedCount > 0 && (
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-orange-100 text-orange-700 font-semibold">
+              {blockedCount} aguardando cliente
+            </span>
+          )}
+        </div>
+      )}
+
+      <div className="space-y-2">
+        {platforms.map((slug) => {
+          const plat = platformOptions.find(p => p.slug === slug);
+          const cp = cpMap[slug];
+          const platTasks = tasks.filter(t => t.platforms?.includes(slug));
+          const pendingCount = platTasks.filter(t => t.status !== 'done').length;
+          const isExpanded = expandedSlug === slug;
+          const platSquad = cp?.squadId ? squads.find(s => s.id === cp.squadId) : null;
+          const statusOpt = cp ? PLATFORM_STATUS_OPTIONS.find(o => o.value === cp.platformStatus) : null;
+          const dias = cp ? computeDiasEmAtraso(cp.deadline) : 0;
+
+          return (
+            <div key={slug} className="border border-border rounded-lg bg-muted/30 overflow-hidden">
+              <button
+                onClick={() => setExpandedSlug(isExpanded ? null : slug)}
+                className="w-full flex items-center justify-between p-3 hover:bg-muted/50 transition-colors text-left"
+              >
+                <div className="flex items-center gap-2 flex-wrap">
+                  <ShoppingBag className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                  <span className="text-sm font-semibold text-foreground">{plat?.name ?? slug}</span>
+                  {cp && statusOpt && (
+                    <span className={cn('text-[10px] px-1.5 py-0.5 rounded-full font-medium', statusOpt.color)}>
+                      {statusOpt.label}
+                    </span>
+                  )}
+                  {pendingCount > 0 && (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-warning/10 text-warning font-medium">
+                      {pendingCount} pendente{pendingCount > 1 ? 's' : ''}
+                    </span>
+                  )}
+                  {dias > 0 && (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-destructive/10 text-destructive font-medium">
+                      {dias}d atraso
+                    </span>
+                  )}
+                  {cp?.dependeCliente && (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-700 font-medium">⏳ Cliente</span>
+                  )}
+                  {cp?.prontaPerformance && (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-medium">✅</span>
+                  )}
+                </div>
+                {isExpanded ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
+              </button>
+
+              {cp && (
+                <div className="px-3 pb-2">
+                  <ChecklistProgressBar clientPlatformId={cp.id} />
+                </div>
+              )}
+
+              {isExpanded && cp && (
+                <div className="px-3 pb-3 space-y-2 border-t border-border pt-2">
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-[10px] text-muted-foreground uppercase">Fase</label>
+                      <select
+                        value={cp.phase}
+                        onChange={e => updatePlatform.mutate({ id: cp.id, updates: { phase: e.target.value } })}
+                        className="w-full h-8 px-2 text-xs bg-background border border-input rounded-md text-foreground"
+                      >
+                        {clientStatuses.map(s => <option key={s.key} value={s.key}>{s.label}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-muted-foreground uppercase">Squad Operacional</label>
+                      <select
+                        value={cp.squadId ?? ''}
+                        onChange={e => updatePlatform.mutate({ id: cp.id, updates: { squad_id: e.target.value || null } })}
+                        className="w-full h-8 px-2 text-xs bg-background border border-input rounded-md text-foreground"
+                      >
+                        <option value="">—</option>
+                        {squads.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-muted-foreground uppercase">Responsável</label>
+                      <select
+                        value={cp.responsible}
+                        onChange={e => updatePlatform.mutate({ id: cp.id, updates: { responsible: e.target.value } })}
+                        className="w-full h-8 px-2 text-xs bg-background border border-input rounded-md text-foreground"
+                      >
+                        <option value="">—</option>
+                        {appUsers.map(u => <option key={u.id} value={u.name}>{u.name}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-muted-foreground uppercase">Nível de Qualidade</label>
+                      <select
+                        value={cp.qualityLevel ?? ''}
+                        onChange={e => updatePlatform.mutate({ id: cp.id, updates: { qualityLevel: e.target.value || null } })}
+                        className="w-full h-8 px-2 text-xs bg-background border border-input rounded-md text-foreground"
+                      >
+                        <option value="">—</option>
+                        <option value="seller">Seller</option>
+                        <option value="lojista">Lojista</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-muted-foreground uppercase">Saúde</label>
+                      <select
+                        value={cp.healthColor ?? ''}
+                        onChange={e => updatePlatform.mutate({ id: cp.id, updates: { healthColor: e.target.value || null } })}
+                        className="w-full h-8 px-2 text-xs bg-background border border-input rounded-md text-foreground"
+                      >
+                        <option value="">—</option>
+                        <option value="green">🟢 Excelente</option>
+                        <option value="orange">🟠 Mediano</option>
+                        <option value="red">🔴 Ruim</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 text-xs text-muted-foreground pt-1">
+                    <span>{platTasks.length} demandas</span>
+                    <span>•</span>
+                    <span>{pendingCount} pendentes</span>
+                    {platSquad && platSquad.id !== client.squadId && (
+                      <>
+                        <span>•</span>
+                        <span className="text-primary font-medium">Squad: {platSquad.name}</span>
+                      </>
+                    )}
+                  </div>
+                  <PlatformAttributesEditor
+                    platformSlug={slug}
+                    attributes={cp.platformAttributes ?? {}}
+                    onChange={(key, value) => {
+                      const newAttrs = { ...cp.platformAttributes, [key]: value };
+                      updatePlatform.mutate({ id: cp.id, updates: { platformAttributes: newAttrs } });
+                    }}
+                  />
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
   const { data: clientPlatforms = [] } = useClientPlatformsQuery();
   const addPlatform = useAddClientPlatform();
   const updatePlatform = useUpdateClientPlatform();
