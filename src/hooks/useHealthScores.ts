@@ -78,6 +78,16 @@ export function useOverrideHealthScore() {
         new_value: `${color} — ${reason}`,
         changed_by: changedBy,
       });
+
+      // Timeline: health_score_changed
+      const { logTimelineEvent } = await import('@/hooks/useTimelineQuery');
+      logTimelineEvent({
+        clientId,
+        eventType: 'health_score_changed',
+        description: `Saúde sobrescrita manualmente para ${color}: ${reason}`,
+        newValue: `${color} (${score})`,
+        triggeredBy: changedBy,
+      });
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['clients'] }),
   });

@@ -11,6 +11,8 @@ import {
 } from '@/hooks/useFlowsQuery';
 import { useClientFlowsQuery } from '@/hooks/useClientFlowsQuery';
 import { useClients } from '@/contexts/ClientsContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { logTimelineEvent } from '@/hooks/useTimelineQuery';
 
 export type { CustomTemplate };
 
@@ -37,6 +39,7 @@ const TasksContext = createContext<TasksContextType | undefined>(undefined);
 export function TasksProvider({ children }: { children: ReactNode }) {
   const { data: tasks = [], isLoading } = useTasksQuery();
   const { clients } = useClients();
+  const { currentUser } = useAuth();
   const addTaskMut = useAddTask();
   const updateTaskMut = useUpdateTask();
   const deleteTaskMut = useDeleteTask();
@@ -51,7 +54,6 @@ export function TasksProvider({ children }: { children: ReactNode }) {
   const updateTemplateMut = useUpdateTemplate();
   const removeTemplateMut = useRemoveTemplate();
 
-  // Load client flows from DB
   const { data: clientFlowsMap = {} } = useClientFlowsQuery();
   const clientFlows: Record<string, string[]> = {};
   for (const [clientId, entries] of Object.entries(clientFlowsMap)) {
@@ -62,8 +64,53 @@ export function TasksProvider({ children }: { children: ReactNode }) {
     toast({ title: 'Erro ao salvar', description: String(err), variant: 'destructive' });
   }, []);
 
-  const addTask = useCallback((task: Task) => addTaskMut.mutate(task, { onError: onMutationError }), [addTaskMut, onMutationError]);
-  const updateTask = useCallback((id: string, updates: Partial<Task>) => updateTaskMut.mutate({ id, updates }, { onError: onMutationError }), [updateTaskMut, onMutationError]);
+  const userName = currentUser?.name ?? 'Sistema';
+
+  const addTask = useCallback((task: Task) => addTaskMut.mutate(task, {
+    onSuccess: () => {
+      logTimelineEvent({
+        clientId: task.clientId,
+        taskId: task.id,
+        eventType: 'task_created',
+        description: `Tarefa "${task.title}" criada`,
+        triggeredBy: userName,
+      });
+    },
+    onError: onMutationError,
+  }), [addTaskMut, onMutationError, userName]);
+
+  const updateTask = useCallback((id: string, updates: Partial<Task>) => {
+    const existing = tasks.find(t => t.id === id);
+    updateTaskMut.mutate({ id, updates }, {
+      onSuccess: () => {
+        if (!existing) return;
+        // Task completed
+        if (updates.status === 'done' && existing.status !== 'done') {
+          logTimelineEvent({
+            clientId: existing.clientId,
+            taskId: id,
+            eventType: 'task_completed',
+            description: `Tarefa "${existing.title}" concluída`,
+            oldValue: existing.status,
+            newValue: 'done',
+            triggeredBy: userName,
+          });
+        }
+        // Task rejected
+        if (updates.rejectionCount !== undefined && updates.rejectionCount > (existing.rejectionCount ?? 0)) {
+          logTimelineEvent({
+            clientId: existing.clientId,
+            taskId: id,
+            eventType: 'task_rejected',
+            description: `Tarefa "${existing.title}" reprovada${updates.rejectionReason ? `: ${updates.rejectionReason}` : ''}`,
+            triggeredBy: userName,
+          });
+        }
+      },
+      onError: onMutationError,
+    });
+  }, [updateTaskMut, onMutationError, tasks, userName]);
+
   const deleteTask = useCallback((id: string) => deleteTaskMut.mutate(id, { onError: onMutationError }), [deleteTaskMut, onMutationError]);
 
   const addFlow = useCallback((flow: Flow) => addFlowMut.mutate(flow, { onError: onMutationError }), [addFlowMut, onMutationError]);

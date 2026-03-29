@@ -160,6 +160,21 @@ export function useUpdateJourneyItem() {
       }
       const { error } = await supabase.from('cs_journey_items' as any).update(dbUpdates).eq('id', id);
       if (error) throw error;
+
+      // Timeline: journey_meeting when completed
+      if (updates.status === 'feita') {
+        // Fetch the item to get clientId
+        const { data: item } = await supabase.from('cs_journey_items' as any).select('client_id, title').eq('id', id).single();
+        if (item) {
+          const { logTimelineEvent } = await import('@/hooks/useTimelineQuery');
+          logTimelineEvent({
+            clientId: (item as any).client_id,
+            eventType: 'journey_meeting',
+            description: `Reunião "${(item as any).title}" realizada`,
+            triggeredBy: updates.completedBy ?? 'Sistema',
+          });
+        }
+      }
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['cs_journey_items'] }),
   });
