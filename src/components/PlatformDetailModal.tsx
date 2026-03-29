@@ -343,7 +343,7 @@ export function PlatformDetailModal({ open, onClose, clientPlatform, client, pla
                         <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">{item.etapa}</span>
                       )}
                       {item.bloqueiaPassagem && (
-                        <AlertTriangle className="w-3 h-3 text-destructive shrink-0" title="Bloqueia passagem" />
+                        <AlertTriangle className="w-3 h-3 text-destructive shrink-0" />
                       )}
                       {item.done && item.checkedBy && (
                         <span className="text-[10px] text-muted-foreground">{item.checkedBy}</span>
