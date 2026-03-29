@@ -83,11 +83,23 @@ export function TasksPage() {
   const handleDrop = (colStatus: TaskStatus, e: React.DragEvent) => {
     e.preventDefault();
     setDragOverCol(null);
-    // Check if it's a column drag
     const colKey = e.dataTransfer.getData('column-key');
-    if (colKey) return; // handled by column drop
+    if (colKey) return;
     const taskId = e.dataTransfer.getData('text/plain');
     if (taskId) {
+      const task = allTasks.find(t => t.id === taskId);
+      // Check dependencies when moving from backlog to in_progress
+      if (task && colStatus !== 'backlog' && colStatus !== 'done' && task.dependsOn?.length) {
+        const unmetDeps = task.dependsOn.filter(depId => {
+          const depTask = allTasks.find(t => t.id === depId);
+          return !depTask || depTask.status !== 'done' || depTask.approvalStatus !== 'approved';
+        });
+        if (unmetDeps.length > 0) {
+          const depNames = unmetDeps.map(id => allTasks.find(t => t.id === id)?.title ?? id).join(', ');
+          toast({ title: 'Dependências pendentes', description: `Aguardando: ${depNames}`, variant: 'destructive' });
+          return;
+        }
+      }
       updateTask(taskId, { status: colStatus });
     }
   };
