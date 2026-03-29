@@ -283,6 +283,7 @@ export function TasksPage() {
           <option value="all">Bloqueia passagem</option>
           <option value="sim">Sim</option>
           <option value="nao">Não</option>
+        </select>
         <div className="flex items-center gap-1.5">
           <CalendarDays className="w-4 h-4 text-muted-foreground" />
           <input
