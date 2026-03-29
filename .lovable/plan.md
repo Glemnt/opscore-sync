@@ -1,149 +1,98 @@
 
 
-## Esteira de Producao — Expandir Sistema de Demandas
+## Fluxo de Aprovacao de Demandas
 
 ### Resumo
 
-Adicionar ~12 novos campos a tabela `tasks`, expandir colunas do Kanban para 7, implementar geracao automatica de demandas ao vincular plataforma, e adicionar sistema de dependencias pai-filho entre tarefas.
+Adicionar campos de aprovacao a tabela `tasks`, implementar botoes Aprovar/Reprovar no TaskDetailModal e no card do Kanban, e aplicar logica de fluxo automatico (colaborador entrega → aguardando aprovacao → coordenador aprova/reprova).
 
 ---
 
-### 1. Migration — Novos campos na tabela `tasks` + tabela `task_dependencies`
+### 1. Migration — Novos campos na tabela `tasks`
 
 ```sql
 ALTER TABLE tasks
-  ADD COLUMN platform_id uuid DEFAULT NULL,
-  ADD COLUMN etapa text NOT NULL DEFAULT '',
-  ADD COLUMN bloqueia_passagem boolean NOT NULL DEFAULT false,
-  ADD COLUMN depende_cliente boolean NOT NULL DEFAULT false,
-  ADD COLUMN aguardando_cliente boolean NOT NULL DEFAULT false,
-  ADD COLUMN origem_tarefa text NOT NULL DEFAULT 'manual',
-  ADD COLUMN link_entrega text NOT NULL DEFAULT '',
-  ADD COLUMN print_entrega text NOT NULL DEFAULT '',
-  ADD COLUMN observacao_entrega text NOT NULL DEFAULT '',
-  ADD COLUMN nota_entrega numeric DEFAULT NULL,
-  ADD COLUMN approval_status text NOT NULL DEFAULT 'pending';
-
-CREATE TABLE task_dependencies (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  task_id uuid NOT NULL,
-  depends_on_task_id uuid NOT NULL,
-  created_at timestamptz NOT NULL DEFAULT now(),
-  UNIQUE(task_id, depends_on_task_id)
-);
+  ADD COLUMN approved_by text NOT NULL DEFAULT '',
+  ADD COLUMN approved_at timestamptz DEFAULT NULL,
+  ADD COLUMN rejection_reason text NOT NULL DEFAULT '',
+  ADD COLUMN rejection_count integer NOT NULL DEFAULT 0;
 ```
 
-RLS: authenticated full CRUD on `task_dependencies`.
-
-Tambem: INSERT novas colunas no `task_statuses` para as 3 colunas faltantes (revisao, bloqueada, aguardando_aprovacao) caso nao existam.
+O campo `approval_status` ja existe (text, default 'pending').
 
 ---
 
 ### 2. Tipos e Mapeamento
 
-**`src/types/index.ts`** — Expandir interface `Task` com os novos campos: `platformId`, `etapa`, `bloqueiaPassagem`, `dependeCliente`, `aguardandoCliente`, `origemTarefa`, `linkEntrega`, `printEntrega`, `observacaoEntrega`, `notaEntrega`, `approvalStatus`, `dependsOn` (array de task IDs).
+**`src/types/index.ts`** — Adicionar a `Task`: `approvedBy`, `approvedAt`, `rejectionReason`, `rejectionCount`.
 
-**`src/types/database.ts`** — Atualizar `mapDbTask` para mapear os novos campos snake_case → camelCase.
+**`src/types/database.ts`** — Expandir `mapDbTask` com os 4 novos campos.
 
-**`src/hooks/useTasksQuery.ts`** — Expandir `useAddTask` e `useUpdateTask` com os novos campos no keyMap. Adicionar query de `task_dependencies` no fetch principal. Adicionar mutations para inserir/remover dependencias.
-
----
-
-### 3. Expandir Kanban de Demandas
-
-Inserir via migration (ou data insert) 3 novos status no `task_statuses`:
-- `revisao` — "Revisao"
-- `bloqueada` — "Bloqueada"  
-- `aguardando_aprovacao` — "Aguardando Aprovacao"
-
-O Kanban ja e dinamico (usa `task_statuses`), entao as colunas aparecerao automaticamente.
+**`src/hooks/useTasksQuery.ts`** — Adicionar ao keyMap de `useUpdateTask` e ao insert de `useAddTask`: `approvedBy → approved_by`, `approvedAt → approved_at`, `rejectionReason → rejection_reason`, `rejectionCount → rejection_count`.
 
 ---
 
-### 4. Expandir AddTaskDialog e TaskDetailModal
+### 3. Logica de Fluxo no Kanban (`TasksPage.tsx`)
 
-**`AddTaskDialog.tsx`**:
-- Tornar `platformId` (select de client_platforms filtrado pelo cliente selecionado) obrigatorio
-- Adicionar campos: etapa (select), bloqueiaPassagem (checkbox), dependeCliente (checkbox), origemTarefa (readonly, default 'manual')
-- Validacao: cliente + plataforma + responsavel obrigatorios
+No `handleDrop`:
+- Se o colaborador arrasta para `aguardando_aprovacao`: permitir, setar `approval_status = 'pending'`.
+- Se arrasta para `done` diretamente: redirecionar para `aguardando_aprovacao` com toast informativo ("Demandas precisam de aprovacao").
+- Manter bloqueio de dependencias existente.
 
-**`TaskDetailModal.tsx`**:
-- Adicionar secao "Entrega" (visivel ao mover para revisao/aprovacao): linkEntrega, printEntrega (URL), observacaoEntrega
-- Adicionar campo notaEntrega (0-10, editavel por coordenador)
-- Exibir dependencias: lista de tarefas pai com status
-- Exibir badge "Bloqueada: aguardando [tarefa pai]" quando dependencias nao concluidas
-
----
-
-### 5. Geracao Automatica de Demandas
-
-**Logica**: Ao adicionar plataforma a um cliente (em `AddClientDialog` ou `EditPlatformDialog`), apos criar o registro em `client_platforms`, exibir dialog de confirmacao. Se confirmado:
-
-1. Buscar `platform_catalog` pelo slug da plataforma → pegar `checklist_obrigatorio`
-2. Para cada item do checklist, criar task com:
-   - `platformId` = ID da client_platform recem-criada
-   - `origemTarefa` = 'automatica'
-   - Responsavel = colaborador do squad com funcao correspondente e menor `currentLoad`
-   - Prazo = `start_date` + dias do `expectedDay` do item (dias uteis)
-   - `bloqueiaPassagem` = item.bloqueia_passagem
-   - Dependencias entre tarefas sequenciais
-
-**Novo componente**: `GenerateAutoDemandsDialog.tsx` — dialog que recebe clientId, platformId, platformSlug e executa a geracao.
-
-**Integracao**: Chamar apos criacao de client_platform nos componentes existentes.
+No `TaskCard`:
+- Se `task.status === 'aguardando_aprovacao'`: exibir botoes Aprovar (verde) e Reprovar (vermelho) direto no card (visivel para coordenadores/managers/admins).
+- Se `task.rejectionReason` e `task.status !== 'done'`: banner vermelho com motivo da reprovacao.
+- Badge de retrabalho se `rejectionCount > 0`.
 
 ---
 
-### 6. Logica de Dependencias no Kanban
+### 4. Aprovar/Reprovar no TaskDetailModal
 
-No `TasksPage.tsx`, ao tentar mover uma tarefa de "Backlog" para "Em Andamento":
-- Verificar se todas as tarefas em `dependsOn` estao com status 'done' E `approvalStatus` = 'approved'
-- Se nao, bloquear o drop e exibir toast com nome das tarefas pendentes
+Adicionar secao "Aprovacao" visivel quando `task.status === 'aguardando_aprovacao'`:
 
-Cards de tarefas bloqueadas exibem icone de cadeado e tooltip "Aguardando: [nomes]".
+**Aprovar**:
+- Input obrigatorio: nota 0-10 (`notaEntrega`)
+- Comentario opcional
+- Ao confirmar: `status → done`, `approval_status → approved`, `approvedBy → currentUser.name`, `approvedAt → now()`, `notaEntrega → nota`
 
----
+**Reprovar**:
+- Input obrigatorio: motivo da reprovacao (`rejectionReason`)
+- Ao confirmar: `status → in_progress`, `approval_status → rejected`, `rejectionReason → motivo`, `rejectionCount += 1`
 
-### 7. Cards Expandidos no Kanban
-
-Atualizar renderizacao dos cards em `TasksPage.tsx`:
-- Badge de plataforma (colorido)
-- Badge de prioridade (P1 vermelho, P2 laranja, P3 amarelo, P4 cinza) — mapear `high`→P1, `medium`→P3, `low`→P4
-- Indicador de atraso (dias, vermelho)
-- Icone cadeado se `bloqueiaPassagem`
-- Icone corrente se tem dependencias pendentes
+Exibir historico de reprovacoes (rejectionCount) e ultimo motivo quando existir.
 
 ---
 
-### 8. Filtros Expandidos
+### 5. Secao de Entrega no TaskDetailModal
 
-Adicionar ao painel de filtros do Kanban de demandas:
-- Cliente (select)
-- Prioridade (P1-P4)
-- bloqueiaPassagem (sim/nao)
+Quando `task.status` e `in_progress` ou `revisao`, exibir secao para o colaborador preencher antes de submeter:
+- `linkEntrega` (URL)
+- `printEntrega` (URL)
+- `observacaoEntrega` (texto)
+- Botao "Enviar para Aprovacao" que move para `aguardando_aprovacao`
+
+---
+
+### 6. Destaque visual da coluna "Aguardando Aprovacao"
+
+No Kanban, a coluna `aguardando_aprovacao` recebe `border-b-amber-500` e icone de relogio no header.
 
 ---
 
 ### Arquivos
 
-- `supabase/migrations/` — nova migration (ALTER TABLE tasks + CREATE TABLE task_dependencies + INSERT task_statuses)
+- `supabase/migrations/` — nova migration (4 colunas)
 - `src/types/index.ts` — expandir Task
 - `src/types/database.ts` — expandir mapDbTask
-- `src/hooks/useTasksQuery.ts` — novos campos + dependencias
-- `src/components/AddTaskDialog.tsx` — platform_id obrigatorio, novos campos
-- `src/components/TaskDetailModal.tsx` — secao entrega, dependencias, nota
-- `src/components/GenerateAutoDemandsDialog.tsx` (novo) — geracao automatica
-- `src/pages/TasksPage.tsx` — cards expandidos, logica dependencias no drop, filtros
-- `src/components/AddClientDialog.tsx` ou `EditPlatformDialog.tsx` — trigger para geracao automatica
+- `src/hooks/useTasksQuery.ts` — novos campos no keyMap
+- `src/components/TaskDetailModal.tsx` — secao aprovacao + entrega
+- `src/pages/TasksPage.tsx` — logica de fluxo no drop + botoes no card + destaque visual
 
 ### Ordem
 
-1. Migration (campos + tabela + status)
+1. Migration
 2. Types + database mapper
-3. Hooks (tasks query expandido + dependencias)
-4. AddTaskDialog (campos obrigatorios)
-5. TaskDetailModal (entrega + dependencias)
-6. GenerateAutoDemandsDialog
-7. TasksPage (cards + filtros + logica drop)
-8. Integracao geracao automatica nos dialogs de plataforma
+3. Hooks
+4. TaskDetailModal (aprovacao + entrega)
+5. TasksPage (fluxo + cards + visual)
 
