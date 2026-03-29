@@ -19,6 +19,17 @@ export interface ClientPlatform {
   salesResponsible: string;
   createdAt: string;
   updatedAt: string;
+  // Operational fields
+  platformStatus: string;
+  motivoAtraso: string;
+  prazoInterno: string | null;
+  dataPrevistaPassagem: string | null;
+  dataRealPassagem: string | null;
+  dependeCliente: boolean;
+  prontaPerformance: boolean;
+  quemAprovouPassagem: string;
+  observacaoPassagem: string;
+  pendenciasRemanescentes: string;
 }
 
 function mapRow(row: any): ClientPlatform {
