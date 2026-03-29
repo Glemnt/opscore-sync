@@ -63,6 +63,8 @@ export function ProjectsPage() {
   const clients = getVisibleClients();
   const { data: platformOptions = [] } = usePlatformsQuery();
   const { data: clientPlatformsData = [] } = useClientPlatformsQuery();
+  const { data: kanbanColumns = [] } = useKanbanColumnConfigsQuery();
+  const kanbanGroups = useKanbanColumnGroups();
   const updatePlatformMut = useUpdateClientPlatform();
   const addClientPlatformMut = useAddClientPlatform();
   const deleteClientPlatformMut = useDeleteClientPlatform();
