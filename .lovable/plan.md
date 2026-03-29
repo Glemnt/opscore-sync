@@ -1,78 +1,119 @@
 
 
-## Catalogo Mestre de Plataformas
+## Expandir client_platforms como Unidade Operacional Central
 
 ### Resumo
 
-Criar uma pagina admin "Plataformas" com catalogo mestre completo, substituindo a tabela simples `platforms` atual por uma `platform_catalog` com regras operacionais, checklists e prazos.
+Adicionar campos operacionais a `client_platforms`, criar tabela de checklist por plataforma do cliente, expandir o `PlatformDetailModal` com checklist interativo e seção de passagem para performance, e calcular automaticamente a `faseMacro` do cliente.
 
 ---
 
-### 1. Migration — Tabela `platform_catalog`
+### 1. Migration — Novos campos e tabela de checklist
 
-Criar tabela com:
+**Novas colunas em `client_platforms`:**
+- `platform_status text DEFAULT 'nao_iniciada'` (nao_iniciada, onboard, implementacao_ativa, aguardando_cliente, bloqueada, pronta_performance, em_performance, escalada, pausada, cancelada)
+- `motivo_atraso text DEFAULT ''`
+- `prazo_interno date DEFAULT NULL`
+- `data_prevista_passagem date DEFAULT NULL`
+- `data_real_passagem date DEFAULT NULL`
+- `depende_cliente boolean DEFAULT false`
+- `pronta_performance boolean DEFAULT false`
+- `quem_aprovou_passagem text DEFAULT ''`
+- `observacao_passagem text DEFAULT ''`
+- `pendencias_remanescentes text DEFAULT ''`
+
+**Nova tabela `client_platform_checklist`:**
 - `id uuid PK DEFAULT gen_random_uuid()`
-- `name text NOT NULL`
-- `slug text NOT NULL UNIQUE`
-- `status text NOT NULL DEFAULT 'ativo'` (ativo/inativo)
-- `prazo_onboarding integer NOT NULL DEFAULT 15`
-- `prazo_implementacao integer NOT NULL DEFAULT 30`
-- `checklist_obrigatorio jsonb NOT NULL DEFAULT '[]'` — array de `{id, label, etapa, bloqueia_passagem}`
-- `tipos_demanda_permitidos text[] NOT NULL DEFAULT '{}'`
-- `criterios_passagem text[] NOT NULL DEFAULT '{}'`
-- `created_at timestamptz NOT NULL DEFAULT now()`
+- `client_platform_id uuid NOT NULL` (FK -> client_platforms ON DELETE CASCADE)
+- `catalog_item_id text NOT NULL` — referência ao id do item no JSONB do catálogo
+- `label text NOT NULL`
+- `etapa text DEFAULT ''`
+- `bloqueia_passagem boolean DEFAULT false`
+- `done boolean DEFAULT false`
+- `checked_by text DEFAULT ''`
+- `checked_at timestamptz DEFAULT NULL`
+- `sort_order integer DEFAULT 0`
+- `created_at timestamptz DEFAULT now()`
 
-RLS: authenticated full CRUD (mesmo padrao das outras tabelas).
-
-Seed das 4 plataformas com checklists conforme especificado (ML 10 itens, Shopee 7, Shein 5, TikTok 5).
-
----
-
-### 2. Nova pagina — `src/pages/PlatformCatalogPage.tsx`
-
-- Listagem em cards com nome, slug, status badge, contagem de checklist items, prazos
-- Botao "Nova Plataforma" abre dialog de criacao
-- Click no card abre dialog de edicao
-- Botao de excluir com confirmacao
+RLS: authenticated full CRUD em ambas.
 
 ---
 
-### 3. Dialog de criacao/edicao — `src/components/PlatformCatalogDialog.tsx`
+### 2. Hook — `useClientPlatformChecklistQuery.ts` (novo)
 
-Campos organizados:
-- **Basico**: nome, slug (auto-gerado do nome), status
-- **Prazos**: prazoOnboarding, prazoImplementacao (inputs numericos)
-- **Checklist**: lista editavel de itens com label, etapa (select), bloqueiaPassagem (checkbox). Botoes adicionar/remover/reordenar
-- **Tipos de demanda**: multi-select dos task_types cadastrados
-- **Criterios de passagem**: lista editavel de strings
+CRUD: query por `client_platform_id`, toggle item (update done/checked_by/checked_at), seed checklist a partir do `platform_catalog`.
 
 ---
 
-### 4. Hook — `src/hooks/usePlatformCatalogQuery.ts`
+### 3. Expandir `ClientPlatform` interface e hook
 
-CRUD completo: `usePlatformCatalogQuery`, `useAddPlatformCatalog`, `useUpdatePlatformCatalog`, `useDeletePlatformCatalog`.
-
----
-
-### 5. Navegacao
-
-- Adicionar item "Plataformas" no `AppSidebar.tsx` (icone `Layers`), visivel apenas para accessLevel === 3
-- Adicionar case `'platform-catalog'` no `renderPage()` de `Index.tsx`
+Adicionar os novos campos ao `ClientPlatform` interface e ao `mapRow`/`keyMap` no `useClientPlatformsQuery.ts`.
 
 ---
 
-### 6. Tabela `platforms` existente
+### 4. PlatformDetailModal — Novas seções
 
-Manter a tabela `platforms` simples como esta (usada em selects de cadastro). O `platform_catalog` e a fonte de verdade para regras operacionais. Futuramente podem ser unificadas, mas nao agora para evitar quebras.
+**Checklist da plataforma:**
+- Puxa itens de `client_platform_checklist` para o `client_platform_id`
+- Se vazio, botão "Inicializar Checklist" copia do `platform_catalog`
+- Cada item: checkbox, label, etapa badge, quem marcou, quando
+- Barra de progresso (% concluído)
+- Itens que `bloqueia_passagem=true` destacados em vermelho se não feitos
+
+**Seção de Passagem para Performance:**
+- Visível quando fase é implementação
+- Mostra requisitos: checklist obrigatórios completos + sem tarefas bloqueadoras
+- Botão "Marcar como Pronta para Performance" (habilitado quando requisitos atendidos)
+- Campos: data prevista, data real, quem aprovou, observação, pendências
+
+**Campos operacionais editáveis:**
+- `platform_status` (select)
+- `motivo_atraso` (select com opções padrão)
+- `depende_cliente` (switch)
+- `prazo_interno` (date picker)
+- Dias em atraso (calculado: hoje - deadline, se > 0)
+
+---
+
+### 5. ClientDetailModal — Cards de plataforma expandidos
+
+Atualizar `PlatformOperationalPanel` para exibir em cada card:
+- Status da plataforma (badge colorido)
+- Barra de progresso do checklist
+- Dias em atraso (vermelho se > 0)
+- Flag `depende_cliente` / `pronta_performance`
+- Indicadores agregados no topo: plataformas prontas, atrasadas, passaram na semana
+
+---
+
+### 6. Cálculo automático da faseMacro do cliente
+
+Criar função utilitária `computeClientFaseMacro(platforms: ClientPlatform[]): FaseMacro` que aplica as regras:
+- Todas em onboard/implementacao_ativa → `implementacao`
+- Todas em em_performance/escalada → `performance`
+- Todas escaladas → `escala`
+- Todas pausadas/canceladas → `pausado`/`cancelado`
+- Mix → fase da plataforma mais atrasada
+
+Chamar esta função ao salvar mudanças de `platform_status` e atualizar `clients.fase_macro` automaticamente.
 
 ---
 
 ### Arquivos
 
-- `supabase/migrations/` — nova migration (CREATE TABLE + INSERT seed)
-- `src/hooks/usePlatformCatalogQuery.ts` (novo)
-- `src/pages/PlatformCatalogPage.tsx` (novo)
-- `src/components/PlatformCatalogDialog.tsx` (novo)
-- `src/components/AppSidebar.tsx` (add nav item)
-- `src/pages/Index.tsx` (add route case)
+- `supabase/migrations/` — nova migration
+- `src/hooks/useClientPlatformChecklistQuery.ts` (novo)
+- `src/hooks/useClientPlatformsQuery.ts` (expandir interface + keyMap)
+- `src/components/PlatformDetailModal.tsx` (checklist, passagem, campos operacionais)
+- `src/components/ClientDetailModal.tsx` (cards expandidos, indicadores)
+- `src/lib/platformUtils.ts` (novo — computeClientFaseMacro)
+
+### Ordem
+
+1. Migration
+2. Checklist hook
+3. ClientPlatform interface/hook
+4. platformUtils
+5. PlatformDetailModal
+6. ClientDetailModal cards
 
