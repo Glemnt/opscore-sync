@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
-import { Plus, Search, Clock, MessageSquare, AlertTriangle, Trash2, Workflow, ChevronDown, ShoppingBag, X, CalendarDays } from 'lucide-react';
+import { Plus, Search, Clock, MessageSquare, AlertTriangle, Trash2, Workflow, ChevronDown, ShoppingBag, X, CalendarDays, Lock, Link } from 'lucide-react';
+import { toast } from 'sonner';
 import { useTasks } from '@/contexts/TasksContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSquads } from '@/contexts/SquadsContext';
