@@ -30,6 +30,9 @@ export function TasksPage() {
   const [selectedType, setSelectedType] = useState('all');
   const [selectedPlatform, setSelectedPlatform] = useState('all');
   const [selectedStatus, setSelectedStatus] = useState('all');
+  const [selectedClient, setSelectedClient] = useState('all');
+  const [selectedPriority, setSelectedPriority] = useState('all');
+  const [filterBloqueiaPassagem, setFilterBloqueiaPassagem] = useState('all');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [editingCol, setEditingCol] = useState<string | null>(null);
@@ -65,9 +68,14 @@ export function TasksPage() {
     const matchType = selectedType === 'all' || t.type === selectedType;
     const matchPlatform = selectedPlatform === 'all' || (t.platforms ?? []).includes(selectedPlatform);
     const matchStatus = selectedStatus === 'all' || t.status === selectedStatus;
+    const matchClient = selectedClient === 'all' || t.clientId === selectedClient;
+    const matchPriority = selectedPriority === 'all' || t.priority === selectedPriority;
+    const matchBloqueia = filterBloqueiaPassagem === 'all' || 
+      (filterBloqueiaPassagem === 'sim' && t.bloqueiaPassagem) ||
+      (filterBloqueiaPassagem === 'nao' && !t.bloqueiaPassagem);
     const matchDateFrom = !dateFrom || (t.deadline && t.deadline >= dateFrom);
     const matchDateTo = !dateTo || (t.deadline && t.deadline <= dateTo);
-    return matchSearch && matchResp && matchType && matchPlatform && matchStatus && matchDateFrom && matchDateTo;
+    return matchSearch && matchResp && matchType && matchPlatform && matchStatus && matchClient && matchPriority && matchBloqueia && matchDateFrom && matchDateTo;
   });
 
   const isLate = (task: Task) => new Date(task.deadline) < new Date() && task.status !== 'done';
