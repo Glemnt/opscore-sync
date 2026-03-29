@@ -98,6 +98,36 @@ export function AppSidebar({ currentPage, onNavigate }: AppSidebarProps) {
             </button>);
 
         })}
+        {/* Manager+ items */}
+        {(currentUser?.accessLevel ?? 0) >= 2 && (
+          <>
+            <div className="mt-3 mb-2">
+              <p className="text-xs font-semibold text-sidebar-foreground/40 uppercase tracking-wider px-3">Gestão</p>
+            </div>
+            {managerNavItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = currentPage === item.id;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => onNavigate(item.id)}
+                  className={cn(
+                    'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 group',
+                    isActive ?
+                    'bg-sidebar-accent text-sidebar-accent-foreground shadow-sm' :
+                    'text-sidebar-foreground hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground'
+                  )}>
+                  <Icon className={cn(
+                    'w-4 h-4 transition-colors shrink-0',
+                    isActive ? 'text-sidebar-primary' : 'text-sidebar-foreground/60 group-hover:text-sidebar-foreground'
+                  )} />
+                  <span className="flex-1 text-left">{item.label}</span>
+                  {isActive && <div className="w-1.5 h-1.5 rounded-full bg-sidebar-primary" />}
+                </button>
+              );
+            })}
+          </>
+        )}
       </nav>
 
       {/* Footer */}
