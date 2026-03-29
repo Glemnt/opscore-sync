@@ -51,6 +51,16 @@ function mapRow(row: any): ClientPlatform {
     salesResponsible: row.sales_responsible ?? '',
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+    platformStatus: row.platform_status ?? 'nao_iniciada',
+    motivoAtraso: row.motivo_atraso ?? '',
+    prazoInterno: row.prazo_interno ?? null,
+    dataPrevistaPassagem: row.data_prevista_passagem ?? null,
+    dataRealPassagem: row.data_real_passagem ?? null,
+    dependeCliente: row.depende_cliente ?? false,
+    prontaPerformance: row.pronta_performance ?? false,
+    quemAprovouPassagem: row.quem_aprovou_passagem ?? '',
+    observacaoPassagem: row.observacao_passagem ?? '',
+    pendenciasRemanescentes: row.pendencias_remanescentes ?? '',
   };
 }
 
@@ -105,6 +115,16 @@ export function useUpdateClientPlatform() {
         origin: 'origin',
         salesResponsible: 'sales_responsible',
         deadline: 'deadline',
+        platformStatus: 'platform_status',
+        motivoAtraso: 'motivo_atraso',
+        prazoInterno: 'prazo_interno',
+        dataPrevistaPassagem: 'data_prevista_passagem',
+        dataRealPassagem: 'data_real_passagem',
+        dependeCliente: 'depende_cliente',
+        prontaPerformance: 'pronta_performance',
+        quemAprovouPassagem: 'quem_aprovou_passagem',
+        observacaoPassagem: 'observacao_passagem',
+        pendenciasRemanescentes: 'pendencias_remanescentes',
         notes: 'notes',
       };
       for (const [k, v] of Object.entries(updates)) {
