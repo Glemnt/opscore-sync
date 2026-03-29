@@ -97,7 +97,7 @@ export function TasksPage() {
         });
         if (unmetDeps.length > 0) {
           const depNames = unmetDeps.map(id => allTasks.find(t => t.id === id)?.title ?? id).join(', ');
-          toast({ title: 'Dependências pendentes', description: `Aguardando: ${depNames}`, variant: 'destructive' });
+          toast.error(`Dependências pendentes: ${depNames}`);
           return;
         }
       }
