@@ -1,129 +1,78 @@
 
 
-## Expansao do Cadastro de Clientes — 30+ Novos Campos
+## Catalogo Mestre de Plataformas
 
 ### Resumo
 
-Adicionar todos os campos da planilha operacional do Grupo TG ao sistema, organizados em secoes. Envolve migration de banco, tipos, mapper, formulario de cadastro, modal de detalhe e card de listagem.
+Criar uma pagina admin "Plataformas" com catalogo mestre completo, substituindo a tabela simples `platforms` atual por uma `platform_catalog` com regras operacionais, checklists e prazos.
 
 ---
 
-### 1. Migration — Novas colunas na tabela `clients`
+### 1. Migration — Tabela `platform_catalog`
 
-Adicionar via migration as seguintes colunas (todas com defaults seguros para nao quebrar registros existentes):
+Criar tabela com:
+- `id uuid PK DEFAULT gen_random_uuid()`
+- `name text NOT NULL`
+- `slug text NOT NULL UNIQUE`
+- `status text NOT NULL DEFAULT 'ativo'` (ativo/inativo)
+- `prazo_onboarding integer NOT NULL DEFAULT 15`
+- `prazo_implementacao integer NOT NULL DEFAULT 30`
+- `checklist_obrigatorio jsonb NOT NULL DEFAULT '[]'` — array de `{id, label, etapa, bloqueia_passagem}`
+- `tipos_demanda_permitidos text[] NOT NULL DEFAULT '{}'`
+- `criterios_passagem text[] NOT NULL DEFAULT '{}'`
+- `created_at timestamptz NOT NULL DEFAULT now()`
 
-**Dados cadastrais:**
-- `razao_social text DEFAULT ''`
-- `perfil_cliente text DEFAULT 'brasileiro'` (brasileiro/boliviano/outro)
-- `endereco text DEFAULT ''`
-- `cidade text DEFAULT ''`
-- `estado text DEFAULT ''`
-- `logistica_principal text DEFAULT ''`
-- `nome_proprietario text DEFAULT ''`
-- `cpf_responsavel text DEFAULT ''`
+RLS: authenticated full CRUD (mesmo padrao das outras tabelas).
 
-**Equipe interna:**
-- `cs_responsavel text DEFAULT ''`
-- `manager text DEFAULT ''`
-- `auxiliar text DEFAULT ''`
-- `assistente text DEFAULT ''`
-- `consultor_atual text DEFAULT ''`
-
-**Contratuais:**
-- `vendedor text DEFAULT ''`
-- `status_financeiro text DEFAULT 'em_dia'`
-- `multa_rescisoria numeric DEFAULT NULL`
-- `data_fim_prevista date DEFAULT NULL`
-
-**Operacionais:**
-- `fase_macro text DEFAULT 'implementacao'`
-- `sub_status text DEFAULT NULL`
-- `ultimo_contato date DEFAULT NULL`
-- `ultima_resposta_cliente date DEFAULT NULL`
-- `motivo_atraso_geral text DEFAULT ''`
-- `risco_churn text DEFAULT 'baixo'`
-- `tipo_cliente text DEFAULT 'seller'`
-- `data_prevista_passagem date DEFAULT NULL`
-- `data_real_passagem date DEFAULT NULL`
-- `prioridade_geral text DEFAULT 'P2'`
-- `nps_ultimo numeric DEFAULT NULL`
-
-Total: 27 novas colunas. Campos `cnpj`, `phone`, `email`, `setup_fee` ja existem.
+Seed das 4 plataformas com checklists conforme especificado (ML 10 itens, Shopee 7, Shein 5, TikTok 5).
 
 ---
 
-### 2. Tipos — `src/types/index.ts`
+### 2. Nova pagina — `src/pages/PlatformCatalogPage.tsx`
 
-Expandir a interface `Client` com todos os novos campos camelCase. Adicionar tipos auxiliares: `FaseMacro`, `SubStatus`, `PerfilCliente`, `StatusFinanceiro`, `RiscoChurn`, `TipoCliente`, `PrioridadeGeral`.
-
----
-
-### 3. Mapper — `src/types/database.ts`
-
-Atualizar `mapDbClient` para mapear todas as novas colunas snake_case -> camelCase.
+- Listagem em cards com nome, slug, status badge, contagem de checklist items, prazos
+- Botao "Nova Plataforma" abre dialog de criacao
+- Click no card abre dialog de edicao
+- Botao de excluir com confirmacao
 
 ---
 
-### 4. Query hooks — `src/hooks/useClientsQuery.ts`
+### 3. Dialog de criacao/edicao — `src/components/PlatformCatalogDialog.tsx`
 
-Atualizar `useAddClient` e `useUpdateClient` com os novos mapeamentos no `keyMap`.
-
----
-
-### 5. AddClientDialog — Formulario com Accordion
-
-Reorganizar o formulario em secoes com `Accordion`:
-
-- **Identificacao**: nome, empresa, razaoSocial, perfilCliente, segment
-- **Dados da Empresa**: cnpj, cpfResponsavel, nomeProprietario, endereco, cidade, estado, logisticaPrincipal
-- **Contato**: phone, email
-- **Equipe Interna**: responsavel, csResponsavel, manager, auxiliar, assistente, consultorAtual (selects de appUsers)
-- **Financeiro** (admin only): monthlyRevenue, setupFee, contractType, paymentDay, contractDuration, vendedor, statusFinanceiro, multaRescisoria, dataFimPrevista
-- **Prazos e Status**: faseMacro, subStatus (condicional se faseMacro=implementacao), riscoChurn, tipoCliente, prioridadeGeral, npsUltimo
-- **Plataformas**: selecao de plataformas (existente)
-
-O dialog fica mais largo (`sm:max-w-2xl`) para acomodar os campos. Accordion permite collapsar secoes.
+Campos organizados:
+- **Basico**: nome, slug (auto-gerado do nome), status
+- **Prazos**: prazoOnboarding, prazoImplementacao (inputs numericos)
+- **Checklist**: lista editavel de itens com label, etapa (select), bloqueiaPassagem (checkbox). Botoes adicionar/remover/reordenar
+- **Tipos de demanda**: multi-select dos task_types cadastrados
+- **Criterios de passagem**: lista editavel de strings
 
 ---
 
-### 6. ClientDetailModal — Edicao dos novos campos
+### 4. Hook — `src/hooks/usePlatformCatalogQuery.ts`
 
-Adicionar os novos campos nas secoes correspondentes do modal, todos editaveis no modo de edicao (isEditing). Campos financeiros protegidos por `isAdmin`.
-
----
-
-### 7. ClientsPage Card — Novos indicadores
-
-Atualizar o card para exibir:
-- `faseMacro` como badge principal (substituindo status)
-- `subStatus` como sub-badge quando presente
-- `prioridadeGeral` como indicador
-- `riscoChurn` com cor contextual
-- Metricas computadas: quantidade de plataformas, plataformas em atraso (calculadas de `clientPlatforms`)
+CRUD completo: `usePlatformCatalogQuery`, `useAddPlatformCatalog`, `useUpdatePlatformCatalog`, `useDeletePlatformCatalog`.
 
 ---
 
-### 8. Changelog
+### 5. Navegacao
 
-O sistema de changelog (`updateClient` no `ClientsContext`) ja registra automaticamente qualquer campo alterado. Nenhuma mudanca adicional necessaria.
+- Adicionar item "Plataformas" no `AppSidebar.tsx` (icone `Layers`), visivel apenas para accessLevel === 3
+- Adicionar case `'platform-catalog'` no `renderPage()` de `Index.tsx`
 
 ---
 
-### Ordem de implementacao
+### 6. Tabela `platforms` existente
 
-1. Migration (banco)
-2. Types + Mapper + Query hooks
-3. AddClientDialog (accordion)
-4. ClientDetailModal (novos campos)
-5. ClientsPage card (visual)
+Manter a tabela `platforms` simples como esta (usada em selects de cadastro). O `platform_catalog` e a fonte de verdade para regras operacionais. Futuramente podem ser unificadas, mas nao agora para evitar quebras.
 
-### Arquivos modificados
+---
 
-- `supabase/migrations/` — nova migration
-- `src/types/index.ts`
-- `src/types/database.ts`
-- `src/hooks/useClientsQuery.ts`
-- `src/components/AddClientDialog.tsx`
-- `src/components/ClientDetailModal.tsx`
-- `src/pages/ClientsPage.tsx`
+### Arquivos
+
+- `supabase/migrations/` — nova migration (CREATE TABLE + INSERT seed)
+- `src/hooks/usePlatformCatalogQuery.ts` (novo)
+- `src/pages/PlatformCatalogPage.tsx` (novo)
+- `src/components/PlatformCatalogDialog.tsx` (novo)
+- `src/components/AppSidebar.tsx` (add nav item)
+- `src/pages/Index.tsx` (add route case)
 
