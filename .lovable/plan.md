@@ -1,116 +1,83 @@
 
 
-## Timer Oculto + Produtividade com Dados Reais
+## CS Dashboard — Painel do CS
 
 ### Resumo
 
-Adicionar campos de timestamp na tabela `tasks`, criar tabela `task_pauses` para rastrear pausas, implementar timer automatico nas transicoes de status do Kanban, e reestruturar ProductivityPage com metricas reais detalhadas, ranking ponderado e filtros.
+Criar nova pagina `CsDashboardPage.tsx` com 5 secoes: agenda de entregaveis, painel de saude da carteira, kanban do CS, criacao de demandas para coordenador, e informacoes consolidadas por cliente. Filtro automatico pela carteira do CS logado (campo `cs_responsavel` nos clientes).
 
 ---
 
-### 1. Migration
+### 1. Nova pagina `src/pages/CsDashboardPage.tsx`
 
-**Novos campos em `tasks`:**
-```sql
-ALTER TABLE tasks
-  ADD COLUMN started_at timestamptz DEFAULT NULL,
-  ADD COLUMN completed_at timestamptz DEFAULT NULL,
-  ADD COLUMN tempo_real_minutos numeric DEFAULT NULL;
-```
+Pagina completa com 5 secoes em tabs ou scroll vertical. Usa hooks existentes: `useClientsQuery`, `useTasksQuery`, `useClientPlatformsQuery`, `useAppUsersQuery`. Filtra clientes por `cs_responsavel === currentUser.name`.
 
-**Nova tabela `task_pauses`:**
+**Secao 1 — Agenda de Entregaveis:**
+- Lista clientes da carteira ordenados por urgencia (tarefas atrasadas primeiro)
+- Para cada cliente: tarefas pendentes em timeline com semaforo:
+  - 🟢 No prazo (>2 dias) | 🟡 Atencao (<=2 dias) | 🔴 Atrasado | 🔵 Entregue (done)
+- Checkbox "Comunicado ao cliente" (salva como chat note com tag `[CS-COMUNICADO]`)
+- Filtro temporal: Hoje / Esta semana / Proxima semana
+
+**Secao 2 — Painel de Saude:**
+- Cards resumo: Total clientes | Em dia | Atencao | Criticos | Sem contato recente
+- Critico = 3+ tarefas atrasadas OU health_color vermelho
+- Sem contato = `ultimo_contato` > 3 dias ou null
+- Lista com semaforo por cliente + dias sem contato + tarefas pendentes
+
+**Secao 3 — Kanban do CS:**
+- Kanban simplificado mostrando APENAS tarefas onde `responsible === currentUser.name`
+- Usa as colunas do `task_statuses` existente
+- Cards compactos com titulo, cliente, prazo, semaforo
+
+**Secao 4 — Nova Demanda para Coordenador:**
+- Dialog com campos: Cliente (select da carteira), Plataforma (filtrado), Descricao, Urgencia (P1-P4), Prazo
+- Ao salvar, cria task com `responsible` = lider do squad do cliente, `origemTarefa` = 'manual', tipo = 'solicitacao_cs'
+- Usa `useAddTask` existente
+
+**Secao 5 — Info Consolidada por Cliente:**
+- Accordion/collapsible por cliente
+- Dados: contrato (mensalidade, tipo, duracao), plataformas + status, ultimo contato, NPS, ultimas 5 notas do chat
+- Botao "Ver detalhes" abre `ClientDetailModal`
+
+---
+
+### 2. Sidebar + Rota
+
+**`src/components/AppSidebar.tsx`:**
+- Adicionar item `{ id: 'cs-dashboard', label: 'Painel CS', icon: Headset }` visivel quando `currentUser.role === 'cs'` ou `currentUser.role === 'gestao'` ou `accessLevel >= 2`
+
+**`src/pages/Index.tsx`:**
+- Importar `CsDashboardPage`
+- Adicionar case `'cs-dashboard'` no switch com verificacao de role
+
+---
+
+### 3. Tabela `task_client_notifications` (nova — para checkbox "Comunicado ao cliente")
+
 ```sql
-CREATE TABLE task_pauses (
+CREATE TABLE task_client_notifications (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   task_id uuid NOT NULL,
-  pause_start timestamptz NOT NULL DEFAULT now(),
-  pause_end timestamptz DEFAULT NULL,
-  reason text NOT NULL DEFAULT 'outro',
-  created_at timestamptz NOT NULL DEFAULT now()
+  notified_by text NOT NULL DEFAULT '',
+  notified_at timestamptz NOT NULL DEFAULT now()
 );
-ALTER TABLE task_pauses ENABLE ROW LEVEL SECURITY;
--- authenticated full CRUD policies
 ```
 
----
-
-### 2. Tipos e Mapeamento
-
-**`src/types/index.ts`** — Adicionar a `Task`: `startedAt`, `completedAt`, `tempoRealMinutos`.
-
-**`src/types/database.ts`** — Expandir `mapDbTask` com os 3 novos campos.
-
-**`src/hooks/useTasksQuery.ts`** — Adicionar ao keyMap: `startedAt → started_at`, `completedAt → completed_at`, `tempoRealMinutos → tempo_real_minutos`. No insert tambem.
-
----
-
-### 3. Hook `useTaskPausesQuery.ts` (novo)
-
-- Query todas as pausas agrupadas por task_id
-- Mutation para inserir pausa (pause_start) e finalizar pausa (update pause_end)
-- Funcao utilitaria `calcTotalPauseMinutes(pauses)`: soma de todas as pausas finalizadas
-
----
-
-### 4. Timer automatico no Kanban (`TasksPage.tsx`)
-
-No `handleDrop`, adicionar logica baseada na transicao de status:
-
-- **→ in_progress** (primeira vez): setar `startedAt = now()` se ainda nao tem. Finalizar qualquer pausa aberta.
-- **→ waiting_client / bloqueada**: inserir nova pausa (pause_start = now, reason = status).
-- **→ in_progress** (voltando de pausa): finalizar pausa aberta (pause_end = now).
-- **→ aguardando_aprovacao / done**: setar `completedAt = now()`. Calcular `tempoRealMinutos = (completedAt - startedAt) - totalPausas` e salvar.
-
----
-
-### 5. Reestruturar ProductivityPage
-
-**Metricas por colaborador** (calculadas com `useMemo` a partir de tasks + pauses + client_platforms):
-- Tarefas concluidas (semana/mes com filtro de periodo)
-- Tarefas atrasadas, em andamento, carga atual
-- Pontualidade (% entregue antes do deadline)
-- Tempo medio de resolucao (media de `tempoRealMinutos`)
-- Nota media de entrega (media de `notaEntrega` das tasks done)
-- Taxa de retrabalho (`sum(rejectionCount) / total entregas`)
-- Plataformas sob responsabilidade e atrasadas (via `useClientPlatformsQuery`)
-
-**Ranking ponderado:**
-```
-score = concluidas*1 + noPrazo*2 + passagens*3 + destravadas*2 + reducaoAtraso*1 + notaMedia*2 + (1-retrabalho)*1
-```
-
-**Semaforos visuais:**
-- Carga: verde <5, amarelo 5-8, vermelho >8
-- Atraso: verde 0, amarelo 1-2, vermelho 3+
-
-**Graficos:**
-- Barras: desempenho por colaborador (concluidas + no prazo)
-- Radar: habilidades comparativas (pontualidade, nota, retrabalho, velocidade)
-- Linha: evolucao semanal (agrupar tasks por semana de conclusao)
-
-**Filtros:**
-- Periodo (semana/mes/custom)
-- Squad
-- Colaborador
-- Plataforma
+RLS: authenticated full CRUD. Isso permite rastrear quais entregaveis foram comunicados ao cliente, separado do status da tarefa.
 
 ---
 
 ### Arquivos
 
-- `supabase/migrations/` — nova migration (ALTER tasks + CREATE task_pauses)
-- `src/types/index.ts` — expandir Task
-- `src/types/database.ts` — expandir mapDbTask
-- `src/hooks/useTasksQuery.ts` — novos campos no keyMap
-- `src/hooks/useTaskPausesQuery.ts` (novo) — CRUD de pausas
-- `src/pages/TasksPage.tsx` — logica de timer no handleDrop
-- `src/pages/ProductivityPage.tsx` — reescrita completa com metricas reais
+- `supabase/migrations/` — CREATE TABLE task_client_notifications
+- `src/pages/CsDashboardPage.tsx` (novo) — pagina completa com 5 secoes
+- `src/components/AppSidebar.tsx` — novo nav item condicional
+- `src/pages/Index.tsx` — nova rota
 
 ### Ordem
 
-1. Migration
-2. Types + database mapper
-3. Hooks (tasks + pausas)
-4. TasksPage (timer no handleDrop)
-5. ProductivityPage (metricas + ranking + graficos + filtros)
+1. Migration (task_client_notifications)
+2. CsDashboardPage (5 secoes)
+3. Sidebar + rota
 
