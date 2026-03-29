@@ -223,6 +223,7 @@ export function SettingsPage() {
   const [goalReducaoBacklog, setGoalReducaoBacklog] = useState(5);
   const [goalAnunciosDia, setGoalAnunciosDia] = useState(24);
   const [goalAnunciosCliente, setGoalAnunciosCliente] = useState(75);
+  const [maxCapacity, setMaxCapacity] = useState(8);
 
   const { data: allGoals = [] } = useUserGoalsQuery();
   const upsertGoal = useUpsertUserGoal();
@@ -240,7 +241,7 @@ export function SettingsPage() {
 
   const resetForm = () => {
     setName(''); setEmail(''); setPassword(''); setRole('auxiliar_ecommerce'); setAccessLevel(1); setSelectedSquads([]);
-    setHireDate(undefined); setBirthday(undefined);
+    setHireDate(undefined); setBirthday(undefined); setMaxCapacity(8);
   };
 
   const openEditDialog = (u: AppUserProfile) => {
@@ -251,6 +252,7 @@ export function SettingsPage() {
     setSelectedSquads(u.squadIds);
     setHireDate(u.hireDate ? parseISO(u.hireDate) : undefined);
     setBirthday(u.birthday ? parseISO(u.birthday) : undefined);
+    setMaxCapacity(u.maxCapacity ?? 8);
     // Load goals
     const userGoal = allGoals.find(g => g.userId === u.id && g.period === 'weekly');
     setGoalPassagens(userGoal?.metaPassagens ?? 5);
@@ -281,6 +283,7 @@ export function SettingsPage() {
         squadIds: accessLevel === 3 ? squads.map((s) => s.id) : selectedSquads,
         hireDate: hireDate ? format(hireDate, 'yyyy-MM-dd') : null,
         birthday: birthday ? format(birthday, 'yyyy-MM-dd') : null,
+        maxCapacity,
       },
       {
         onSuccess: () => {
@@ -489,6 +492,10 @@ export function SettingsPage() {
             <div className="space-y-2 col-span-2">
               <Label className="text-xs">Meta anúncios/cliente (plataforma)</Label>
               <Input type="number" min={0} value={goalAnunciosCliente} onChange={e => setGoalAnunciosCliente(Number(e.target.value))} className="h-8 text-sm" />
+            </div>
+            <div className="space-y-2 col-span-2">
+              <Label className="text-xs">Capacidade máxima (tarefas simultâneas)</Label>
+              <Input type="number" min={1} max={50} value={maxCapacity} onChange={e => setMaxCapacity(Number(e.target.value))} className="h-8 text-sm" />
             </div>
           </div>
         </div>

@@ -80,6 +80,7 @@ export type Database = {
           hire_date: string | null
           id: string
           login: string
+          max_capacity: number
           name: string
           role: Database["public"]["Enums"]["team_role"]
           squad_ids: string[]
@@ -92,6 +93,7 @@ export type Database = {
           hire_date?: string | null
           id?: string
           login: string
+          max_capacity?: number
           name: string
           role?: Database["public"]["Enums"]["team_role"]
           squad_ids?: string[]
@@ -104,6 +106,7 @@ export type Database = {
           hire_date?: string | null
           id?: string
           login?: string
+          max_capacity?: number
           name?: string
           role?: Database["public"]["Enums"]["team_role"]
           squad_ids?: string[]
@@ -1190,6 +1193,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      scheduled_milestones: {
+        Row: {
+          actual_date: string | null
+          client_id: string
+          created_at: string
+          id: string
+          milestone_type: string
+          notes: string
+          platform_id: string | null
+          responsible: string
+          scheduled_date: string
+          status: string
+          title: string
+        }
+        Insert: {
+          actual_date?: string | null
+          client_id: string
+          created_at?: string
+          id?: string
+          milestone_type: string
+          notes?: string
+          platform_id?: string | null
+          responsible?: string
+          scheduled_date: string
+          status?: string
+          title?: string
+        }
+        Update: {
+          actual_date?: string | null
+          client_id?: string
+          created_at?: string
+          id?: string
+          milestone_type?: string
+          notes?: string
+          platform_id?: string | null
+          responsible?: string
+          scheduled_date?: string
+          status?: string
+          title?: string
+        }
+        Relationships: []
       }
       squads: {
         Row: {

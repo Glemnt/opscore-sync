@@ -13,6 +13,7 @@ import {
 } from '@/hooks/useClientsQuery';
 import { useGenerateJourneyForClient } from '@/hooks/useCsJourneyQuery';
 import { logTimelineEvent } from '@/hooks/useTimelineQuery';
+import { generateMilestonesForClient } from '@/hooks/useScheduledMilestonesQuery';
 
 interface MutationCallbacks {
   onSuccess?: () => void;
@@ -48,6 +49,8 @@ export function ClientsProvider({ children }: { children: ReactNode }) {
       onSuccess: () => {
         // Auto-generate CS journey
         generateJourney.mutate({ clientId: client.id, startDate: client.startDate });
+        // Auto-generate milestones
+        generateMilestonesForClient(client.id, client.startDate, client.responsible || client.csResponsavel || '');
         // Timeline: client_created
         logTimelineEvent({
           clientId: client.id,
