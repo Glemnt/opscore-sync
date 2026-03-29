@@ -143,6 +143,7 @@ export function DashboardPage() {
   const { data: platformsList = [] } = usePlatformsQuery();
   const { data: clientStatuses = [] } = useClientStatusesQuery('clients');
   const { data: taskTypes = [] } = useTaskTypesQuery();
+  const { data: allNpsResponses = [] } = useNpsResponsesQuery();
 
   const platformLabels = useMemo(() => {
     const m: Record<string, string> = {};
