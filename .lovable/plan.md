@@ -1,112 +1,104 @@
 
 
-## Dashboard Executivo — Reestruturação Completa
+## Health Score Automatico — Sistema de Saude Calculada
 
 ### Resumo
 
-Reescrever `DashboardPage.tsx` com 5 blocos gerenciais, filtros globais no topo, dados 100% reais do banco, numeros clicaveis que abrem listas filtradas, e graficos interativos com Recharts. Acesso restrito por nivel: admin ve tudo, niveis 1-2 veem apenas seu squad.
+Adicionar colunas de health score na tabela `clients`, criar funcao utilitaria `calculateHealthScore` no frontend que recalcula em tempo real usando dados de tasks, client_platforms e campos do cliente. Aplicar visibilidade por role. Permitir override manual por admin com justificativa.
 
 ---
 
-### 1. Filtros Globais (topo)
+### 1. Migration — Novas colunas na tabela clients
 
-Barra fixa no topo com filtros que afetam todos os blocos simultaneamente:
-- Periodo: presets (Semana / Mes / Trimestre) + date range custom
-- Squad (select multi usando `useSquadsQuery`)
-- Responsavel (select filtrado por squad)
-- Plataforma (select usando `usePlatformsQuery`)
-- Fase (select: onboarding / implementacao / performance / escala)
-- Saude (green / yellow / red / white)
-- Prioridade (P1-P4)
+```sql
+ALTER TABLE clients
+  ADD COLUMN health_score numeric DEFAULT NULL,
+  ADD COLUMN health_calculated_at timestamptz DEFAULT NULL,
+  ADD COLUMN health_override boolean NOT NULL DEFAULT false,
+  ADD COLUMN health_override_reason text NOT NULL DEFAULT '';
+```
 
-Todos os dados (clients, client_platforms, tasks) sao filtrados por esses criterios antes de alimentar os blocos.
-
----
-
-### 2. Bloco 1 — Operação Geral
-
-StatCards em grid:
-- Clientes ativos (excluindo churn)
-- Em implementacao (sub: onboard + impl ativa, baseado em `fase_macro` ou `phase` dos clients)
-- Em performance
-- Em escala
-- Inativos/churn
-- Cada card com variacao vs semana anterior (calcula contagem na semana passada e compara)
-
-Dados: `useClients` + `useClientStatusesQuery`
+A coluna `health_color` ja existe. Sera atualizada automaticamente pelo calculo.
 
 ---
 
-### 3. Bloco 2 — Plataformas
+### 2. Funcao utilitaria `src/lib/healthScore.ts` (novo)
 
-Dados: `useClientPlatformsQuery`
-- Total plataformas ativas (phase != churn)
-- Em onboard (phase === 'onboarding')
-- Em implementacao
-- Atrasadas (deadline < hoje e phase != performance/done) — clicavel, abre dialog com lista
-- Prontas para performance (prontaPerformance === true)
-- Grafico de pizza: distribuicao por `platform_slug` (count)
+Funcao pura `calculateHealthScore(client, clientTasks, clientPlatforms)` retorna `{ score: number, color: 'green'|'yellow'|'red'|'white', breakdown: {...} }`.
 
----
+Componentes e pesos:
+- **Tarefas atrasadas (25%)**: `(1 - min(atrasadas/total, 1)) * 100`
+- **Plataformas travadas (20%)**: plataformas com status bloqueada ou aguardando_cliente vs total
+- **Tempo sem resposta (15%)**: dias desde `ultimaRespostaCliente` — 0 dias=100, 7+=0
+- **Prazo estourado (15%)**: `dataPrevistaPassagem < hoje` = 0, senao 100
+- **Bloqueios ativos (10%)**: tasks com `depende_cliente || aguardando_cliente` vs total
+- **Risco financeiro (10%)**: em_dia=100, atrasado=30, inadimplente=0
+- **NPS (5%)**: `(npsUltimo / 10) * 100`, sem dado=50
 
-### 4. Bloco 3 — Atrasos (destaque vermelho)
+Classificacao: 80-100=green, 50-79=yellow, 0-49=red, sem dados=white.
 
-Dados: `useTasksQuery` + `useClientPlatformsQuery` + `useDelayReasonsQuery`
-- Total demandas atrasadas (deadline < hoje, status != done)
-- Total plataformas atrasadas
-- Clientes travados +3 dias (lista clicavel com nomes)
-- Clientes travados +7 dias (lista clicavel com nomes)
-- Plataformas travadas por falta de cliente (dependeCliente === true)
-- Plataformas travadas por erro operacional (atrasadas e !dependeCliente)
-- Grafico de barras horizontal: top 5 motivos de atraso (contagem de `motivo_atraso` nos tasks e client_platforms)
+Funcao auxiliar `canViewHealth(user)`: retorna true se `accessLevel >= 2` ou `role === 'cs'`.
 
 ---
 
-### 5. Bloco 4 — Equipe
+### 3. Hook `useHealthScores` (novo em `src/hooks/useHealthScores.ts`)
 
-Dados: `useTasksQuery` + `useAppUsersQuery` + `useSquadsQuery`
-- Grafico de barras: demandas por colaborador (concluidas vs atrasadas)
-- Passagens concluidas na semana por colaborador (tasks tipo passagem, done esta semana)
-- Carga por colaborador com semaforo (verde <5, amarelo 5-8, vermelho >8 tarefas ativas)
-- Taxa de avanco (% concluidas no prazo)
-- Lista de sobrecarregados (>8 tarefas) com destaque vermelho
+- Consome `useClients`, `useTasksQuery`, `useClientPlatformsQuery`
+- Retorna mapa `clientId -> { score, color, breakdown }`
+- Recalcula via `useMemo` a cada mudanca nos dados
+- Mutation `useOverrideHealthScore(clientId, color, reason)` que faz update no clients + changelog
 
 ---
 
-### 6. Bloco 5 — Receita e Carteira (visivel apenas admin, accessLevel === 3)
+### 4. Integracao nos componentes existentes
 
-Dados: `useClients` + `useClientPlatformsQuery`
-- MRR total
-- Receita por plataforma (grafico de barras)
-- Clientes adicionados no periodo (filtrado por date range)
-- Churn no periodo
-- Saude da carteira (grafico de rosca: saudavel/atencao/critico)
-- Clientes em risco de churn (risco_churn !== 'baixo', lista clicavel)
+**Card do cliente** (em `ClientsPage.tsx` e componentes de card):
+- Substituir exibicao de `healthColor` manual pelo score calculado
+- Condicional: so mostra se `canViewHealth(currentUser)`
+
+**ClientDetailModal.tsx**:
+- Nova secao "Saude" mostrando score numerico + breakdown dos 7 componentes
+- Botao "Sobrescrever" (apenas admin) abre dialog com select de cor + campo de justificativa
+- Badge indicando se health esta em override manual
+
+**DashboardPage.tsx**:
+- Bloco 5 (Saude da Carteira) usa scores calculados em vez de `healthColor` manual
+- Drill-down de clientes criticos mostra breakdown
+
+**CsDashboardPage.tsx**:
+- Secao "Saude da Carteira" usa scores calculados
 
 ---
 
-### 7. Componente de Lista Clicavel
+### 5. Cronologia do cliente (prova de valor)
 
-Dialog/Sheet reutilizavel que abre ao clicar em qualquer numero. Recebe titulo + lista de items (clientes ou plataformas) e exibe em tabela simples com nome, status, responsavel. Clique no item pode navegar ao detalhe.
+No ClientDetailModal, ao clicar no score de saude, abre dialog/sheet com timeline consolidada:
+- Reunioes da jornada CS (cs_journey_items com status feita)
+- Tarefas concluidas (tasks com status done)
+- Changelog do cliente (change_logs)
+- Ordenado cronologicamente, com icones por tipo
 
 ---
 
 ### Arquivos
 
-- `src/pages/DashboardPage.tsx` — reescrita completa
-
-### Hooks existentes reutilizados (sem alteracao)
-- `useClientsQuery` (via ClientsContext)
-- `useClientPlatformsQuery`
-- `useTasksQuery` (via TasksContext)
-- `useAppUsersQuery`
-- `useSquadsQuery`
-- `usePlatformsQuery`
-- `useClientStatusesQuery`
-- `useDelayReasonsQuery`
-- `useTaskTypesQuery`
+- `supabase/migrations/` — ALTER TABLE clients (4 colunas)
+- `src/lib/healthScore.ts` (novo) — calculateHealthScore + canViewHealth
+- `src/hooks/useHealthScores.ts` (novo) — hook com memo + override mutation
+- `src/types/index.ts` — adicionar campos healthScore, healthOverride, healthOverrideReason ao Client
+- `src/types/database.ts` — mapear novas colunas no mapDbClient
+- `src/hooks/useClientsQuery.ts` — adicionar novas colunas no keyMap do update
+- `src/components/ClientDetailModal.tsx` — secao saude + cronologia + override
+- `src/pages/DashboardPage.tsx` — usar scores calculados
+- `src/pages/CsDashboardPage.tsx` — usar scores calculados
+- `src/pages/ClientsPage.tsx` — condicional de visibilidade nos cards
 
 ### Ordem
 
-1. Reescrever DashboardPage.tsx com filtros globais + 5 blocos + dialog de lista clicavel
+1. Migration (colunas)
+2. healthScore.ts (logica pura)
+3. useHealthScores.ts (hook)
+4. Types + mappers
+5. ClientDetailModal (saude + cronologia + override)
+6. Dashboard + CsDashboard + ClientsPage (visibilidade)
 
