@@ -217,6 +217,17 @@ export function SettingsPage() {
   // Delete confirm
   const [deletingUser, setDeletingUser] = useState<AppUserProfile | null>(null);
 
+  // Goals state
+  const [goalPassagens, setGoalPassagens] = useState(5);
+  const [goalDestravamentos, setGoalDestravamentos] = useState(3);
+  const [goalReducaoBacklog, setGoalReducaoBacklog] = useState(5);
+  const [goalAnunciosDia, setGoalAnunciosDia] = useState(24);
+  const [goalAnunciosCliente, setGoalAnunciosCliente] = useState(75);
+
+  const { data: allGoals = [] } = useUserGoalsQuery();
+  const upsertGoal = useUpsertUserGoal();
+  const { data: clientPlatforms = [] } = useClientPlatformsQuery();
+
   // Form state
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
