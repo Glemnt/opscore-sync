@@ -510,6 +510,8 @@ export function ProjectsPage() {
                 setSquadPlatformFilter('all');
                 setSquadQualityFilter('all');
                 setSquadPriorityFilter('all');
+                setSquadFaseMacroFilter('all');
+                setSquadDiasAtrasoFilter('all');
                 setSquadDateFrom('');
                 setSquadDateTo('');
                 setSearch('');
