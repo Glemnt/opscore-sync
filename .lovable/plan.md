@@ -1,98 +1,116 @@
 
 
-## Fluxo de Aprovacao de Demandas
+## Timer Oculto + Produtividade com Dados Reais
 
 ### Resumo
 
-Adicionar campos de aprovacao a tabela `tasks`, implementar botoes Aprovar/Reprovar no TaskDetailModal e no card do Kanban, e aplicar logica de fluxo automatico (colaborador entrega → aguardando aprovacao → coordenador aprova/reprova).
+Adicionar campos de timestamp na tabela `tasks`, criar tabela `task_pauses` para rastrear pausas, implementar timer automatico nas transicoes de status do Kanban, e reestruturar ProductivityPage com metricas reais detalhadas, ranking ponderado e filtros.
 
 ---
 
-### 1. Migration — Novos campos na tabela `tasks`
+### 1. Migration
 
+**Novos campos em `tasks`:**
 ```sql
 ALTER TABLE tasks
-  ADD COLUMN approved_by text NOT NULL DEFAULT '',
-  ADD COLUMN approved_at timestamptz DEFAULT NULL,
-  ADD COLUMN rejection_reason text NOT NULL DEFAULT '',
-  ADD COLUMN rejection_count integer NOT NULL DEFAULT 0;
+  ADD COLUMN started_at timestamptz DEFAULT NULL,
+  ADD COLUMN completed_at timestamptz DEFAULT NULL,
+  ADD COLUMN tempo_real_minutos numeric DEFAULT NULL;
 ```
 
-O campo `approval_status` ja existe (text, default 'pending').
+**Nova tabela `task_pauses`:**
+```sql
+CREATE TABLE task_pauses (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  task_id uuid NOT NULL,
+  pause_start timestamptz NOT NULL DEFAULT now(),
+  pause_end timestamptz DEFAULT NULL,
+  reason text NOT NULL DEFAULT 'outro',
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+ALTER TABLE task_pauses ENABLE ROW LEVEL SECURITY;
+-- authenticated full CRUD policies
+```
 
 ---
 
 ### 2. Tipos e Mapeamento
 
-**`src/types/index.ts`** — Adicionar a `Task`: `approvedBy`, `approvedAt`, `rejectionReason`, `rejectionCount`.
+**`src/types/index.ts`** — Adicionar a `Task`: `startedAt`, `completedAt`, `tempoRealMinutos`.
 
-**`src/types/database.ts`** — Expandir `mapDbTask` com os 4 novos campos.
+**`src/types/database.ts`** — Expandir `mapDbTask` com os 3 novos campos.
 
-**`src/hooks/useTasksQuery.ts`** — Adicionar ao keyMap de `useUpdateTask` e ao insert de `useAddTask`: `approvedBy → approved_by`, `approvedAt → approved_at`, `rejectionReason → rejection_reason`, `rejectionCount → rejection_count`.
-
----
-
-### 3. Logica de Fluxo no Kanban (`TasksPage.tsx`)
-
-No `handleDrop`:
-- Se o colaborador arrasta para `aguardando_aprovacao`: permitir, setar `approval_status = 'pending'`.
-- Se arrasta para `done` diretamente: redirecionar para `aguardando_aprovacao` com toast informativo ("Demandas precisam de aprovacao").
-- Manter bloqueio de dependencias existente.
-
-No `TaskCard`:
-- Se `task.status === 'aguardando_aprovacao'`: exibir botoes Aprovar (verde) e Reprovar (vermelho) direto no card (visivel para coordenadores/managers/admins).
-- Se `task.rejectionReason` e `task.status !== 'done'`: banner vermelho com motivo da reprovacao.
-- Badge de retrabalho se `rejectionCount > 0`.
+**`src/hooks/useTasksQuery.ts`** — Adicionar ao keyMap: `startedAt → started_at`, `completedAt → completed_at`, `tempoRealMinutos → tempo_real_minutos`. No insert tambem.
 
 ---
 
-### 4. Aprovar/Reprovar no TaskDetailModal
+### 3. Hook `useTaskPausesQuery.ts` (novo)
 
-Adicionar secao "Aprovacao" visivel quando `task.status === 'aguardando_aprovacao'`:
-
-**Aprovar**:
-- Input obrigatorio: nota 0-10 (`notaEntrega`)
-- Comentario opcional
-- Ao confirmar: `status → done`, `approval_status → approved`, `approvedBy → currentUser.name`, `approvedAt → now()`, `notaEntrega → nota`
-
-**Reprovar**:
-- Input obrigatorio: motivo da reprovacao (`rejectionReason`)
-- Ao confirmar: `status → in_progress`, `approval_status → rejected`, `rejectionReason → motivo`, `rejectionCount += 1`
-
-Exibir historico de reprovacoes (rejectionCount) e ultimo motivo quando existir.
+- Query todas as pausas agrupadas por task_id
+- Mutation para inserir pausa (pause_start) e finalizar pausa (update pause_end)
+- Funcao utilitaria `calcTotalPauseMinutes(pauses)`: soma de todas as pausas finalizadas
 
 ---
 
-### 5. Secao de Entrega no TaskDetailModal
+### 4. Timer automatico no Kanban (`TasksPage.tsx`)
 
-Quando `task.status` e `in_progress` ou `revisao`, exibir secao para o colaborador preencher antes de submeter:
-- `linkEntrega` (URL)
-- `printEntrega` (URL)
-- `observacaoEntrega` (texto)
-- Botao "Enviar para Aprovacao" que move para `aguardando_aprovacao`
+No `handleDrop`, adicionar logica baseada na transicao de status:
+
+- **→ in_progress** (primeira vez): setar `startedAt = now()` se ainda nao tem. Finalizar qualquer pausa aberta.
+- **→ waiting_client / bloqueada**: inserir nova pausa (pause_start = now, reason = status).
+- **→ in_progress** (voltando de pausa): finalizar pausa aberta (pause_end = now).
+- **→ aguardando_aprovacao / done**: setar `completedAt = now()`. Calcular `tempoRealMinutos = (completedAt - startedAt) - totalPausas` e salvar.
 
 ---
 
-### 6. Destaque visual da coluna "Aguardando Aprovacao"
+### 5. Reestruturar ProductivityPage
 
-No Kanban, a coluna `aguardando_aprovacao` recebe `border-b-amber-500` e icone de relogio no header.
+**Metricas por colaborador** (calculadas com `useMemo` a partir de tasks + pauses + client_platforms):
+- Tarefas concluidas (semana/mes com filtro de periodo)
+- Tarefas atrasadas, em andamento, carga atual
+- Pontualidade (% entregue antes do deadline)
+- Tempo medio de resolucao (media de `tempoRealMinutos`)
+- Nota media de entrega (media de `notaEntrega` das tasks done)
+- Taxa de retrabalho (`sum(rejectionCount) / total entregas`)
+- Plataformas sob responsabilidade e atrasadas (via `useClientPlatformsQuery`)
+
+**Ranking ponderado:**
+```
+score = concluidas*1 + noPrazo*2 + passagens*3 + destravadas*2 + reducaoAtraso*1 + notaMedia*2 + (1-retrabalho)*1
+```
+
+**Semaforos visuais:**
+- Carga: verde <5, amarelo 5-8, vermelho >8
+- Atraso: verde 0, amarelo 1-2, vermelho 3+
+
+**Graficos:**
+- Barras: desempenho por colaborador (concluidas + no prazo)
+- Radar: habilidades comparativas (pontualidade, nota, retrabalho, velocidade)
+- Linha: evolucao semanal (agrupar tasks por semana de conclusao)
+
+**Filtros:**
+- Periodo (semana/mes/custom)
+- Squad
+- Colaborador
+- Plataforma
 
 ---
 
 ### Arquivos
 
-- `supabase/migrations/` — nova migration (4 colunas)
+- `supabase/migrations/` — nova migration (ALTER tasks + CREATE task_pauses)
 - `src/types/index.ts` — expandir Task
 - `src/types/database.ts` — expandir mapDbTask
 - `src/hooks/useTasksQuery.ts` — novos campos no keyMap
-- `src/components/TaskDetailModal.tsx` — secao aprovacao + entrega
-- `src/pages/TasksPage.tsx` — logica de fluxo no drop + botoes no card + destaque visual
+- `src/hooks/useTaskPausesQuery.ts` (novo) — CRUD de pausas
+- `src/pages/TasksPage.tsx` — logica de timer no handleDrop
+- `src/pages/ProductivityPage.tsx` — reescrita completa com metricas reais
 
 ### Ordem
 
 1. Migration
 2. Types + database mapper
-3. Hooks
-4. TaskDetailModal (aprovacao + entrega)
-5. TasksPage (fluxo + cards + visual)
+3. Hooks (tasks + pausas)
+4. TasksPage (timer no handleDrop)
+5. ProductivityPage (metricas + ranking + graficos + filtros)
 
