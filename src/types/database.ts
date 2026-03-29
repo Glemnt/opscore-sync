@@ -132,7 +132,8 @@ export function mapDbChecklistItem(row: DbChecklistItem): ChecklistItem {
 export function mapDbTask(
   row: DbTask,
   subtasks: DbSubtask[] = [],
-  chatNotes: DbTaskChatNote[] = []
+  chatNotes: DbTaskChatNote[] = [],
+  dependsOn: string[] = []
 ): Task {
   return {
     id: row.id,
@@ -155,6 +156,18 @@ export function mapDbTask(
     motivoAtraso: (row as any).motivo_atraso ?? '',
     subtasks: subtasks.map(mapDbSubtask),
     chatNotes: chatNotes.map(mapDbChatNote),
+    platformId: (row as any).platform_id ?? undefined,
+    etapa: (row as any).etapa ?? '',
+    bloqueiaPassagem: (row as any).bloqueia_passagem ?? false,
+    dependeCliente: (row as any).depende_cliente ?? false,
+    aguardandoCliente: (row as any).aguardando_cliente ?? false,
+    origemTarefa: (row as any).origem_tarefa ?? 'manual',
+    linkEntrega: (row as any).link_entrega ?? '',
+    printEntrega: (row as any).print_entrega ?? '',
+    observacaoEntrega: (row as any).observacao_entrega ?? '',
+    notaEntrega: (row as any).nota_entrega != null ? Number((row as any).nota_entrega) : undefined,
+    approvalStatus: (row as any).approval_status ?? 'pending',
+    dependsOn,
   };
 }
 
