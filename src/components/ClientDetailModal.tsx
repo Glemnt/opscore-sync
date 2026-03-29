@@ -694,28 +694,8 @@ export function ClientDetailModal({ client, open, onClose }: ClientDetailModalPr
                 />
               )}
 
-              {/* Health color - read only */}
-              <div className="mt-3">
-                <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1.5">Saúde do Cliente</p>
-                <div className="flex items-center gap-2">
-                  {([
-                    { value: 'green' as const, color: 'bg-success', label: 'Saudável' },
-                    { value: 'yellow' as const, color: 'bg-warning', label: 'Atenção' },
-                    { value: 'red' as const, color: 'bg-destructive', label: 'Crítico' },
-                    { value: 'white' as const, color: 'bg-border', label: 'Não avaliado' },
-                  ]).map((opt) => (
-                    <div
-                      key={opt.value}
-                      title={opt.label}
-                      className={cn(
-                        'w-6 h-6 rounded-full border-2',
-                        opt.color,
-                        client.healthColor === opt.value ? 'border-foreground scale-110 ring-2 ring-primary/30' : 'border-border opacity-40'
-                      )}
-                    />
-                  ))}
-                </div>
-              </div>
+              {/* Health Score Section */}
+              <HealthScoreSection client={client} />
             </>
           )}
 
