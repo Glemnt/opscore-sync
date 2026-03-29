@@ -9,7 +9,8 @@ import {
   LogOut,
   Shield,
   Layers,
-  ClipboardCheck } from
+  ClipboardCheck,
+  AlertTriangle } from
 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
@@ -23,6 +24,10 @@ const navItems = [
 { id: 'productivity', label: 'Produtividade', icon: BarChart3 },
 { id: 'reports', label: 'Relatórios', icon: FileText },
 { id: 'onboarding-checklist', label: 'Checklist Onboarding', icon: ClipboardCheck }];
+
+const managerNavItems = [
+{ id: 'action-plans', label: 'Plano de Ação', icon: AlertTriangle },
+];
 
 
 interface AppSidebarProps {
