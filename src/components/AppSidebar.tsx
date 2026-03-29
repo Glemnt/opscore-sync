@@ -11,7 +11,8 @@ import {
   Layers,
   ClipboardCheck,
   AlertTriangle,
-  Headset } from
+  Headset,
+  Gauge } from
 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
@@ -28,6 +29,7 @@ const navItems = [
 
 const managerNavItems = [
 { id: 'action-plans', label: 'Plano de Ação', icon: AlertTriangle },
+{ id: 'capacity', label: 'Capacidade', icon: Gauge },
 { id: 'coordenador-dashboard', label: 'Painel Coordenador', icon: Shield },
 ];
 

@@ -11,6 +11,7 @@ import { SettingsPage } from '@/pages/SettingsPage';
 import { PlatformCatalogPage } from '@/pages/PlatformCatalogPage';
 import { OnboardingChecklistPage } from '@/pages/OnboardingChecklistPage';
 import { ActionPlansPage } from '@/pages/ActionPlansPage';
+import { CapacityPage } from '@/pages/CapacityPage';
 import { CsDashboardPage } from '@/pages/CsDashboardPage';
 import { CoordinatorDashboardPage } from '@/pages/CoordinatorDashboardPage';
 import { LoginPage } from '@/pages/LoginPage';
@@ -53,6 +54,7 @@ function AppContent() {
       case 'onboarding-checklist': return <OnboardingChecklistPage />;
       case 'cs-dashboard': return (currentUser?.role === 'cs' || currentUser?.role === 'gestao' || (currentUser?.accessLevel ?? 0) >= 2) ? <CsDashboardPage /> : <DashboardPage />;
       case 'action-plans': return (currentUser?.accessLevel ?? 0) >= 2 ? <ActionPlansPage /> : <DashboardPage />;
+      case 'capacity': return (currentUser?.accessLevel ?? 0) >= 2 ? <CapacityPage /> : <DashboardPage />;
       case 'coordenador-dashboard': return (currentUser?.accessLevel ?? 0) >= 2 ? <CoordinatorDashboardPage /> : <DashboardPage />;
       case 'platform-catalog': return currentUser?.accessLevel === 3 ? <PlatformCatalogPage /> : <DashboardPage />;
       case 'settings': return currentUser?.accessLevel === 3 ? <SettingsPage /> : <DashboardPage />;
