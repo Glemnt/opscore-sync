@@ -167,6 +167,10 @@ export function mapDbTask(
     observacaoEntrega: (row as any).observacao_entrega ?? '',
     notaEntrega: (row as any).nota_entrega != null ? Number((row as any).nota_entrega) : undefined,
     approvalStatus: (row as any).approval_status ?? 'pending',
+    approvedBy: (row as any).approved_by ?? '',
+    approvedAt: (row as any).approved_at ?? undefined,
+    rejectionReason: (row as any).rejection_reason ?? '',
+    rejectionCount: (row as any).rejection_count ?? 0,
     dependsOn,
   };
 }
