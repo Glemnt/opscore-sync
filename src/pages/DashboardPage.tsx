@@ -330,6 +330,17 @@ export function DashboardPage() {
 
   const churnRiskClients = activeClients.filter(c => c.riscoChurn && c.riscoChurn !== 'baixo');
 
+  // NPS Consolidated
+  const npsStats = useMemo(() => {
+    const scored = allNpsResponses.filter(r => r.score != null);
+    if (scored.length === 0) return { score: 0, promoters: 0, neutrals: 0, detractors: 0, total: 0 };
+    const promoters = scored.filter(r => r.score! >= 9).length;
+    const detractors = scored.filter(r => r.score! <= 6).length;
+    const neutrals = scored.length - promoters - detractors;
+    const npsScore = Math.round(((promoters - detractors) / scored.length) * 100);
+    return { score: npsScore, promoters, neutrals, detractors, total: scored.length };
+  }, [allNpsResponses]);
+
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <div className="p-6 animate-fade-in space-y-6">
