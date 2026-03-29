@@ -520,10 +520,10 @@ function TaskCard({ task, isLate, onClick, canDelete, onDelete }: { task: Task; 
         <p className="text-sm font-semibold text-foreground line-clamp-2 leading-snug flex-1">{task.title}</p>
         <div className="flex items-center gap-1">
           {task.bloqueiaPassagem && (
-            <Lock className="w-3 h-3 text-destructive" title="Bloqueia passagem" />
+            <span title="Bloqueia passagem"><Lock className="w-3 h-3 text-destructive" /></span>
           )}
           {hasDeps && (
-            <Link className="w-3 h-3 text-warning" title="Tem dependências" />
+            <span title="Tem dependências"><Link className="w-3 h-3 text-warning" /></span>
           )}
           <span className={cn('text-[10px] px-1.5 py-0.5 rounded border font-bold', pBadge.className)}>
             {pBadge.label}
