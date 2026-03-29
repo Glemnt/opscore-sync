@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Workflow } from 'lucide-react';
+import { Workflow, AlertTriangle } from 'lucide-react';
 import { useClientPlatformsQuery } from '@/hooks/useClientPlatformsQuery';
 import { Plus, Search, Building2, Calendar, User, X, Users, Circle, ShoppingBag, Settings2, Trash2, Phone, Mail, FileText } from 'lucide-react';
 import { mockAnalysisData } from '@/components/ClientAIAnalysis';
@@ -321,15 +321,12 @@ export function ClientsPage() {
 }
 
 function ClientCard({ client, statusMap, clientFlows, onClick, isAdmin }: { client: Client; statusMap: Record<string, { label: string; className: string }>; clientFlows: { flowId: string; flowName: string }[]; onClick: () => void; isAdmin: boolean }) {
-  const statusConf = statusMap[client.status] ?? { label: client.status, className: 'bg-muted text-muted-foreground border-border' };
   const { squads } = useSquads();
   const { tasks } = useTasks();
   const { data: platforms = [] } = usePlatformsQuery();
   const { data: allClientPlatforms = [] } = useClientPlatformsQuery();
   const squad = squads.find((s) => s.id === client.squadId);
   const pendingTasks = tasks.filter((t) => t.clientId === client.id && t.status !== 'done');
-  const analysis = mockAnalysisData[client.id];
-  const nps = analysis?.satisfactionScore;
   const clientCPs = allClientPlatforms.filter(cp => cp.clientId === client.id);
 
   const healthColorMap: Record<string, string> = {
@@ -338,6 +335,39 @@ function ClientCard({ client, statusMap, clientFlows, onClick, isAdmin }: { clie
     red: 'bg-destructive',
     white: 'bg-border',
   };
+
+  const faseMacroLabels: Record<string, string> = {
+    implementacao: 'Implementação',
+    performance: 'Performance',
+    escala: 'Escala',
+    pausado: 'Pausado',
+    cancelado: 'Cancelado',
+    inativo: 'Inativo',
+  };
+
+  const faseMacroColors: Record<string, string> = {
+    implementacao: 'bg-info-light text-info border-info/20',
+    performance: 'bg-success-light text-success border-success/20',
+    escala: 'bg-purple-100 text-purple-700 border-purple-200',
+    pausado: 'bg-warning-light text-warning border-warning/20',
+    cancelado: 'bg-destructive/10 text-destructive border-destructive/20',
+    inativo: 'bg-muted text-muted-foreground border-border',
+  };
+
+  const riscoColors: Record<string, string> = {
+    baixo: 'text-success',
+    medio: 'text-warning',
+    alto: 'text-orange-500',
+    critico: 'text-destructive',
+  };
+
+  const subStatusLabels: Record<string, string> = {
+    onboard: 'Onboard',
+    implementacao_ativa: 'Impl. Ativa',
+    validacao_final: 'Validação',
+  };
+
+  const fase = client.faseMacro ?? 'implementacao';
 
   return (
     <div
@@ -357,10 +387,19 @@ function ClientCard({ client, statusMap, clientFlows, onClick, isAdmin }: { clie
             <p className="text-xs text-muted-foreground">{client.segment}</p>
           </div>
         </div>
-        <StatusBadge className={statusConf.className}>{statusConf.label}</StatusBadge>
+        <div className="flex items-center gap-1.5">
+          <StatusBadge className={faseMacroColors[fase] ?? 'bg-muted text-muted-foreground border-border'}>
+            {faseMacroLabels[fase] ?? fase}
+          </StatusBadge>
+          {client.subStatus && fase === 'implementacao' && (
+            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground font-medium">
+              {subStatusLabels[client.subStatus] ?? client.subStatus}
+            </span>
+          )}
+        </div>
       </div>
 
-      {/* Context line: Squad + Platforms + Health */}
+      {/* Context line: Squad + Platforms + Health + Priority + Churn */}
       <div className="flex flex-wrap items-center gap-1.5 mb-2">
         {squad && (
           <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground bg-muted/60 rounded-md px-2 py-1 font-medium">
@@ -377,6 +416,17 @@ function ClientCard({ client, statusMap, clientFlows, onClick, isAdmin }: { clie
             </span>
           );
         })}
+        {client.prioridadeGeral && (
+          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary font-bold">
+            {client.prioridadeGeral}
+          </span>
+        )}
+        {client.riscoChurn && client.riscoChurn !== 'baixo' && (
+          <span className={cn('inline-flex items-center gap-0.5 text-[10px] font-medium', riscoColors[client.riscoChurn])}>
+            <AlertTriangle className="w-3 h-3" />
+            {client.riscoChurn === 'critico' ? 'Crítico' : client.riscoChurn === 'alto' ? 'Alto' : 'Médio'}
+          </span>
+        )}
         <div
           className={cn(
             'w-3.5 h-3.5 rounded-full border border-border shrink-0 ml-auto',
@@ -386,7 +436,7 @@ function ClientCard({ client, statusMap, clientFlows, onClick, isAdmin }: { clie
         />
       </div>
 
-      {/* Metadata line: Responsible + Entry Date */}
+      {/* Metadata line */}
       <div className="flex flex-wrap items-center gap-1.5 mb-3">
         <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground bg-muted/60 rounded-md px-2 py-1 font-medium">
           <Calendar className="w-3 h-3 shrink-0" />
@@ -402,12 +452,6 @@ function ClientCard({ client, statusMap, clientFlows, onClick, isAdmin }: { clie
           <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground bg-muted/60 rounded-md px-2 py-1 font-medium">
             <Mail className="w-3 h-3 shrink-0" />
             {client.email}
-          </span>
-        )}
-        {client.cnpj && (
-          <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground bg-muted/60 rounded-md px-2 py-1 font-medium">
-            <FileText className="w-3 h-3 shrink-0" />
-            {client.cnpj}
           </span>
         )}
       </div>
@@ -437,12 +481,12 @@ function ClientCard({ client, statusMap, clientFlows, onClick, isAdmin }: { clie
           )}
           <div className="text-center">
             <p className="text-sm font-bold text-foreground">
-              {client.contractDurationMonths ? `${client.contractDurationMonths}m` : '—'}
+              {client.platforms?.length ?? 0}
             </p>
-            <p className="text-[10px] text-muted-foreground">Contrato</p>
+            <p className="text-[10px] text-muted-foreground">Plataformas</p>
           </div>
           <div className="text-center">
-            <p className="text-sm font-bold text-foreground">{nps !== undefined ? nps.toFixed(1) : '—'}</p>
+            <p className="text-sm font-bold text-foreground">{client.npsUltimo !== undefined && client.npsUltimo !== null ? client.npsUltimo.toFixed(1) : '—'}</p>
             <p className="text-[10px] text-muted-foreground">NPS</p>
           </div>
         </div>
