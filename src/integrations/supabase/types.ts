@@ -1214,6 +1214,8 @@ export type Database = {
         Row: {
           aguardando_cliente: boolean
           approval_status: string
+          approved_at: string | null
+          approved_by: string
           bloqueia_passagem: boolean
           client_id: string
           client_name: string
@@ -1237,6 +1239,8 @@ export type Database = {
           project_id: string | null
           project_name: string | null
           real_time: number | null
+          rejection_count: number
+          rejection_reason: string
           responsible: string
           status: string
           title: string
@@ -1246,6 +1250,8 @@ export type Database = {
         Insert: {
           aguardando_cliente?: boolean
           approval_status?: string
+          approved_at?: string | null
+          approved_by?: string
           bloqueia_passagem?: boolean
           client_id: string
           client_name?: string
@@ -1269,6 +1275,8 @@ export type Database = {
           project_id?: string | null
           project_name?: string | null
           real_time?: number | null
+          rejection_count?: number
+          rejection_reason?: string
           responsible?: string
           status?: string
           title: string
@@ -1278,6 +1286,8 @@ export type Database = {
         Update: {
           aguardando_cliente?: boolean
           approval_status?: string
+          approved_at?: string | null
+          approved_by?: string
           bloqueia_passagem?: boolean
           client_id?: string
           client_name?: string
@@ -1301,6 +1311,8 @@ export type Database = {
           project_id?: string | null
           project_name?: string | null
           real_time?: number | null
+          rejection_count?: number
+          rejection_reason?: string
           responsible?: string
           status?: string
           title?: string

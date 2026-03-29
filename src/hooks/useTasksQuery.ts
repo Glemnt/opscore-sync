@@ -77,6 +77,10 @@ export function useAddTask() {
         observacao_entrega: task.observacaoEntrega ?? '',
         nota_entrega: task.notaEntrega ?? null,
         approval_status: task.approvalStatus ?? 'pending',
+        approved_by: task.approvedBy ?? '',
+        approved_at: task.approvedAt ?? null,
+        rejection_reason: task.rejectionReason ?? '',
+        rejection_count: task.rejectionCount ?? 0,
       } as any);
       if (error) throw error;
       // Insert subtasks if any
@@ -124,6 +128,10 @@ export function useUpdateTask() {
         linkEntrega: 'link_entrega', printEntrega: 'print_entrega',
         observacaoEntrega: 'observacao_entrega', notaEntrega: 'nota_entrega',
         approvalStatus: 'approval_status',
+        approvedBy: 'approved_by',
+        approvedAt: 'approved_at',
+        rejectionReason: 'rejection_reason',
+        rejectionCount: 'rejection_count',
       };
       for (const [k, v] of Object.entries(updates)) {
         if (k === 'subtasks' || k === 'chatNotes' || k === 'dependsOn') continue;

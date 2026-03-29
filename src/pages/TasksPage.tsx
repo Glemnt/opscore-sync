@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Plus, Search, Clock, MessageSquare, AlertTriangle, Trash2, Workflow, ChevronDown, ShoppingBag, X, CalendarDays, Lock, Link } from 'lucide-react';
+import { Plus, Search, Clock, MessageSquare, AlertTriangle, Trash2, Workflow, ChevronDown, ShoppingBag, X, CalendarDays, Lock, Link, CheckCircle, XCircle, RotateCcw } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTasks } from '@/contexts/TasksContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -89,8 +89,9 @@ export function TasksPage() {
     const taskId = e.dataTransfer.getData('text/plain');
     if (taskId) {
       const task = allTasks.find(t => t.id === taskId);
-      // Check dependencies when moving from backlog to in_progress
-      if (task && colStatus !== 'backlog' && colStatus !== 'done' && task.dependsOn?.length) {
+      if (!task) return;
+      // Check dependencies when moving from backlog
+      if (colStatus !== 'backlog' && task.dependsOn?.length) {
         const unmetDeps = task.dependsOn.filter(depId => {
           const depTask = allTasks.find(t => t.id === depId);
           return !depTask || depTask.status !== 'done' || depTask.approvalStatus !== 'approved';
@@ -100,6 +101,17 @@ export function TasksPage() {
           toast.error(`Dependências pendentes: ${depNames}`);
           return;
         }
+      }
+      // Redirect direct drop to 'done' → 'aguardando_aprovacao'
+      if (colStatus === 'done' && task.approvalStatus !== 'approved') {
+        toast.info('Demandas precisam de aprovação antes de serem concluídas');
+        updateTask(taskId, { status: 'aguardando_aprovacao' as TaskStatus, approvalStatus: 'pending' } as any);
+        return;
+      }
+      // If moving to aguardando_aprovacao, set approval_status pending
+      if (colStatus === 'aguardando_aprovacao') {
+        updateTask(taskId, { status: colStatus, approvalStatus: 'pending' } as any);
+        return;
       }
       updateTask(taskId, { status: colStatus });
     }
@@ -346,7 +358,8 @@ export function TasksPage() {
                 col.status === 'backlog' ? 'border-b-slate-300' :
                   col.status === 'in_progress' ? 'border-b-info' :
                     col.status === 'waiting_client' ? 'border-b-warning' :
-                      col.status === 'done' ? 'border-b-success' : 'border-b-primary/40'
+                      col.status === 'aguardando_aprovacao' ? 'border-b-amber-500' :
+                        col.status === 'done' ? 'border-b-success' : 'border-b-primary/40'
               )}>
                 {editingCol === col.status ? (
                   <EditableColInput
@@ -400,6 +413,33 @@ export function TasksPage() {
                       onClick={() => setSelectedTask(task)}
                       canDelete={canDel}
                       onDelete={() => deleteTask(task.id)}
+                      allTasks={allTasks}
+                      onApprove={(id) => {
+                        const nota = prompt('Nota de 0-10:');
+                        if (nota == null) return;
+                        const n = Number(nota);
+                        if (isNaN(n) || n < 0 || n > 10) { toast.error('Nota inválida'); return; }
+                        updateTask(id, {
+                          status: 'done' as TaskStatus,
+                          approvalStatus: 'approved',
+                          approvedBy: currentUser?.name ?? 'Coordenador',
+                          approvedAt: new Date().toISOString(),
+                          notaEntrega: n,
+                        } as any);
+                        toast.success('Demanda aprovada! ✅');
+                      }}
+                      onReject={(id) => {
+                        const reason = prompt('Motivo da reprovação:');
+                        if (!reason?.trim()) { toast.error('Informe o motivo'); return; }
+                        const t = allTasks.find(x => x.id === id);
+                        updateTask(id, {
+                          status: 'in_progress' as TaskStatus,
+                          approvalStatus: 'rejected',
+                          rejectionReason: reason.trim(),
+                          rejectionCount: ((t?.rejectionCount ?? 0) + 1),
+                        } as any);
+                        toast.info('Demanda reprovada e devolvida');
+                      }}
                     />
                   );
                 })}
@@ -474,7 +514,10 @@ export function TasksPage() {
   );
 }
 
-function TaskCard({ task, isLate, onClick, canDelete, onDelete }: { task: Task; isLate: boolean; onClick: () => void; canDelete: boolean; onDelete: () => void }) {
+function TaskCard({ task, isLate, onClick, canDelete, onDelete, allTasks, onApprove, onReject }: { 
+  task: Task; isLate: boolean; onClick: () => void; canDelete: boolean; onDelete: () => void;
+  allTasks?: Task[]; onApprove?: (taskId: string) => void; onReject?: (taskId: string) => void;
+}) {
   const taskTypeMap = useTaskTypesMap();
   const typeConf = taskTypeMap[task.type] ?? { label: task.type, color: 'bg-gray-100 text-gray-700' };
   const { data: platforms = [] } = usePlatformsQuery();
@@ -554,10 +597,41 @@ function TaskCard({ task, isLate, onClick, canDelete, onDelete }: { task: Task; 
         </div>
       )}
 
+      {/* Rejection banner */}
+      {task.rejectionReason && task.status !== 'done' && (
+        <div className="flex items-center gap-1.5 text-xs bg-destructive/10 text-destructive rounded-lg p-2 mb-3 border border-destructive/20">
+          <RotateCcw className="w-3 h-3 shrink-0" />
+          <span className="line-clamp-2">Reprovada: {task.rejectionReason}</span>
+          {(task.rejectionCount ?? 0) > 0 && (
+            <span className="ml-auto text-[10px] font-bold whitespace-nowrap">{task.rejectionCount}x</span>
+          )}
+        </div>
+      )}
+
       {task.comments && (
         <div className="flex items-start gap-1.5 text-xs text-muted-foreground bg-muted/50 rounded-lg p-2 mb-3">
           <MessageSquare className="w-3 h-3 mt-0.5 shrink-0" />
           <span className="line-clamp-2">{task.comments}</span>
+        </div>
+      )}
+
+      {/* Quick approve/reject buttons on aguardando_aprovacao cards */}
+      {task.status === 'aguardando_aprovacao' && (
+        <div className="flex gap-1.5 mb-3">
+          <button
+            onClick={(e) => { e.stopPropagation(); onApprove?.(task.id); }}
+            className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-xs font-medium rounded-lg bg-emerald-100 text-emerald-700 hover:bg-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:hover:bg-emerald-900/50 transition-colors"
+          >
+            <CheckCircle className="w-3 h-3" />
+            Aprovar
+          </button>
+          <button
+            onClick={(e) => { e.stopPropagation(); onReject?.(task.id); }}
+            className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-xs font-medium rounded-lg bg-destructive/10 text-destructive hover:bg-destructive/20 transition-colors"
+          >
+            <XCircle className="w-3 h-3" />
+            Reprovar
+          </button>
         </div>
       )}
 

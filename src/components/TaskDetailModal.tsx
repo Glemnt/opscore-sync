@@ -430,8 +430,18 @@ export function TaskDetailModal({ task, open, onOpenChange }: TaskDetailModalPro
             </div>
           </div>
 
-          {/* Entrega — visible for revisao/aguardando_aprovacao/done */}
-          {(task.status === 'revisao' || task.status === 'aguardando_aprovacao' || task.status === 'done') && (
+          {/* Rejection banner */}
+          {task.rejectionReason && task.status !== 'done' && (
+            <div className="bg-destructive/10 border border-destructive/30 rounded-xl p-3 space-y-1">
+              <div className="flex items-center gap-2 text-sm font-semibold text-destructive">
+                ❌ Reprovada {task.rejectionCount && task.rejectionCount > 0 ? `(${task.rejectionCount}x retrabalho)` : ''}
+              </div>
+              <p className="text-sm text-destructive/80">{task.rejectionReason}</p>
+            </div>
+          )}
+
+          {/* Entrega — visible for in_progress/revisao/aguardando_aprovacao/done */}
+          {(task.status === 'in_progress' || task.status === 'revisao' || task.status === 'aguardando_aprovacao' || task.status === 'done') && (
             <div className="space-y-3">
               <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
                 📦 Entrega
@@ -440,7 +450,7 @@ export function TaskDetailModal({ task, open, onOpenChange }: TaskDetailModalPro
                 <div className="space-y-1">
                   <label className="text-xs text-muted-foreground">Link de entrega</label>
                   <Input
-                    value={(task as any).linkEntrega ?? ''}
+                    value={task.linkEntrega ?? ''}
                     onChange={(e) => {
                       supabase.from('tasks').update({ link_entrega: e.target.value } as any).eq('id', task.id)
                         .then(({ error }) => {
@@ -449,12 +459,13 @@ export function TaskDetailModal({ task, open, onOpenChange }: TaskDetailModalPro
                     }}
                     placeholder="https://..."
                     className="h-8 text-sm"
+                    readOnly={task.status === 'done'}
                   />
                 </div>
                 <div className="space-y-1">
                   <label className="text-xs text-muted-foreground">Print de entrega (URL)</label>
                   <Input
-                    value={(task as any).printEntrega ?? ''}
+                    value={task.printEntrega ?? ''}
                     onChange={(e) => {
                       supabase.from('tasks').update({ print_entrega: e.target.value } as any).eq('id', task.id)
                         .then(({ error }) => {
@@ -463,12 +474,13 @@ export function TaskDetailModal({ task, open, onOpenChange }: TaskDetailModalPro
                     }}
                     placeholder="URL da imagem..."
                     className="h-8 text-sm"
+                    readOnly={task.status === 'done'}
                   />
                 </div>
                 <div className="space-y-1">
                   <label className="text-xs text-muted-foreground">Observação de entrega</label>
                   <Input
-                    value={(task as any).observacaoEntrega ?? ''}
+                    value={task.observacaoEntrega ?? ''}
                     onChange={(e) => {
                       supabase.from('tasks').update({ observacao_entrega: e.target.value } as any).eq('id', task.id)
                         .then(({ error }) => {
@@ -477,15 +489,38 @@ export function TaskDetailModal({ task, open, onOpenChange }: TaskDetailModalPro
                     }}
                     placeholder="Comentário sobre a entrega..."
                     className="h-8 text-sm"
+                    readOnly={task.status === 'done'}
                   />
                 </div>
+                {(task.status === 'in_progress' || task.status === 'revisao') && (
+                  <Button
+                    onClick={() => {
+                      updateTask(task.id, { status: 'aguardando_aprovacao', approvalStatus: 'pending' } as any);
+                      toast.success('Demanda enviada para aprovação');
+                    }}
+                    className="w-full bg-amber-500 hover:bg-amber-600 text-white"
+                  >
+                    📤 Enviar para Aprovação
+                  </Button>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Aprovação — visible when aguardando_aprovacao */}
+          {task.status === 'aguardando_aprovacao' && (
+            <div className="space-y-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4">
+              <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                ⏳ Aprovação do Coordenador
+              </h4>
+              <div className="space-y-3">
                 <div className="space-y-1">
-                  <label className="text-xs text-muted-foreground">Nota (0-10)</label>
+                  <label className="text-xs text-muted-foreground">Nota (0-10) *</label>
                   <Input
                     type="number"
                     min={0}
                     max={10}
-                    value={(task as any).notaEntrega ?? ''}
+                    value={task.notaEntrega ?? ''}
                     onChange={(e) => {
                       const val = e.target.value ? Number(e.target.value) : null;
                       supabase.from('tasks').update({ nota_entrega: val } as any).eq('id', task.id)
@@ -496,7 +531,69 @@ export function TaskDetailModal({ task, open, onOpenChange }: TaskDetailModalPro
                     className="h-8 text-sm w-24"
                   />
                 </div>
+                <div className="flex gap-2">
+                  <Button
+                    onClick={() => {
+                      if (task.notaEntrega == null || task.notaEntrega < 0 || task.notaEntrega > 10) {
+                        toast.error('Informe uma nota de 0 a 10 para aprovar');
+                        return;
+                      }
+                      updateTask(task.id, {
+                        status: 'done',
+                        approvalStatus: 'approved',
+                        approvedBy: currentUser?.name ?? 'Coordenador',
+                        approvedAt: new Date().toISOString(),
+                      } as any);
+                      toast.success('Demanda aprovada! ✅');
+                    }}
+                    className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white"
+                  >
+                    ✅ Aprovar
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    onClick={() => {
+                      const reason = prompt('Motivo da reprovação:');
+                      if (!reason?.trim()) {
+                        toast.error('Informe o motivo da reprovação');
+                        return;
+                      }
+                      updateTask(task.id, {
+                        status: 'in_progress',
+                        approvalStatus: 'rejected',
+                        rejectionReason: reason.trim(),
+                        rejectionCount: (task.rejectionCount ?? 0) + 1,
+                      } as any);
+                      toast.info('Demanda reprovada e devolvida');
+                    }}
+                    className="flex-1"
+                  >
+                    ❌ Reprovar
+                  </Button>
+                </div>
               </div>
+              {task.notaEntrega != null && task.status === 'done' && (
+                <p className="text-xs text-muted-foreground">Nota: {task.notaEntrega}/10</p>
+              )}
+            </div>
+          )}
+
+          {/* Approval info when done */}
+          {task.status === 'done' && task.approvalStatus === 'approved' && (
+            <div className="bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800 rounded-xl p-3 space-y-1">
+              <div className="flex items-center gap-2 text-sm font-semibold text-emerald-700 dark:text-emerald-400">
+                ✅ Aprovada
+                {task.notaEntrega != null && <span className="text-xs font-normal">· Nota: {task.notaEntrega}/10</span>}
+              </div>
+              {task.approvedBy && (
+                <p className="text-xs text-muted-foreground">
+                  Por {task.approvedBy}
+                  {task.approvedAt && ` · ${new Date(task.approvedAt).toLocaleString('pt-BR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}`}
+                </p>
+              )}
+              {task.rejectionCount && task.rejectionCount > 0 && (
+                <p className="text-xs text-warning">Retrabalho: {task.rejectionCount}x</p>
+              )}
             </div>
           )}
 

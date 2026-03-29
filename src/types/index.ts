@@ -155,6 +155,10 @@ export interface Task {
   observacaoEntrega?: string;
   notaEntrega?: number;
   approvalStatus?: ApprovalStatus;
+  approvedBy?: string;
+  approvedAt?: string;
+  rejectionReason?: string;
+  rejectionCount?: number;
   dependsOn?: string[];
 }
 
