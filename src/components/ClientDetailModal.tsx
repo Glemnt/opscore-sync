@@ -817,6 +817,9 @@ export function ClientDetailModal({ client, open, onClose }: ClientDetailModalPr
           </div>
         )}
 
+        {/* Jornada CS */}
+        <ClientJourneySection clientId={client.id} startDate={client.startDate} />
+
         {/* Timeline */}
         <div className="px-6 py-4">
           <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4">
