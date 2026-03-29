@@ -1,4 +1,11 @@
 export type ClientStatus = 'active' | 'onboarding' | 'implementacao' | 'escala' | 'performance' | 'inativo' | (string & {});
+export type FaseMacro = 'implementacao' | 'performance' | 'escala' | 'pausado' | 'cancelado' | 'inativo';
+export type SubStatus = 'onboard' | 'implementacao_ativa' | 'validacao_final' | null;
+export type PerfilCliente = 'brasileiro' | 'boliviano' | 'outro';
+export type StatusFinanceiro = 'em_dia' | 'atrasado' | 'inadimplente';
+export type RiscoChurn = 'baixo' | 'medio' | 'alto' | 'critico';
+export type TipoCliente = 'seller' | 'lojista';
+export type PrioridadeGeral = 'P1' | 'P2' | 'P3' | 'P4';
 export type ProjectStatus = 'backlog' | 'in_progress' | 'waiting_client' | 'done';
 export type TaskStatus = 'backlog' | 'in_progress' | 'waiting_client' | 'done' | (string & {});
 export type Priority = 'high' | 'medium' | 'low';
@@ -51,6 +58,35 @@ export interface Client {
   email?: string;
   origin?: string;
   contractFile?: { name: string; url: string; uploadedAt: string };
+  // New expanded fields
+  razaoSocial?: string;
+  perfilCliente?: PerfilCliente;
+  endereco?: string;
+  cidade?: string;
+  estado?: string;
+  logisticaPrincipal?: string;
+  nomeProprietario?: string;
+  cpfResponsavel?: string;
+  csResponsavel?: string;
+  manager?: string;
+  auxiliar?: string;
+  assistente?: string;
+  consultorAtual?: string;
+  vendedor?: string;
+  statusFinanceiro?: StatusFinanceiro;
+  multaRescisoria?: number;
+  dataFimPrevista?: string;
+  faseMacro?: FaseMacro;
+  subStatus?: SubStatus;
+  ultimoContato?: string;
+  ultimaRespostaCliente?: string;
+  motivoAtrasoGeral?: string;
+  riscoChurn?: RiscoChurn;
+  tipoCliente?: TipoCliente;
+  dataPrevistaPassagem?: string;
+  dataRealPassagem?: string;
+  prioridadeGeral?: PrioridadeGeral;
+  npsUltimo?: number;
   changeLogs: ChangeLogEntry[];
   chatNotes: ChatNote[];
 }
