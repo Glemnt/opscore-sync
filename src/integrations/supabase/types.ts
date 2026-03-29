@@ -643,6 +643,39 @@ export type Database = {
         }
         Relationships: []
       }
+      kanban_column_configs: {
+        Row: {
+          created_at: string
+          group_key: string
+          group_label: string
+          id: string
+          is_active: boolean
+          key: string
+          label: string
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          group_key: string
+          group_label: string
+          id?: string
+          is_active?: boolean
+          key: string
+          label: string
+          sort_order?: number
+        }
+        Update: {
+          created_at?: string
+          group_key?: string
+          group_label?: string
+          id?: string
+          is_active?: boolean
+          key?: string
+          label?: string
+          sort_order?: number
+        }
+        Relationships: []
+      }
       onboarding_checklist_items: {
         Row: {
           client_id: string

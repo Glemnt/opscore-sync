@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Plus, Search, Calendar, CalendarDays, ChevronDown, CheckCircle2, Circle, ArrowLeft, Users2, X, Pencil, Trash2, MessageSquare, ShoppingBag, LayoutGrid, Zap, ArrowRightLeft, Workflow, CreditCard, Building2, User, Phone, Mail, FileText, UserCircle, Briefcase, ListChecks } from 'lucide-react';
+import { Plus, Search, Calendar, CalendarDays, ChevronDown, ChevronRight, CheckCircle2, Circle, ArrowLeft, Users2, X, Pencil, Trash2, MessageSquare, ShoppingBag, LayoutGrid, Zap, ArrowRightLeft, Workflow, CreditCard, Building2, User, Phone, Mail, FileText, UserCircle, Briefcase, ListChecks, AlertTriangle, Clock } from 'lucide-react';
 import { mockAnalysisData } from '@/components/ClientAIAnalysis';
 import { usePlatformsQuery } from '@/hooks/usePlatformsQuery';
 import { TaskDetailModal } from '@/components/TaskDetailModal';
@@ -35,7 +35,9 @@ import { EditPlatformDialog } from '@/components/EditPlatformDialog';
 import { useTaskTypesMap } from '@/hooks/useTaskTypesQuery';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { PlatformDetailModal } from '@/components/PlatformDetailModal';
-
+import { useKanbanColumnConfigsQuery, useKanbanColumnGroups } from '@/hooks/useKanbanColumnConfigsQuery';
+import { supabase } from '@/integrations/supabase/client';
+import { differenceInCalendarDays } from 'date-fns';
 type KanbanColumn = {id: string;label: string;status: ClientStatus | string;};
 type ProjectKanbanColumn = {id: string;label: string;status: ProjectStatus | string;};
 
@@ -61,6 +63,8 @@ export function ProjectsPage() {
   const clients = getVisibleClients();
   const { data: platformOptions = [] } = usePlatformsQuery();
   const { data: clientPlatformsData = [] } = useClientPlatformsQuery();
+  const { data: kanbanColumns = [] } = useKanbanColumnConfigsQuery();
+  const kanbanGroups = useKanbanColumnGroups();
   const updatePlatformMut = useUpdateClientPlatform();
   const addClientPlatformMut = useAddClientPlatform();
   const deleteClientPlatformMut = useDeleteClientPlatform();
@@ -86,6 +90,9 @@ export function ProjectsPage() {
   const [squadDateFrom, setSquadDateFrom] = useState('');
   const [squadDateTo, setSquadDateTo] = useState('');
   const [view, setView] = useState<'kanban' | 'list'>('kanban');
+  const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
+  const [squadFaseMacroFilter, setSquadFaseMacroFilter] = useState('all');
+  const [squadDiasAtrasoFilter, setSquadDiasAtrasoFilter] = useState('all');
   const [addDemandOpen, setAddDemandOpen] = useState(false);
   const [addColDialogOpen, setAddColDialogOpen] = useState(false);
   const [newColLabel, setNewColLabel] = useState('');
@@ -178,19 +185,26 @@ export function ProjectsPage() {
   // Stable key based on platform phases for orphan detection in Squads kanban
   const platformPhaseKey = clientPlatformsData.map(cp => `${cp.id}:${cp.phase}`).sort().join(',');
 
-  // Sync kanban columns from platform_phase_statuses (the real operational phases)
+  // Sync kanban columns from kanban_column_configs (grouped operational phases)
   useEffect(() => {
-    if (platformPhaseStatuses.length > 0) {
-      const baseCols = [...platformPhaseStatuses]
-        .sort((a, b) => a.sort_order - b.sort_order)
-        .map((s) => ({ id: s.key, label: s.label, status: s.key }));
+    if (kanbanColumns.length > 0) {
+      const baseCols = kanbanColumns.map((c) => ({ id: c.key, label: c.label, status: c.key }));
       const knownKeys = new Set(baseCols.map(c => c.status));
       // Orphan detection: phases present in data but not in config
       const orphanStatuses = [...new Set(clientPlatformsData.map(cp => cp.phase))].filter(s => s && !knownKeys.has(s));
       const extraCols = orphanStatuses.map(s => ({ id: s, label: s.charAt(0).toUpperCase() + s.slice(1).replace(/_/g, ' '), status: s }));
       setClientCols([...baseCols, ...extraCols]);
+    } else if (platformPhaseStatuses.length > 0) {
+      // Fallback to platform_phase_statuses
+      const baseCols = [...platformPhaseStatuses]
+        .sort((a, b) => a.sort_order - b.sort_order)
+        .map((s) => ({ id: s.key, label: s.label, status: s.key }));
+      const knownKeys = new Set(baseCols.map(c => c.status));
+      const orphanStatuses = [...new Set(clientPlatformsData.map(cp => cp.phase))].filter(s => s && !knownKeys.has(s));
+      const extraCols = orphanStatuses.map(s => ({ id: s, label: s.charAt(0).toUpperCase() + s.slice(1).replace(/_/g, ' '), status: s }));
+      setClientCols([...baseCols, ...extraCols]);
     }
-  }, [platformPhaseStatuses, platformPhaseKey]);
+  }, [kanbanColumns, platformPhaseStatuses, platformPhaseKey]);
   const [dragOverClientCol, setDragOverClientCol] = useState<string | null>(null);
 
   // Auto-select first platform when entering client detail view
@@ -429,12 +443,31 @@ export function ProjectsPage() {
     };
 
 
-    const phaseLabels: Record<string, string> = {
-      onboarding: 'On-board',
-      implementacao: 'Implementação',
-      performance: 'Performance',
-      escala: 'Escala',
+    const PLATFORM_COLORS: Record<string, string> = {
+      mercado_livre: 'bg-green-100 text-green-800 border-green-300',
+      shopee: 'bg-orange-100 text-orange-800 border-orange-300',
+      shein: 'bg-purple-100 text-purple-800 border-purple-300',
+      tiktok: 'bg-gray-900 text-white border-gray-700',
     };
+
+    const PRIORITY_BADGES: Record<string, string> = {
+      P1: 'bg-destructive/15 text-destructive border-destructive/30',
+      P2: 'bg-orange-100 text-orange-700 border-orange-300',
+      P3: 'bg-yellow-100 text-yellow-700 border-yellow-300',
+      P4: 'bg-muted text-muted-foreground border-border',
+    };
+
+    const computeDiasEmAtraso = (deadline: string | null): number => {
+      if (!deadline) return 0;
+      const diff = differenceInCalendarDays(new Date(), new Date(deadline));
+      return diff > 0 ? diff : 0;
+    };
+
+    // Build kanban column group lookup
+    const colGroupMap = new Map<string, string>();
+    for (const col of kanbanColumns) {
+      colGroupMap.set(col.key, col.groupKey);
+    }
 
     const uniqueResponsibles = [...new Set(squadPlatformEntries.map((e) => e.cp.responsible).filter(Boolean))];
 
@@ -444,11 +477,20 @@ export function ProjectsPage() {
       const matchHealth = squadHealthFilter === 'all' || (e.cp.healthColor ?? 'white') === squadHealthFilter;
       const matchPlatform = squadPlatformFilter === 'all' || e.cp.platformSlug === squadPlatformFilter;
       const matchQuality = squadQualityFilter === 'all' || (e.cp.qualityLevel ?? '') === squadQualityFilter;
-      const matchPriority = squadPriorityFilter === 'all' || allTasksData.some((t) => t.clientId === e.client.id && (t.platforms ?? []).includes(e.cp.platformSlug) && t.priority === squadPriorityFilter);
+      const matchPriority = squadPriorityFilter === 'all' || (e.client as any).prioridadeGeral === squadPriorityFilter;
       const startDate = e.cp.startDate ?? e.client.startDate;
       const matchDateFrom = !squadDateFrom || startDate >= squadDateFrom;
       const matchDateTo = !squadDateTo || startDate <= squadDateTo;
-      return matchSearch && matchResponsible && matchHealth && matchPlatform && matchQuality && matchPriority && matchDateFrom && matchDateTo;
+      // New: fase macro filter
+      const entryGroup = colGroupMap.get(e.cp.phase) ?? '';
+      const matchFaseMacro = squadFaseMacroFilter === 'all' || entryGroup === squadFaseMacroFilter;
+      // New: dias em atraso filter
+      const diasAtraso = computeDiasEmAtraso(e.cp.deadline);
+      const matchDiasAtraso = squadDiasAtrasoFilter === 'all' ||
+        (squadDiasAtrasoFilter === '>0' && diasAtraso > 0) ||
+        (squadDiasAtrasoFilter === '>3' && diasAtraso > 3) ||
+        (squadDiasAtrasoFilter === '>7' && diasAtraso > 7);
+      return matchSearch && matchResponsible && matchHealth && matchPlatform && matchQuality && matchPriority && matchDateFrom && matchDateTo && matchFaseMacro && matchDiasAtraso;
     });
 
     
@@ -468,6 +510,8 @@ export function ProjectsPage() {
                 setSquadPlatformFilter('all');
                 setSquadQualityFilter('all');
                 setSquadPriorityFilter('all');
+                setSquadFaseMacroFilter('all');
+                setSquadDiasAtrasoFilter('all');
                 setSquadDateFrom('');
                 setSquadDateTo('');
                 setSearch('');
@@ -547,9 +591,31 @@ export function ProjectsPage() {
             onChange={(e) => setSquadPriorityFilter(e.target.value)}
             className="px-3 py-2 text-sm bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition text-foreground">
             <option value="all">Prioridade</option>
-            <option value="high">🔴 Alta</option>
-            <option value="medium">🟡 Média</option>
-            <option value="low">🟢 Baixa</option>
+            <option value="P1">🔴 P1</option>
+            <option value="P2">🟠 P2</option>
+            <option value="P3">🟡 P3</option>
+            <option value="P4">⚪ P4</option>
+          </select>
+
+          <select
+            value={squadFaseMacroFilter}
+            onChange={(e) => setSquadFaseMacroFilter(e.target.value)}
+            className="px-3 py-2 text-sm bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition text-foreground">
+            <option value="all">Fase Macro</option>
+            <option value="implementacao">🔧 Implementação</option>
+            <option value="performance">📈 Performance</option>
+            <option value="escala">🚀 Escala</option>
+            <option value="auxiliar">⚠️ Auxiliares</option>
+          </select>
+
+          <select
+            value={squadDiasAtrasoFilter}
+            onChange={(e) => setSquadDiasAtrasoFilter(e.target.value)}
+            className="px-3 py-2 text-sm bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition text-foreground">
+            <option value="all">Dias Atraso</option>
+            <option value=">0">{'> 0 dias'}</option>
+            <option value=">3">{'> 3 dias'}</option>
+            <option value=">7">{'> 7 dias'}</option>
           </select>
 
           <div className="flex items-center gap-2">
@@ -602,182 +668,273 @@ export function ProjectsPage() {
           );
         })()}
 
-        {/* Kanban by phase */}
-        <div className="flex gap-4 overflow-x-auto pb-4 flex-1 min-h-0">
-          {clientCols.map((col) => {
-            const colEntries = filteredPlatformEntries.filter(e => e.cp.phase === col.status);
-            const isDragOver = platDragOverCol === col.status;
+        {/* Kanban by phase — grouped & collapsible */}
+        <div className="flex gap-2 overflow-x-auto pb-4 flex-1 min-h-0">
+          {(() => {
+            // Build groups from kanban config, filter by fase macro if needed
+            const GROUP_COLORS: Record<string, string> = {
+              implementacao: 'bg-blue-600',
+              performance: 'bg-emerald-600',
+              escala: 'bg-purple-600',
+              auxiliar: 'bg-orange-600',
+            };
+
+            const handleDropOnCol = (colKey: string, e: React.DragEvent) => {
+              e.preventDefault();
+              setPlatDragOverCol(null);
+              const cpId = e.dataTransfer.getData('text/plain');
+              if (cpId) {
+                // Find old phase for history
+                const oldCp = clientPlatformsData.find(p => p.id === cpId);
+                const oldPhase = oldCp?.phase ?? '';
+                if (oldPhase !== colKey) {
+                  updatePlatformMut.mutate({ id: cpId, updates: { phase: colKey } });
+                  // Log phase change
+                  supabase.from('platform_change_logs').insert({
+                    client_platform_id: cpId,
+                    field: 'phase',
+                    old_value: oldPhase,
+                    new_value: colKey,
+                    changed_by: currentUser?.name ?? '',
+                  } as any).then(() => {});
+                }
+              }
+            };
+
+            // Determine which groups to show
+            const groupOrder = ['implementacao', 'performance', 'escala', 'auxiliar'];
+            const activeGroups = kanbanGroups.length > 0
+              ? groupOrder.map(gk => kanbanGroups.find(g => g.groupKey === gk)).filter((g): g is NonNullable<typeof g> => !!g)
+              : [{ groupKey: 'all', groupLabel: 'Fases', columns: clientCols.map(c => ({ id: c.id, key: c.status as string, label: c.label, groupKey: 'all', groupLabel: 'Fases', sortOrder: 0, isActive: true })) }];
+
+            // Filter groups by fase macro filter
+            const visibleGroups = squadFaseMacroFilter === 'all'
+              ? activeGroups
+              : activeGroups.filter(g => g.groupKey === squadFaseMacroFilter);
+
+            // Also include orphan columns not in any group
+            const allGroupKeys = new Set(kanbanColumns.map(c => c.key));
+            const orphanCols = clientCols.filter(c => !allGroupKeys.has(c.status as string));
+
             return (
-              <div
-                key={col.id}
-                className={cn(
-                  'flex flex-col w-80 min-w-[320px] shrink-0 rounded-xl border transition-all',
-                  isDragOver ? 'border-primary bg-primary/5 drop-zone-highlight' : 'border-border bg-muted/30'
-                )}
-                onDragOver={(e) => { e.preventDefault(); setPlatDragOverCol(col.status as string); }}
-                onDragLeave={() => setPlatDragOverCol(null)}
-                onDrop={(e) => {
-                  e.preventDefault();
-                  setPlatDragOverCol(null);
-                  const cpId = e.dataTransfer.getData('text/plain');
-                  if (cpId) {
-                    updatePlatformMut.mutate({ id: cpId, updates: { phase: col.status as string } });
-                  }
-                }}
-              >
-                {/* Column header */}
-                <div className="flex items-center justify-between px-3 py-2.5 border-b border-border/50">
-                  <h3 className="text-xs font-bold text-foreground uppercase tracking-wider">
-                    {col.label}
-                    <span className="ml-1.5 text-[10px] font-semibold bg-primary/10 text-primary px-1.5 py-0.5 rounded-full">
-                      {colEntries.length}
-                    </span>
-                  </h3>
-                </div>
+              <>
+                {visibleGroups.map((group) => {
+                  const isCollapsed = collapsedGroups[group.groupKey] ?? false;
+                  const groupEntries = filteredPlatformEntries.filter(e => group.columns.some(c => c.key === e.cp.phase));
+                  const groupColor = GROUP_COLORS[group.groupKey] ?? 'bg-muted';
 
-                {/* Column cards */}
-                <div
-                  className="flex-1 overflow-y-auto p-2 space-y-2"
-                  onDragOver={(e) => { e.preventDefault(); setPlatDragOverCol(col.status as string); }}
-                  onDrop={(e) => {
-                    e.preventDefault();
-                    setPlatDragOverCol(null);
-                    const cpId = e.dataTransfer.getData('text/plain');
-                    if (cpId) {
-                      updatePlatformMut.mutate({ id: cpId, updates: { phase: col.status as string } });
-                    }
-                  }}
-                >
-                  {colEntries.map((entry) => {
-                    const { client, cp, platformName } = entry;
-                    const cpSquad = cp.squadId ? squads.find((s) => s.id === cp.squadId) : null;
-                    const displaySquad = cpSquad ?? (client.squadId ? squads.find((s) => s.id === client.squadId) : null);
-                    const attrs = cp.platformAttributes ?? {};
-                    const summaryBadges = getPlatformAttributeSummary(cp.platformSlug, attrs);
-
-                    return (
-                      <div
-                        key={cp.id}
-                        draggable
-                        onDragStart={(e) => {
-                          e.dataTransfer.setData('text/plain', cp.id);
-                          wasDraggingPlatRef.current = true;
-                        }}
-                        onDragEnd={() => { setTimeout(() => { wasDraggingPlatRef.current = false; }, 200); }}
-                        onClick={() => {
-                          if (wasDraggingPlatRef.current) return;
-                          setExpandedPlatformEntry({ cp, client, platformName });
-                        }}
-                        className="w-full bg-card rounded-xl border border-border p-3 shadow-sm-custom hover:shadow-md-custom hover:-translate-y-0.5 transition-all text-left group cursor-grab active:cursor-grabbing"
+                  return (
+                    <div key={group.groupKey} className="flex shrink-0 gap-0.5">
+                      {/* Group header (vertical) */}
+                      <button
+                        onClick={() => setCollapsedGroups(prev => ({ ...prev, [group.groupKey]: !isCollapsed }))}
+                        className={cn(
+                          'flex flex-col items-center justify-start gap-1 px-1.5 py-3 rounded-lg text-white text-[10px] font-bold uppercase tracking-widest cursor-pointer transition-all hover:opacity-80 min-w-[28px] writing-mode-vertical',
+                          groupColor
+                        )}
+                        style={{ writingMode: 'vertical-lr', textOrientation: 'mixed' }}
+                        title={isCollapsed ? `Expandir ${group.groupLabel}` : `Colapsar ${group.groupLabel}`}
                       >
-                        {/* Header */}
-                        <div className="flex items-start justify-between mb-2">
-                          <div className="flex items-center gap-2 min-w-0">
-                            <div className="w-8 h-8 rounded-lg bg-primary-light flex items-center justify-center shrink-0">
-                              <ShoppingBag className="w-3.5 h-3.5 text-primary" />
-                            </div>
-                            <h3 className="text-xs font-bold text-foreground group-hover:text-primary transition-colors truncate">
-                              {client.name}
-                            </h3>
-                          </div>
-                          {cp.qualityLevel && (() => {
-                            const qMap: Record<string, {emoji: string; label: string}> = { Seller: { emoji: '🛒', label: 'Seller' }, Lojista: { emoji: '🏪', label: 'Lojista' } };
-                            const q = qMap[cp.qualityLevel];
-                            return <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-accent text-[10px] font-semibold text-accent-foreground">{q ? `${q.emoji} ${q.label}` : cp.qualityLevel}</span>;
-                          })()}
-                        </div>
+                        {isCollapsed ? <ChevronRight className="w-3 h-3 rotate-90" /> : <ChevronDown className="w-3 h-3 rotate-90" />}
+                        <span>{group.groupLabel} ({groupEntries.length})</span>
+                      </button>
 
-                        {/* Context */}
-                        <div className="grid grid-cols-2 gap-x-2 gap-y-1 mb-2 text-xs">
-                          <div className="flex items-center gap-1 text-muted-foreground min-w-0">
-                            <Users2 className="w-3 h-3 shrink-0" />
-                            <span className="truncate font-medium text-foreground">{displaySquad?.name ?? '—'}</span>
-                          </div>
-                          <div className="flex items-center gap-1 text-muted-foreground min-w-0">
-                            <UserCircle className="w-3 h-3 shrink-0" />
-                            <span className="truncate font-medium text-foreground">{cp.responsible || '—'}</span>
-                          </div>
-                        </div>
-
-                        {/* Badges */}
-                        <div className="flex flex-wrap items-center gap-1 mb-2 pt-1.5 border-t border-border/50">
-                          {(() => {
-                            const hMap: Record<string, { emoji: string; label: string; cls: string }> = {
-                              green: { emoji: '🟢', label: 'Excelente', cls: 'bg-success/15 text-success border-success/30' },
-                              yellow: { emoji: '🟡', label: 'Atenção', cls: 'bg-warning/15 text-warning border-warning/30' },
-                              red: { emoji: '🔴', label: 'Ruim', cls: 'bg-destructive/15 text-destructive border-destructive/30' },
-                              white: { emoji: '⚪', label: 'Não avaliado', cls: 'bg-muted text-muted-foreground border-border/50' },
-                            };
-                            const h = cp.healthColor ? hMap[cp.healthColor] : null;
-                            return (
-                              <span className={cn('inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-semibold border', h ? h.cls : 'bg-muted text-muted-foreground border-border/50')}>
-                                {h ? `${h.emoji} ${h.label}` : '— Saúde'}
-                              </span>
-                            );
-                          })()}
-                          <span className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-primary/10 text-[10px] font-semibold text-primary border border-primary/20">
-                            {platformName}
-                          </span>
-                        </div>
-
-                        {/* ML badges */}
-                        {cp.platformSlug === 'mercado_livre' && (
-                          <div className="flex flex-wrap gap-1 mb-2">
-                            {[
-                              { key: 'envios_full', label: 'Full' },
-                              { key: 'envios_flex', label: 'Flex' },
-                              { key: 'envios_turbo', label: 'Turbo' },
-                            ].map((item) => {
-                              const active = !!attrs[item.key];
-                              return (
-                                <span key={item.key} className={cn('inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-semibold border', active ? 'bg-success/15 text-success border-success/30' : 'bg-muted text-muted-foreground border-border/50')}>
-                                  {active ? '✓' : '✗'} {item.label}
+                      {/* Columns */}
+                      {!isCollapsed && group.columns.map((col) => {
+                        const colEntries = filteredPlatformEntries.filter(e => e.cp.phase === col.key);
+                        const isDragOver = platDragOverCol === col.key;
+                        return (
+                          <div
+                            key={col.key}
+                            className={cn(
+                              'flex flex-col w-72 min-w-[280px] shrink-0 rounded-xl border transition-all',
+                              isDragOver ? 'border-primary bg-primary/5 drop-zone-highlight' : 'border-border bg-muted/30'
+                            )}
+                            onDragOver={(e) => { e.preventDefault(); setPlatDragOverCol(col.key); }}
+                            onDragLeave={() => setPlatDragOverCol(null)}
+                            onDrop={(e) => handleDropOnCol(col.key, e)}
+                          >
+                            {/* Column header */}
+                            <div className="flex items-center justify-between px-2.5 py-2 border-b border-border/50">
+                              <h3 className="text-[10px] font-bold text-foreground uppercase tracking-wider leading-tight">
+                                {col.label}
+                                <span className="ml-1 text-[10px] font-semibold bg-primary/10 text-primary px-1.5 py-0.5 rounded-full">
+                                  {colEntries.length}
                                 </span>
-                              );
-                            })}
-                          </div>
-                        )}
+                              </h3>
+                            </div>
 
-                        {/* Other attribute badges */}
-                        {cp.platformSlug !== 'mercado_livre' && summaryBadges.length > 0 && (
-                          <div className="flex flex-wrap gap-1 mb-2">
-                            {summaryBadges.map((badge, i) => (
-                              <span key={i} className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-secondary text-[10px] font-medium text-secondary-foreground border border-border/50">
-                                {badge}
-                              </span>
-                            ))}
-                          </div>
-                        )}
+                            {/* Column cards */}
+                            <div
+                              className="flex-1 overflow-y-auto p-1.5 space-y-1.5"
+                              onDragOver={(e) => { e.preventDefault(); setPlatDragOverCol(col.key); }}
+                              onDrop={(e) => { e.stopPropagation(); handleDropOnCol(col.key, e); }}
+                            >
+                              {colEntries.map((entry) => {
+                                const { client, cp, platformName } = entry;
+                                const attrs = cp.platformAttributes ?? {};
+                                const diasAtraso = computeDiasEmAtraso(cp.deadline);
+                                const clientPrio = (client as any).prioridadeGeral ?? 'P2';
+                                const platColorCls = PLATFORM_COLORS[cp.platformSlug] ?? 'bg-primary/10 text-primary border-primary/20';
+                                const prioCls = PRIORITY_BADGES[clientPrio] ?? PRIORITY_BADGES.P4;
 
-                        {/* Footer */}
-                        <div className="flex items-center justify-end text-xs text-muted-foreground pt-1.5 border-t border-border/50">
-                          <div className="flex items-center gap-0.5">
-                            <Button variant="ghost" size="icon" className="h-6 w-6" title="Editar"
-                              onClick={(e) => { e.stopPropagation(); setEditingPlatform(cp); }}>
-                              <Pencil className="w-3.5 h-3.5" />
-                            </Button>
-                            <Button variant="ghost" size="icon" className="h-6 w-6" title="Transferir"
-                              onClick={(e) => { e.stopPropagation(); setTransferTarget({ platformId: cp.id, squadId: cp.squadId, responsible: cp.responsible }); }}>
-                              <ArrowRightLeft className="w-3.5 h-3.5" />
-                            </Button>
-                            <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-destructive" title="Excluir"
-                              onClick={(e) => { e.stopPropagation(); setDeletingPlatform({ id: cp.id, slug: cp.platformSlug, clientId: cp.clientId }); }}>
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </Button>
+                                return (
+                                  <div
+                                    key={cp.id}
+                                    draggable
+                                    onDragStart={(e) => {
+                                      e.dataTransfer.setData('text/plain', cp.id);
+                                      wasDraggingPlatRef.current = true;
+                                    }}
+                                    onDragEnd={() => { setTimeout(() => { wasDraggingPlatRef.current = false; }, 200); }}
+                                    onClick={() => {
+                                      if (wasDraggingPlatRef.current) return;
+                                      setExpandedPlatformEntry({ cp, client, platformName });
+                                    }}
+                                    className="w-full bg-card rounded-lg border border-border p-2.5 shadow-sm-custom hover:shadow-md-custom hover:-translate-y-0.5 transition-all text-left group cursor-grab active:cursor-grabbing"
+                                  >
+                                    {/* Row 1: Client name + Priority */}
+                                    <div className="flex items-center justify-between gap-1 mb-1.5">
+                                      <h3 className="text-[11px] font-bold text-foreground group-hover:text-primary transition-colors truncate flex-1">
+                                        {client.name}
+                                      </h3>
+                                      <span className={cn('shrink-0 inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold border', prioCls)}>
+                                        {clientPrio}
+                                      </span>
+                                    </div>
+
+                                    {/* Row 2: Platform badge + Health */}
+                                    <div className="flex flex-wrap items-center gap-1 mb-1.5">
+                                      <span className={cn('inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-semibold border', platColorCls)}>
+                                        {platformName}
+                                      </span>
+                                      {(() => {
+                                        const hMap: Record<string, { emoji: string; cls: string }> = {
+                                          green: { emoji: '🟢', cls: 'bg-success/15 text-success border-success/30' },
+                                          yellow: { emoji: '🟡', cls: 'bg-warning/15 text-warning border-warning/30' },
+                                          red: { emoji: '🔴', cls: 'bg-destructive/15 text-destructive border-destructive/30' },
+                                        };
+                                        const h = cp.healthColor ? hMap[cp.healthColor] : null;
+                                        if (!h) return null;
+                                        return <span className={cn('inline-flex items-center px-1 py-0.5 rounded text-[9px] font-semibold border', h.cls)}>{h.emoji}</span>;
+                                      })()}
+                                      {diasAtraso > 0 && (
+                                        <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-bold bg-destructive/15 text-destructive border border-destructive/30">
+                                          <Clock className="w-2.5 h-2.5" /> {diasAtraso}d
+                                        </span>
+                                      )}
+                                    </div>
+
+                                    {/* Row 3: Responsible + Deadline */}
+                                    <div className="flex items-center justify-between text-[10px] text-muted-foreground mb-1">
+                                      <span className="truncate font-medium">{cp.responsible || '—'}</span>
+                                      {cp.deadline && (
+                                        <span className="flex items-center gap-0.5 shrink-0">
+                                          <Calendar className="w-2.5 h-2.5" />
+                                          {format(new Date(cp.deadline), 'dd/MM')}
+                                        </span>
+                                      )}
+                                    </div>
+
+                                    {/* Row 4: Motivo de atraso (if any) */}
+                                    {cp.motivoAtraso && (
+                                      <p className="text-[9px] text-destructive/80 bg-destructive/5 rounded px-1.5 py-0.5 mb-1 truncate border border-destructive/10">
+                                        ⚠ {cp.motivoAtraso}
+                                      </p>
+                                    )}
+
+                                    {/* Row 5: Operational badges */}
+                                    <div className="flex flex-wrap gap-0.5">
+                                      {cp.qualityLevel && (
+                                        <span className="px-1 py-0.5 rounded bg-accent text-[8px] font-semibold text-accent-foreground">
+                                          {cp.qualityLevel === 'Seller' ? '🛒' : '🏪'} {cp.qualityLevel}
+                                        </span>
+                                      )}
+                                      {cp.platformSlug === 'mercado_livre' && ['envios_full', 'envios_flex', 'envios_turbo'].map(k => {
+                                        if (!attrs[k]) return null;
+                                        const labels: Record<string, string> = { envios_full: 'Full', envios_flex: 'Flex', envios_turbo: 'Turbo' };
+                                        return <span key={k} className="px-1 py-0.5 rounded bg-success/15 text-[8px] font-semibold text-success border border-success/30">✓ {labels[k]}</span>;
+                                      })}
+                                      {cp.dependeCliente && (
+                                        <span className="px-1 py-0.5 rounded bg-warning/15 text-[8px] font-semibold text-warning border border-warning/30">Aguard. cliente</span>
+                                      )}
+                                      {cp.prontaPerformance && (
+                                        <span className="px-1 py-0.5 rounded bg-success/15 text-[8px] font-semibold text-success border border-success/30">✓ Pronta</span>
+                                      )}
+                                    </div>
+
+                                    {/* Footer actions */}
+                                    <div className="flex items-center justify-end pt-1 mt-1 border-t border-border/30">
+                                      <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <Button variant="ghost" size="icon" className="h-5 w-5" title="Editar"
+                                          onClick={(e) => { e.stopPropagation(); setEditingPlatform(cp); }}>
+                                          <Pencil className="w-3 h-3" />
+                                        </Button>
+                                        <Button variant="ghost" size="icon" className="h-5 w-5" title="Transferir"
+                                          onClick={(e) => { e.stopPropagation(); setTransferTarget({ platformId: cp.id, squadId: cp.squadId, responsible: cp.responsible }); }}>
+                                          <ArrowRightLeft className="w-3 h-3" />
+                                        </Button>
+                                        <Button variant="ghost" size="icon" className="h-5 w-5 text-muted-foreground hover:text-destructive" title="Excluir"
+                                          onClick={(e) => { e.stopPropagation(); setDeletingPlatform({ id: cp.id, slug: cp.platformSlug, clientId: cp.clientId }); }}>
+                                          <Trash2 className="w-3 h-3" />
+                                        </Button>
+                                      </div>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                              {colEntries.length === 0 && (
+                                <div className="flex items-center justify-center h-16 text-[10px] text-muted-foreground">
+                                  Nenhum card
+                                </div>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                  {colEntries.length === 0 && (
-                    <div className="flex items-center justify-center h-20 text-xs text-muted-foreground">
-                      Nenhum card nesta fase
+                        );
+                      })}
                     </div>
-                  )}
-                </div>
-              </div>
+                  );
+                })}
+
+                {/* Orphan columns (not in any group) */}
+                {orphanCols.length > 0 && orphanCols.map(col => {
+                  const colEntries = filteredPlatformEntries.filter(e => e.cp.phase === col.status);
+                  if (colEntries.length === 0) return null;
+                  const isDragOver = platDragOverCol === col.status;
+                  return (
+                    <div
+                      key={col.id}
+                      className={cn(
+                        'flex flex-col w-72 min-w-[280px] shrink-0 rounded-xl border transition-all',
+                        isDragOver ? 'border-primary bg-primary/5 drop-zone-highlight' : 'border-border bg-muted/30'
+                      )}
+                      onDragOver={(e) => { e.preventDefault(); setPlatDragOverCol(col.status as string); }}
+                      onDragLeave={() => setPlatDragOverCol(null)}
+                      onDrop={(e) => handleDropOnCol(col.status as string, e)}
+                    >
+                      <div className="flex items-center justify-between px-2.5 py-2 border-b border-border/50">
+                        <h3 className="text-[10px] font-bold text-foreground uppercase tracking-wider">
+                          {col.label}
+                          <span className="ml-1 text-[10px] font-semibold bg-primary/10 text-primary px-1.5 py-0.5 rounded-full">
+                            {colEntries.length}
+                          </span>
+                        </h3>
+                      </div>
+                      <div className="flex-1 overflow-y-auto p-1.5 space-y-1.5">
+                        {colEntries.map(entry => (
+                          <div key={entry.cp.id} className="bg-card rounded-lg border border-border p-2 text-xs cursor-pointer hover:shadow-sm-custom"
+                            onClick={() => setExpandedPlatformEntry(entry)}>
+                            <p className="font-bold text-foreground truncate">{entry.client.name}</p>
+                            <p className="text-muted-foreground text-[10px]">{entry.platformName}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </>
             );
-          })}
+          })()}
         </div>
 
         {/* Add Column Dialog */}
