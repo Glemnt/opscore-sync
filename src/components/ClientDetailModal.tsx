@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
 import { StatusBadge } from '@/components/ui/shared';
 import { taskStatusConfig, taskTypeConfig } from '@/lib/config';
 import { Client, Task, TaskStatus, ClientStatus, ContractType, Platform, Squad, FaseMacro, PerfilCliente, StatusFinanceiro, RiscoChurn, TipoCliente, PrioridadeGeral } from '@/types';
