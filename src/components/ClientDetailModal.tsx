@@ -248,16 +248,6 @@ function PlatformOperationalPanel({ client, platformOptions, squads, appUsers, t
 }
 
 
-      <div className="space-y-2">
-        {platforms.map((slug) => {
-          const plat = platformOptions.find(p => p.slug === slug);
-          const cp = cpMap[slug];
-          const platTasks = tasks.filter(t => t.platforms?.includes(slug));
-          const pendingCount = platTasks.filter(t => t.status !== 'done').length;
-          const isExpanded = expandedSlug === slug;
-          const platSquad = cp?.squadId ? squads.find(s => s.id === cp.squadId) : null;
-
-          return (
             <div key={slug} className="border border-border rounded-lg bg-muted/30 overflow-hidden">
               <button
                 onClick={() => setExpandedSlug(isExpanded ? null : slug)}
