@@ -1,109 +1,112 @@
 
 
-## Jornada do CS (D1-D90) — Modulo Completo
+## Dashboard Executivo — Reestruturação Completa
 
 ### Resumo
 
-Criar duas tabelas no banco (`cs_journey_templates` e `cs_journey_items`), um hook de queries, uma secao de configuracao de templates em SettingsPage, uma secao "Jornada dos Clientes" no CsDashboardPage, e uma aba "Jornada CS" no ClientDetailModal. Ao cadastrar cliente, gerar automaticamente os 90 dias de jornada.
+Reescrever `DashboardPage.tsx` com 5 blocos gerenciais, filtros globais no topo, dados 100% reais do banco, numeros clicaveis que abrem listas filtradas, e graficos interativos com Recharts. Acesso restrito por nivel: admin ve tudo, niveis 1-2 veem apenas seu squad.
 
 ---
 
-### 1. Migration — Duas tabelas novas
+### 1. Filtros Globais (topo)
 
-```sql
-CREATE TABLE cs_journey_templates (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  title text NOT NULL,
-  day_number integer NOT NULL,
-  phase text NOT NULL DEFAULT 'onboard',
-  description text NOT NULL DEFAULT '',
-  is_active boolean NOT NULL DEFAULT true,
-  sort_order integer NOT NULL DEFAULT 0,
-  created_at timestamptz NOT NULL DEFAULT now()
-);
+Barra fixa no topo com filtros que afetam todos os blocos simultaneamente:
+- Periodo: presets (Semana / Mes / Trimestre) + date range custom
+- Squad (select multi usando `useSquadsQuery`)
+- Responsavel (select filtrado por squad)
+- Plataforma (select usando `usePlatformsQuery`)
+- Fase (select: onboarding / implementacao / performance / escala)
+- Saude (green / yellow / red / white)
+- Prioridade (P1-P4)
 
-CREATE TABLE cs_journey_items (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  client_id uuid NOT NULL,
-  template_id uuid,
-  scheduled_date date NOT NULL,
-  actual_date date,
-  status text NOT NULL DEFAULT 'pendente',
-  completed_by text NOT NULL DEFAULT '',
-  completed_at timestamptz,
-  notes text NOT NULL DEFAULT '',
-  link text NOT NULL DEFAULT '',
-  title text NOT NULL DEFAULT '',
-  day_number integer NOT NULL DEFAULT 0,
-  phase text NOT NULL DEFAULT 'onboard',
-  created_at timestamptz NOT NULL DEFAULT now()
-);
-```
-
-RLS: authenticated full CRUD em ambas. Seed dos ~30 templates default (D1-D90 conforme especificado).
+Todos os dados (clients, client_platforms, tasks) sao filtrados por esses criterios antes de alimentar os blocos.
 
 ---
 
-### 2. Hook `src/hooks/useCsJourneyQuery.ts` (novo)
+### 2. Bloco 1 — Operação Geral
 
-- `useCsJourneyTemplatesQuery()` — lista templates ordenados por day_number
-- `useAddJourneyTemplate()`, `useUpdateJourneyTemplate()`, `useDeleteJourneyTemplate()` — CRUD de templates
-- `useCsJourneyItemsQuery(clientId?)` — lista items, opcionalmente filtrado por client_id
-- `useUpdateJourneyItem()` — atualizar status, notes, link, actual_date
-- `useGenerateJourneyForClient()` — mutation que gera items a partir dos templates ativos, calculando `scheduled_date = client.start_date + day_number dias uteis`
+StatCards em grid:
+- Clientes ativos (excluindo churn)
+- Em implementacao (sub: onboard + impl ativa, baseado em `fase_macro` ou `phase` dos clients)
+- Em performance
+- Em escala
+- Inativos/churn
+- Cada card com variacao vs semana anterior (calcula contagem na semana passada e compara)
 
----
-
-### 3. Geracao automatica ao cadastrar cliente
-
-No `useAddClient` (useClientsQuery.ts), apos inserir o cliente com sucesso, chamar a funcao de geracao da jornada. Alternativa: disparar no `ClientsContext.addClient` callback `onSuccess`.
+Dados: `useClients` + `useClientStatusesQuery`
 
 ---
 
-### 4. SettingsPage — Aba "Jornada CS"
+### 3. Bloco 2 — Plataformas
 
-Nova tab na pagina de configuracoes (acessivel apenas para admin):
-- Tabela listando templates: Dia | Fase | Titulo | Ativo
-- Botoes: Adicionar template, Editar, Excluir, Toggle ativo
-- Fases disponiveis: onboard, primeiros_resultados, estabilizacao, consolidacao
-
----
-
-### 5. CsDashboardPage — Secao "Jornada dos Clientes"
-
-Nova tab no dashboard do CS:
-- Tabela por cliente da carteira: Cliente | Dia atual (ex: "D23 de 90") | Barra de progresso | Proxima tarefa | Status
-- Dia atual = dias uteis entre start_date e hoje
-- Alertas: tarefas atrasadas (scheduled_date < hoje e status pendente)
-- Clique em cliente expande timeline das tarefas da jornada
-- Cada tarefa: marcar como feita, adicionar notas, link
+Dados: `useClientPlatformsQuery`
+- Total plataformas ativas (phase != churn)
+- Em onboard (phase === 'onboarding')
+- Em implementacao
+- Atrasadas (deadline < hoje e phase != performance/done) — clicavel, abre dialog com lista
+- Prontas para performance (prontaPerformance === true)
+- Grafico de pizza: distribuicao por `platform_slug` (count)
 
 ---
 
-### 6. ClientDetailModal — Aba "Jornada CS"
+### 4. Bloco 3 — Atrasos (destaque vermelho)
 
-Nova tab no modal do cliente:
-- Timeline vertical das tarefas da jornada organizada por fase
-- Semaforo: verde (feita) | amarelo (hoje/proxima) | vermelho (atrasada) | cinza (pendente futura)
-- Campos editaveis: status, notas, link
+Dados: `useTasksQuery` + `useClientPlatformsQuery` + `useDelayReasonsQuery`
+- Total demandas atrasadas (deadline < hoje, status != done)
+- Total plataformas atrasadas
+- Clientes travados +3 dias (lista clicavel com nomes)
+- Clientes travados +7 dias (lista clicavel com nomes)
+- Plataformas travadas por falta de cliente (dependeCliente === true)
+- Plataformas travadas por erro operacional (atrasadas e !dependeCliente)
+- Grafico de barras horizontal: top 5 motivos de atraso (contagem de `motivo_atraso` nos tasks e client_platforms)
+
+---
+
+### 5. Bloco 4 — Equipe
+
+Dados: `useTasksQuery` + `useAppUsersQuery` + `useSquadsQuery`
+- Grafico de barras: demandas por colaborador (concluidas vs atrasadas)
+- Passagens concluidas na semana por colaborador (tasks tipo passagem, done esta semana)
+- Carga por colaborador com semaforo (verde <5, amarelo 5-8, vermelho >8 tarefas ativas)
+- Taxa de avanco (% concluidas no prazo)
+- Lista de sobrecarregados (>8 tarefas) com destaque vermelho
+
+---
+
+### 6. Bloco 5 — Receita e Carteira (visivel apenas admin, accessLevel === 3)
+
+Dados: `useClients` + `useClientPlatformsQuery`
+- MRR total
+- Receita por plataforma (grafico de barras)
+- Clientes adicionados no periodo (filtrado por date range)
+- Churn no periodo
+- Saude da carteira (grafico de rosca: saudavel/atencao/critico)
+- Clientes em risco de churn (risco_churn !== 'baixo', lista clicavel)
+
+---
+
+### 7. Componente de Lista Clicavel
+
+Dialog/Sheet reutilizavel que abre ao clicar em qualquer numero. Recebe titulo + lista de items (clientes ou plataformas) e exibe em tabela simples com nome, status, responsavel. Clique no item pode navegar ao detalhe.
 
 ---
 
 ### Arquivos
 
-- `supabase/migrations/` — CREATE TABLE cs_journey_templates + cs_journey_items + INSERT seed
-- `src/hooks/useCsJourneyQuery.ts` (novo) — hooks completos
-- `src/pages/SettingsPage.tsx` — nova tab "Jornada CS"
-- `src/pages/CsDashboardPage.tsx` — nova tab "Jornada"
-- `src/components/ClientDetailModal.tsx` — nova aba "Jornada CS"
-- `src/hooks/useClientsQuery.ts` ou `src/contexts/ClientsContext.tsx` — trigger de geracao automatica
+- `src/pages/DashboardPage.tsx` — reescrita completa
+
+### Hooks existentes reutilizados (sem alteracao)
+- `useClientsQuery` (via ClientsContext)
+- `useClientPlatformsQuery`
+- `useTasksQuery` (via TasksContext)
+- `useAppUsersQuery`
+- `useSquadsQuery`
+- `usePlatformsQuery`
+- `useClientStatusesQuery`
+- `useDelayReasonsQuery`
+- `useTaskTypesQuery`
 
 ### Ordem
 
-1. Migration (tabelas + seed)
-2. Hook useCsJourneyQuery
-3. SettingsPage (aba templates)
-4. Geracao automatica no cadastro de cliente
-5. CsDashboardPage (secao jornada)
-6. ClientDetailModal (aba jornada)
+1. Reescrever DashboardPage.tsx com filtros globais + 5 blocos + dialog de lista clicavel
 
