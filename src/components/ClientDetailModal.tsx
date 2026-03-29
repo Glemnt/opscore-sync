@@ -246,15 +246,8 @@ function PlatformOperationalPanel({ client, platformOptions, squads, appUsers, t
     </div>
   );
 }
-    const map: Record<string, ClientPlatform> = {};
-    for (const cp of clientPlatforms) {
-      if (cp.clientId === client.id) map[cp.platformSlug] = cp;
-    }
-    return map;
-  }, [clientPlatforms, client.id]);
 
-  // Auto-seed missing platform records
-  useEffect(() => {
+
     for (const slug of platforms) {
       if (!cpMap[slug]) {
         addPlatform.mutate({ clientId: client.id, platformSlug: slug, squadId: client.squadId || null });
