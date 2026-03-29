@@ -10,10 +10,12 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Command, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem } from '@/components/ui/command';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useTasks } from '@/contexts/TasksContext';
 import { useClients } from '@/contexts/ClientsContext';
 import { useAppUsersQuery } from '@/hooks/useAppUsersQuery';
 import { usePlatformsQuery } from '@/hooks/usePlatformsQuery';
+import { useClientPlatformsQuery } from '@/hooks/useClientPlatformsQuery';
 
 import { priorityConfig } from '@/lib/config';
 import { useTaskTypesQuery, useAddTaskType } from '@/hooks/useTaskTypesQuery';
@@ -28,13 +30,15 @@ interface AddTaskDialogProps {
   defaultClientId?: string;
   defaultClientName?: string;
   defaultPlatformSlug?: string;
+  defaultPlatformId?: string;
 }
 
-export function AddTaskDialog({ open, onOpenChange, defaultStatus = 'backlog', defaultClientId, defaultClientName, defaultPlatformSlug }: AddTaskDialogProps) {
+export function AddTaskDialog({ open, onOpenChange, defaultStatus = 'backlog', defaultClientId, defaultClientName, defaultPlatformSlug, defaultPlatformId }: AddTaskDialogProps) {
   const { addTask } = useTasks();
   const { getVisibleClients } = useClients();
   const { data: appUsers = [] } = useAppUsersQuery();
   const { data: platforms = [] } = usePlatformsQuery();
+  const { data: clientPlatforms = [] } = useClientPlatformsQuery();
   const visibleClients = getVisibleClients();
   const { data: taskTypes = [] } = useTaskTypesQuery();
   const addTaskTypeMut = useAddTaskType();
@@ -43,6 +47,10 @@ export function AddTaskDialog({ open, onOpenChange, defaultStatus = 'backlog', d
   const [typePopoverOpen, setTypePopoverOpen] = useState(false);
 
   const [clientId, setClientId] = useState(defaultClientId ?? '');
+  const [platformId, setPlatformId] = useState(defaultPlatformId ?? '');
+  const [etapa, setEtapa] = useState('');
+  const [bloqueiaPassagem, setBloqueiaPassagem] = useState(false);
+  const [dependeCliente, setDependeCliente] = useState(false);
   
   const [type, setType] = useState<TaskType>('anuncio');
   const [title, setTitle] = useState('');
@@ -57,6 +65,12 @@ export function AddTaskDialog({ open, onOpenChange, defaultStatus = 'backlog', d
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>(defaultPlatformSlug ? [defaultPlatformSlug] : []);
 
   const selectedClient = visibleClients.find((c) => c.id === clientId);
+  
+  // Client platforms filtered by selected client
+  const filteredClientPlatforms = useMemo(() => {
+    if (!clientId) return [];
+    return clientPlatforms.filter(cp => cp.clientId === clientId);
+  }, [clientId, clientPlatforms]);
 
   const allTypes = useMemo(() => {
     const map: Record<string, { label: string; color: string }> = {};
