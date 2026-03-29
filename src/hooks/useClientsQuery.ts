@@ -118,6 +118,10 @@ export function useUpdateClient() {
         tipoCliente: 'tipo_cliente', dataPrevistaPassagem: 'data_prevista_passagem',
         dataRealPassagem: 'data_real_passagem', prioridadeGeral: 'prioridade_geral',
         npsUltimo: 'nps_ultimo',
+        healthScore: 'health_score',
+        healthCalculatedAt: 'health_calculated_at',
+        healthOverride: 'health_override',
+        healthOverrideReason: 'health_override_reason',
       };
       for (const [k, v] of Object.entries(updates)) {
         if (k === 'changeLogs' || k === 'chatNotes') continue;

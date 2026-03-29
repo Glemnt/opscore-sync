@@ -81,6 +81,10 @@ export function mapDbClient(
     dataRealPassagem: (row as any).data_real_passagem ?? undefined,
     prioridadeGeral: (row as any).prioridade_geral ?? 'P2',
     npsUltimo: (row as any).nps_ultimo ?? undefined,
+    healthScore: (row as any).health_score ?? undefined,
+    healthCalculatedAt: (row as any).health_calculated_at ?? undefined,
+    healthOverride: (row as any).health_override ?? false,
+    healthOverrideReason: (row as any).health_override_reason ?? '',
     changeLogs: changeLogs.map(mapDbChangeLog),
     chatNotes: chatNotes.map(mapDbChatNote),
   };
