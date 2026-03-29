@@ -8,6 +8,7 @@ import { TasksPage } from '@/pages/TasksPage';
 import { ProductivityPage } from '@/pages/ProductivityPage';
 import { ReportsPage } from '@/pages/ReportsPage';
 import { SettingsPage } from '@/pages/SettingsPage';
+import { PlatformCatalogPage } from '@/pages/PlatformCatalogPage';
 import { LoginPage } from '@/pages/LoginPage';
 import { TasksProvider } from '@/contexts/TasksContext';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
@@ -45,6 +46,7 @@ function AppContent() {
       case 'tasks': return <TasksPage />;
       case 'productivity': return <ProductivityPage />;
       case 'reports': return <ReportsPage />;
+      case 'platform-catalog': return currentUser?.accessLevel === 3 ? <PlatformCatalogPage /> : <DashboardPage />;
       case 'settings': return currentUser?.accessLevel === 3 ? <SettingsPage /> : <DashboardPage />;
       default: return <DashboardPage />;
     }

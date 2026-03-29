@@ -520,6 +520,45 @@ export type Database = {
           },
         ]
       }
+      platform_catalog: {
+        Row: {
+          checklist_obrigatorio: Json
+          created_at: string
+          criterios_passagem: string[]
+          id: string
+          name: string
+          prazo_implementacao: number
+          prazo_onboarding: number
+          slug: string
+          status: string
+          tipos_demanda_permitidos: string[]
+        }
+        Insert: {
+          checklist_obrigatorio?: Json
+          created_at?: string
+          criterios_passagem?: string[]
+          id?: string
+          name: string
+          prazo_implementacao?: number
+          prazo_onboarding?: number
+          slug: string
+          status?: string
+          tipos_demanda_permitidos?: string[]
+        }
+        Update: {
+          checklist_obrigatorio?: Json
+          created_at?: string
+          criterios_passagem?: string[]
+          id?: string
+          name?: string
+          prazo_implementacao?: number
+          prazo_onboarding?: number
+          slug?: string
+          status?: string
+          tipos_demanda_permitidos?: string[]
+        }
+        Relationships: []
+      }
       platform_change_logs: {
         Row: {
           changed_at: string
