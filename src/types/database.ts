@@ -225,6 +225,7 @@ export interface AppUserProfile {
   authUserId: string | null;
   hireDate: string | null;
   birthday: string | null;
+  maxCapacity: number;
 }
 
 export function mapDbAppUser(row: DbAppUser): AppUserProfile {
@@ -238,5 +239,6 @@ export function mapDbAppUser(row: DbAppUser): AppUserProfile {
     authUserId: row.auth_user_id,
     hireDate: (row as any).hire_date ?? null,
     birthday: (row as any).birthday ?? null,
+    maxCapacity: (row as any).max_capacity ?? 8,
   };
 }

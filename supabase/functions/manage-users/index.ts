@@ -52,10 +52,12 @@ Deno.serve(async (req) => {
     const { action } = body;
 
     if (action === "update") {
-      const { userId, name, role, accessLevel, squadIds, hireDate, birthday } = body;
+      const { userId, name, role, accessLevel, squadIds, hireDate, birthday, maxCapacity } = body;
+      const updatePayload: Record<string, any> = { name, role, access_level: accessLevel, squad_ids: squadIds, hire_date: hireDate ?? null, birthday: birthday ?? null };
+      if (maxCapacity !== undefined) updatePayload.max_capacity = maxCapacity;
       const { error } = await adminClient
         .from("app_users")
-        .update({ name, role, access_level: accessLevel, squad_ids: squadIds, hire_date: hireDate ?? null, birthday: birthday ?? null })
+        .update(updatePayload)
         .eq("id", userId);
       if (error) throw error;
 
