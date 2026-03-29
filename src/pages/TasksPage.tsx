@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Plus, Search, Clock, MessageSquare, AlertTriangle, Trash2, Workflow, ChevronDown, ShoppingBag, X, CalendarDays, Lock, Link, CheckCircle, XCircle, RotateCcw } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTasks } from '@/contexts/TasksContext';
+import { useStartPause, useEndPause, useTaskPausesQuery, calcTotalPauseMinutes } from '@/hooks/useTaskPausesQuery';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSquads } from '@/contexts/SquadsContext';
 import { useClients } from '@/contexts/ClientsContext';
@@ -81,6 +82,10 @@ export function TasksPage() {
 
   const isLate = (task: Task) => new Date(task.deadline) < new Date() && task.status !== 'done';
 
+  const startPauseMut = useStartPause();
+  const endPauseMut = useEndPause();
+  const { data: allPauses = [] } = useTaskPausesQuery();
+
   const handleDrop = (colStatus: TaskStatus, e: React.DragEvent) => {
     e.preventDefault();
     setDragOverCol(null);
@@ -90,6 +95,7 @@ export function TasksPage() {
     if (taskId) {
       const task = allTasks.find(t => t.id === taskId);
       if (!task) return;
+      const oldStatus = task.status;
       // Check dependencies when moving from backlog
       if (colStatus !== 'backlog' && task.dependsOn?.length) {
         const unmetDeps = task.dependsOn.filter(depId => {
@@ -105,15 +111,56 @@ export function TasksPage() {
       // Redirect direct drop to 'done' → 'aguardando_aprovacao'
       if (colStatus === 'done' && task.approvalStatus !== 'approved') {
         toast.info('Demandas precisam de aprovação antes de serem concluídas');
-        updateTask(taskId, { status: 'aguardando_aprovacao' as TaskStatus, approvalStatus: 'pending' } as any);
+        const now = new Date().toISOString();
+        const timerUpdates: any = { status: 'aguardando_aprovacao' as TaskStatus, approvalStatus: 'pending' };
+        if (!task.completedAt) timerUpdates.completedAt = now;
+        endPauseMut.mutate(taskId);
+        // Calculate tempo real
+        if (task.startedAt) {
+          const taskPauses = allPauses.filter(p => p.taskId === taskId);
+          const pauseMin = calcTotalPauseMinutes(taskPauses);
+          const elapsed = (new Date(now).getTime() - new Date(task.startedAt).getTime()) / 60000;
+          timerUpdates.tempoRealMinutos = Math.round(elapsed - pauseMin);
+        }
+        updateTask(taskId, timerUpdates);
         return;
       }
-      // If moving to aguardando_aprovacao, set approval_status pending
+      // If moving to aguardando_aprovacao, set approval_status pending + complete timer
       if (colStatus === 'aguardando_aprovacao') {
-        updateTask(taskId, { status: colStatus, approvalStatus: 'pending' } as any);
+        const now = new Date().toISOString();
+        const timerUpdates: any = { status: colStatus, approvalStatus: 'pending' };
+        if (!task.completedAt) timerUpdates.completedAt = now;
+        endPauseMut.mutate(taskId);
+        if (task.startedAt) {
+          const taskPauses = allPauses.filter(p => p.taskId === taskId);
+          const pauseMin = calcTotalPauseMinutes(taskPauses);
+          const elapsed = (new Date(now).getTime() - new Date(task.startedAt).getTime()) / 60000;
+          timerUpdates.tempoRealMinutos = Math.round(elapsed - pauseMin);
+        }
+        updateTask(taskId, timerUpdates);
         return;
       }
-      updateTask(taskId, { status: colStatus });
+
+      // Timer logic based on transition
+      const timerUpdates: any = { status: colStatus };
+
+      if (colStatus === 'in_progress') {
+        // First time starting: set startedAt
+        if (!task.startedAt) {
+          timerUpdates.startedAt = new Date().toISOString();
+        }
+        // End any open pause (returning from waiting/blocked)
+        if (oldStatus === 'waiting_client' || oldStatus === 'bloqueada') {
+          endPauseMut.mutate(taskId);
+        }
+      } else if (colStatus === 'waiting_client') {
+        // Start a pause
+        startPauseMut.mutate({ taskId, reason: 'aguardando_cliente' });
+      } else if (colStatus === 'bloqueada') {
+        startPauseMut.mutate({ taskId, reason: 'bloqueada' });
+      }
+
+      updateTask(taskId, timerUpdates);
     }
   };
 
