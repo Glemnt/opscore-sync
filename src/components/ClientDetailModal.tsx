@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
-import { Building2, Calendar as CalendarIcon, Clock, User, CheckCircle2, AlertCircle, ClipboardList, Circle, Send, History, Edit3, Save, X, FileText, Upload, Eye, Trash2, Pencil, Plus, Workflow, ShoppingBag, ChevronDown, ChevronUp, AlertTriangle } from 'lucide-react';
+import { Building2, Calendar as CalendarIcon, Clock, User, CheckCircle2, AlertCircle, ClipboardList, Circle, Send, History, Edit3, Save, X, FileText, Upload, Eye, Trash2, Pencil, Plus, Workflow, ShoppingBag, ChevronDown, ChevronUp, AlertTriangle, Route } from 'lucide-react';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Calendar } from '@/components/ui/calendar';
@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
 import { StatusBadge } from '@/components/ui/shared';
 import { taskStatusConfig, taskTypeConfig } from '@/lib/config';
 import { Client, Task, TaskStatus, ClientStatus, ContractType, Platform, Squad, FaseMacro, PerfilCliente, StatusFinanceiro, RiscoChurn, TipoCliente, PrioridadeGeral } from '@/types';
@@ -27,6 +28,7 @@ import { useClientPlatformsQuery, useAddClientPlatform, useUpdateClientPlatform,
 import type { ClientPlatform } from '@/hooks/useClientPlatformsQuery';
 import { PlatformAttributesEditor } from '@/components/PlatformAttributesEditor';
 import { useAuth } from '@/contexts/AuthContext';
+import { useCsJourneyItemsQuery, useUpdateJourneyItem, PHASE_LABELS } from '@/hooks/useCsJourneyQuery';
 import { useClientPlatformChecklistQuery } from '@/hooks/useClientPlatformChecklistQuery';
 import { PLATFORM_STATUS_OPTIONS, computeDiasEmAtraso } from '@/lib/platformUtils';
 import { Progress } from '@/components/ui/progress';
@@ -816,6 +818,9 @@ export function ClientDetailModal({ client, open, onClose }: ClientDetailModalPr
           </div>
         )}
 
+        {/* Jornada CS */}
+        <ClientJourneySection clientId={client.id} startDate={client.startDate} />
+
         {/* Timeline */}
         <div className="px-6 py-4">
           <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4">
@@ -913,6 +918,81 @@ export function ClientDetailModal({ client, open, onClose }: ClientDetailModalPr
         </div>
       </DialogContent>
     </Dialog>
+  );
+}
+
+function ClientJourneySection({ clientId, startDate }: { clientId: string; startDate: string }) {
+  const { data: items = [] } = useCsJourneyItemsQuery(clientId);
+  const updateItem = useUpdateJourneyItem();
+  const { currentUser } = useAuth();
+  const [expanded, setExpanded] = useState(false);
+  const todayStr = format(new Date(), 'yyyy-MM-dd');
+
+  if (items.length === 0) return null;
+
+  const doneCount = items.filter(i => i.status === 'feita').length;
+  const pct = Math.round((doneCount / items.length) * 100);
+  const overdueCount = items.filter(i => i.status === 'pendente' && i.scheduledDate < todayStr).length;
+  const phases = ['onboard', 'primeiros_resultados', 'estabilizacao', 'consolidacao'];
+
+  const handleComplete = (id: string) => {
+    updateItem.mutate({ id, updates: { status: 'feita', completedBy: currentUser?.name ?? '', completedAt: new Date().toISOString(), actualDate: todayStr } });
+  };
+
+  return (
+    <div className="px-6 py-4 border-b border-border">
+      <button onClick={() => setExpanded(!expanded)} className="flex items-center justify-between w-full">
+        <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+          <Route className="w-3.5 h-3.5" /> Jornada CS ({doneCount}/{items.length})
+          {overdueCount > 0 && <Badge variant="destructive" className="text-[10px] ml-1">{overdueCount} atrasada(s)</Badge>}
+        </h4>
+        <div className="flex items-center gap-2">
+          <Progress value={pct} className="h-1.5 w-20" />
+          <span className="text-xs font-bold text-primary">{pct}%</span>
+          {expanded ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
+        </div>
+      </button>
+
+      {expanded && (
+        <div className="mt-4 space-y-4">
+          {phases.map(phase => {
+            const phaseItems = items.filter(i => i.phase === phase);
+            if (phaseItems.length === 0) return null;
+            return (
+              <div key={phase}>
+                <p className="text-xs font-semibold text-muted-foreground mb-2">{PHASE_LABELS[phase]}</p>
+                <div className="space-y-1.5">
+                  {phaseItems.map(item => {
+                    const isOverdue = item.status === 'pendente' && item.scheduledDate < todayStr;
+                    const isDone = item.status === 'feita';
+                    const isSkipped = item.status === 'pulada';
+                    return (
+                      <div key={item.id} className={cn(
+                        'flex items-center gap-2 px-3 py-1.5 rounded-md text-sm',
+                        isDone ? 'bg-green-500/5' : isOverdue ? 'bg-destructive/5' : 'bg-muted/30'
+                      )}>
+                        <span className={cn(
+                          'w-2.5 h-2.5 rounded-full shrink-0',
+                          isDone ? 'bg-green-500' : isSkipped ? 'bg-muted-foreground' : isOverdue ? 'bg-destructive' : 'bg-border'
+                        )} />
+                        <span className="font-mono text-xs text-muted-foreground w-8">D{item.dayNumber}</span>
+                        <span className={cn('flex-1', isDone && 'line-through text-muted-foreground')}>{item.title}</span>
+                        <span className="text-[10px] text-muted-foreground">{item.scheduledDate}</span>
+                        {!isDone && !isSkipped && (
+                          <Button size="sm" variant="ghost" className="h-5 px-1.5 text-[10px]" onClick={() => handleComplete(item.id)}>
+                            <CheckCircle2 className="w-3 h-3" />
+                          </Button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
   );
 }
 

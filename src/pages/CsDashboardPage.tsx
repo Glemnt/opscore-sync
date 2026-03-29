@@ -3,6 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useClientsQuery, useAddClientChatNote } from '@/hooks/useClientsQuery';
 import { useTasksQuery, useAddTask } from '@/hooks/useTasksQuery';
 import { useClientPlatformsQuery } from '@/hooks/useClientPlatformsQuery';
+import { useCsJourneyItemsQuery, useUpdateJourneyItem, PHASE_LABELS } from '@/hooks/useCsJourneyQuery';
 import { useSquadsQuery } from '@/hooks/useSquadsQuery';
 import { useTaskStatusesQuery } from '@/hooks/useTaskStatusesQuery';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -17,10 +18,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Calendar, Clock, AlertTriangle, CheckCircle2, Users, Heart, Send, Plus, Eye, CircleDot } from 'lucide-react';
+import { Calendar, Clock, AlertTriangle, CheckCircle2, Users, Heart, Send, Plus, Eye, CircleDot, Route, Pencil, X } from 'lucide-react';
 import { differenceInDays, format, startOfWeek, endOfWeek, addWeeks, isWithinInterval, parseISO, isValid } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
+import { Progress } from '@/components/ui/progress';
 import type { Client, Task } from '@/types';
 
 // --- Notification tracking ---
@@ -259,6 +262,7 @@ export function CsDashboardPage() {
           <TabsTrigger value="saude" className="gap-1.5"><Heart className="w-3.5 h-3.5" /> Saúde</TabsTrigger>
           <TabsTrigger value="kanban" className="gap-1.5"><CircleDot className="w-3.5 h-3.5" /> Minhas Tarefas</TabsTrigger>
           <TabsTrigger value="clientes" className="gap-1.5"><Users className="w-3.5 h-3.5" /> Clientes</TabsTrigger>
+          <TabsTrigger value="jornada" className="gap-1.5"><Route className="w-3.5 h-3.5" /> Jornada</TabsTrigger>
         </TabsList>
 
         {/* === SECTION 1: AGENDA === */}
@@ -448,7 +452,182 @@ export function CsDashboardPage() {
             })}
           </Accordion>
         </TabsContent>
+
+        {/* === SECTION: JORNADA === */}
+        <TabsContent value="jornada" className="space-y-4">
+          <JornadaSection clients={myClients} />
+        </TabsContent>
       </Tabs>
+    </div>
+  );
+}
+
+function JornadaSection({ clients }: { clients: Client[] }) {
+  const { data: allItems = [] } = useCsJourneyItemsQuery();
+  const updateItem = useUpdateJourneyItem();
+  const { currentUser } = useAuth();
+  const [expandedClient, setExpandedClient] = useState<string | null>(null);
+  const [editingItem, setEditingItem] = useState<string | null>(null);
+  const [editNotes, setEditNotes] = useState('');
+  const [editLink, setEditLink] = useState('');
+  const now = new Date();
+  const todayStr = format(now, 'yyyy-MM-dd');
+
+  const clientJourneys = useMemo(() => {
+    return clients.map(c => {
+      const items = allItems.filter(i => i.clientId === c.id).sort((a, b) => a.dayNumber - b.dayNumber);
+      const totalItems = items.length;
+      const doneItems = items.filter(i => i.status === 'feita').length;
+      const overdueItems = items.filter(i => i.status === 'pendente' && i.scheduledDate < todayStr);
+      const startDate = parseISO(c.startDate);
+      const daysCurrent = isValid(startDate) ? Math.max(0, differenceInDays(now, startDate)) : 0;
+      const nextTask = items.find(i => i.status === 'pendente' && i.scheduledDate >= todayStr);
+      return { client: c, items, totalItems, doneItems, overdueItems, daysCurrent, nextTask };
+    }).filter(j => j.totalItems > 0).sort((a, b) => b.overdueItems.length - a.overdueItems.length);
+  }, [clients, allItems, todayStr]);
+
+  const handleComplete = (itemId: string) => {
+    updateItem.mutate({
+      id: itemId,
+      updates: {
+        status: 'feita',
+        completedBy: currentUser?.name ?? '',
+        completedAt: new Date().toISOString(),
+        actualDate: todayStr,
+      },
+    });
+  };
+
+  const handleSkip = (itemId: string) => {
+    updateItem.mutate({ id: itemId, updates: { status: 'pulada' } });
+  };
+
+  const handleSaveNotes = (itemId: string) => {
+    updateItem.mutate({ id: itemId, updates: { notes: editNotes, link: editLink } }, {
+      onSuccess: () => setEditingItem(null),
+    });
+  };
+
+  if (clientJourneys.length === 0) {
+    return <p className="text-sm text-muted-foreground text-center py-8">Nenhuma jornada encontrada para seus clientes.</p>;
+  }
+
+  return (
+    <div className="space-y-3">
+      {clientJourneys.map(({ client: c, items, totalItems, doneItems, overdueItems, daysCurrent, nextTask }) => {
+        const pct = totalItems > 0 ? Math.round((doneItems / totalItems) * 100) : 0;
+        const isExpanded = expandedClient === c.id;
+
+        return (
+          <Card key={c.id} className="overflow-hidden">
+            <button className="w-full text-left" onClick={() => setExpandedClient(isExpanded ? null : c.id)}>
+              <CardHeader className="py-3 px-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <CardTitle className="text-sm font-semibold">{c.name}</CardTitle>
+                    <Badge variant="outline" className="text-xs font-mono">D{daysCurrent} de 90</Badge>
+                    {overdueItems.length > 0 && (
+                      <Badge variant="destructive" className="text-xs gap-1"><AlertTriangle className="w-3 h-3" />{overdueItems.length} atrasada(s)</Badge>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-3 min-w-[200px]">
+                    <Progress value={pct} className="h-2 flex-1" />
+                    <span className="text-xs font-bold text-primary w-10 text-right">{pct}%</span>
+                  </div>
+                </div>
+                {nextTask && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Próxima: <strong>D{nextTask.dayNumber}</strong> — {nextTask.title} ({nextTask.scheduledDate})
+                  </p>
+                )}
+              </CardHeader>
+            </button>
+
+            {isExpanded && (
+              <CardContent className="px-4 pb-4 pt-0">
+                <div className="relative">
+                  <div className="absolute left-[9px] top-2 bottom-2 w-0.5 bg-border" />
+                  <div className="space-y-2">
+                    {items.map(item => {
+                      const isOverdue = item.status === 'pendente' && item.scheduledDate < todayStr;
+                      const isToday = item.scheduledDate === todayStr;
+                      const isDone = item.status === 'feita';
+                      const isSkipped = item.status === 'pulada';
+
+                      return (
+                        <div key={item.id} className="relative flex items-start gap-3 pl-0">
+                          <div className={cn(
+                            'relative z-10 w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5',
+                            isDone ? 'bg-green-500 text-white' :
+                            isSkipped ? 'bg-muted text-muted-foreground' :
+                            isOverdue ? 'bg-destructive text-destructive-foreground' :
+                            isToday ? 'bg-yellow-500 text-white' :
+                            'bg-card border-2 border-border'
+                          )}>
+                            {isDone ? <CheckCircle2 className="w-3 h-3" /> : <span className="text-[8px] font-bold">D{item.dayNumber}</span>}
+                          </div>
+                          <div className={cn(
+                            'flex-1 rounded-lg border p-2.5 text-sm',
+                            isDone ? 'bg-green-500/5 border-green-500/20 opacity-70' :
+                            isOverdue ? 'bg-destructive/5 border-destructive/20' :
+                            isToday ? 'bg-yellow-500/5 border-yellow-500/20' :
+                            'bg-card border-border'
+                          )}>
+                            <div className="flex items-center justify-between gap-2">
+                              <div>
+                                <span className={cn('font-medium', isDone && 'line-through text-muted-foreground')}>{item.title}</span>
+                                <span className="text-xs text-muted-foreground ml-2">({PHASE_LABELS[item.phase]?.split(' ')[0] ?? item.phase})</span>
+                                <span className="text-xs text-muted-foreground ml-2">{item.scheduledDate}</span>
+                              </div>
+                              <div className="flex items-center gap-1 shrink-0">
+                                {!isDone && !isSkipped && (
+                                  <>
+                                    <Button size="sm" variant="ghost" className="h-6 px-2 text-xs" onClick={() => handleComplete(item.id)}>
+                                      <CheckCircle2 className="w-3 h-3 mr-1" /> Feita
+                                    </Button>
+                                    <Button size="sm" variant="ghost" className="h-6 px-2 text-xs text-muted-foreground" onClick={() => handleSkip(item.id)}>
+                                      Pular
+                                    </Button>
+                                  </>
+                                )}
+                                <Button
+                                  size="sm" variant="ghost" className="h-6 px-2 text-xs"
+                                  onClick={() => {
+                                    if (editingItem === item.id) { setEditingItem(null); }
+                                    else { setEditingItem(item.id); setEditNotes(item.notes); setEditLink(item.link); }
+                                  }}
+                                >
+                                  {editingItem === item.id ? <X className="w-3 h-3" /> : <Pencil className="w-3 h-3" />}
+                                </Button>
+                              </div>
+                            </div>
+                            {item.notes && editingItem !== item.id && (
+                              <p className="text-xs text-muted-foreground mt-1 italic">{item.notes}</p>
+                            )}
+                            {item.link && editingItem !== item.id && (
+                              <a href={item.link} target="_blank" rel="noopener noreferrer" className="text-xs text-primary underline mt-0.5 inline-block">🔗 Link</a>
+                            )}
+                            {editingItem === item.id && (
+                              <div className="mt-2 space-y-1.5">
+                                <Textarea value={editNotes} onChange={e => setEditNotes(e.target.value)} placeholder="Observações..." className="text-xs min-h-[50px]" />
+                                <Input value={editLink} onChange={e => setEditLink(e.target.value)} placeholder="Link (ex: gravação da reunião)" className="h-7 text-xs" />
+                                <Button size="sm" className="h-7 text-xs" onClick={() => handleSaveNotes(item.id)}>Salvar</Button>
+                              </div>
+                            )}
+                            {isDone && item.completedBy && (
+                              <p className="text-[10px] text-muted-foreground mt-1">✅ por {item.completedBy} em {item.actualDate}</p>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </CardContent>
+            )}
+          </Card>
+        );
+      })}
     </div>
   );
 }

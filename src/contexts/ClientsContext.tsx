@@ -1,4 +1,4 @@
-import { createContext, useContext, ReactNode, useCallback } from 'react';
+import { createContext, useContext, ReactNode, useCallback, useEffect, useRef } from 'react';
 import { Client, ChangeLogEntry, ChatNote } from '@/types';
 import { toast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
@@ -11,6 +11,7 @@ import {
   useAddChangeLog,
   useAddClientChatNote,
 } from '@/hooks/useClientsQuery';
+import { useGenerateJourneyForClient } from '@/hooks/useCsJourneyQuery';
 
 interface MutationCallbacks {
   onSuccess?: () => void;
@@ -39,16 +40,21 @@ export function ClientsProvider({ children }: { children: ReactNode }) {
   const deleteClientMut = useDeleteClient();
   const addChangeLogMut = useAddChangeLog();
   const addChatNoteMut = useAddClientChatNote();
+  const generateJourney = useGenerateJourneyForClient();
 
   const addClient = useCallback((client: Client, callbacks?: MutationCallbacks) => {
     addClientMut.mutate(client, {
-      onSuccess: () => callbacks?.onSuccess?.(),
+      onSuccess: () => {
+        // Auto-generate CS journey
+        generateJourney.mutate({ clientId: client.id, startDate: client.startDate });
+        callbacks?.onSuccess?.();
+      },
       onError: (err) => {
         toast({ title: 'Erro ao adicionar cliente', description: String(err), variant: 'destructive' });
         callbacks?.onError?.(err);
       },
     });
-  }, [addClientMut]);
+  }, [addClientMut, generateJourney]);
 
   const deleteClient = useCallback((clientId: string) => {
     deleteClientMut.mutate(clientId, {

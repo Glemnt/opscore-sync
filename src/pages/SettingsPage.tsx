@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { Plus, Shield, ShieldCheck, ShieldAlert, Pencil, Trash2, CalendarIcon, Cake } from 'lucide-react';
+import { Plus, Shield, ShieldCheck, ShieldAlert, Pencil, Trash2, CalendarIcon, Cake, Route, Save, X } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSquads } from '@/contexts/SquadsContext';
 import { useAppUsersQuery, useCreateAppUser, useUpdateAppUser, useDeleteAppUser } from '@/hooks/useAppUsersQuery';
 import { usePlatformsQuery, useAddPlatform, useDeletePlatform } from '@/hooks/usePlatformsQuery';
 import { useTaskTypesQuery, useAddTaskType, useDeleteTaskType } from '@/hooks/useTaskTypesQuery';
 import { useDelayReasonsQuery, useAddDelayReason, useUpdateDelayReason, useDeleteDelayReason } from '@/hooks/useDelayReasonsQuery';
+import { useCsJourneyTemplatesQuery, useAddJourneyTemplate, useUpdateJourneyTemplate, useDeleteJourneyTemplate, PHASE_LABELS, PHASE_OPTIONS } from '@/hooks/useCsJourneyQuery';
 import { AccessLevel, TeamRole } from '@/types';
 import type { AppUserProfile } from '@/types/database';
 import { PageHeader } from '@/components/ui/shared';
@@ -57,6 +58,131 @@ function calculateAge(birthday: string | null): number | null {
   } catch {
     return null;
   }
+}
+
+function JornadaCsSettings() {
+  const { data: templates = [], isLoading } = useCsJourneyTemplatesQuery();
+  const addTemplate = useAddJourneyTemplate();
+  const updateTemplate = useUpdateJourneyTemplate();
+  const deleteTemplate = useDeleteJourneyTemplate();
+  const [showAdd, setShowAdd] = useState(false);
+  const [newTitle, setNewTitle] = useState('');
+  const [newDay, setNewDay] = useState(1);
+  const [newPhase, setNewPhase] = useState('onboard');
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editTitle, setEditTitle] = useState('');
+  const [editDay, setEditDay] = useState(1);
+  const [editPhase, setEditPhase] = useState('onboard');
+
+  const handleAdd = () => {
+    if (!newTitle.trim()) return;
+    addTemplate.mutate({ title: newTitle.trim(), dayNumber: newDay, phase: newPhase }, {
+      onSuccess: () => { setNewTitle(''); setNewDay(1); setNewPhase('onboard'); setShowAdd(false); toast.success('Template adicionado'); },
+    });
+  };
+
+  const startEdit = (t: any) => {
+    setEditingId(t.id); setEditTitle(t.title); setEditDay(t.dayNumber); setEditPhase(t.phase);
+  };
+
+  const handleSaveEdit = () => {
+    if (!editingId) return;
+    updateTemplate.mutate({ id: editingId, updates: { title: editTitle, dayNumber: editDay, phase: editPhase } }, {
+      onSuccess: () => { setEditingId(null); toast.success('Template atualizado'); },
+    });
+  };
+
+  return (
+    <div className="mt-8">
+      <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+        <Route className="w-5 h-5" /> Jornada do CS (D1-D90)
+      </h3>
+      <div className="bg-card rounded-xl border border-border shadow-sm-custom p-5">
+        <div className="flex items-center justify-between mb-4">
+          <p className="text-sm text-muted-foreground">Template de tarefas automáticas ao longo dos 90 dias do cliente.</p>
+          <Button size="sm" onClick={() => setShowAdd(true)} className="gap-1"><Plus className="w-4 h-4" /> Adicionar</Button>
+        </div>
+
+        {showAdd && (
+          <div className="flex items-end gap-2 mb-4 p-3 bg-muted/50 rounded-lg">
+            <div className="flex-1">
+              <Label className="text-xs">Título</Label>
+              <Input value={newTitle} onChange={e => setNewTitle(e.target.value)} placeholder="Título da tarefa" className="h-8 text-sm" />
+            </div>
+            <div className="w-20">
+              <Label className="text-xs">Dia</Label>
+              <Input type="number" min={1} max={90} value={newDay} onChange={e => setNewDay(Number(e.target.value))} className="h-8 text-sm" />
+            </div>
+            <div className="w-44">
+              <Label className="text-xs">Fase</Label>
+              <select value={newPhase} onChange={e => setNewPhase(e.target.value)} className="w-full h-8 px-2 text-sm bg-background border border-input rounded-md text-foreground">
+                {PHASE_OPTIONS.map(p => <option key={p} value={p}>{PHASE_LABELS[p]}</option>)}
+              </select>
+            </div>
+            <Button size="sm" onClick={handleAdd} disabled={addTemplate.isPending}>Salvar</Button>
+            <Button size="sm" variant="ghost" onClick={() => setShowAdd(false)}>Cancelar</Button>
+          </div>
+        )}
+
+        {isLoading ? (
+          <div className="space-y-2">{Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}</div>
+        ) : templates.length === 0 ? (
+          <p className="text-sm text-muted-foreground text-center py-6">Nenhum template cadastrado.</p>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-16">Dia</TableHead>
+                <TableHead className="w-40">Fase</TableHead>
+                <TableHead>Título</TableHead>
+                <TableHead className="w-20 text-center">Ativo</TableHead>
+                <TableHead className="w-24 text-right">Ações</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {templates.map(t => (
+                <TableRow key={t.id}>
+                  {editingId === t.id ? (
+                    <>
+                      <TableCell><Input type="number" min={1} max={90} value={editDay} onChange={e => setEditDay(Number(e.target.value))} className="h-7 w-14 text-sm" /></TableCell>
+                      <TableCell>
+                        <select value={editPhase} onChange={e => setEditPhase(e.target.value)} className="h-7 px-1 text-xs bg-background border border-input rounded text-foreground">
+                          {PHASE_OPTIONS.map(p => <option key={p} value={p}>{PHASE_LABELS[p]}</option>)}
+                        </select>
+                      </TableCell>
+                      <TableCell><Input value={editTitle} onChange={e => setEditTitle(e.target.value)} className="h-7 text-sm" /></TableCell>
+                      <TableCell />
+                      <TableCell className="text-right space-x-1">
+                        <Button size="sm" variant="ghost" onClick={handleSaveEdit} className="h-7 px-2"><Save className="w-3.5 h-3.5" /></Button>
+                        <Button size="sm" variant="ghost" onClick={() => setEditingId(null)} className="h-7 px-2"><X className="w-3.5 h-3.5" /></Button>
+                      </TableCell>
+                    </>
+                  ) : (
+                    <>
+                      <TableCell className="font-mono text-sm font-bold">D{t.dayNumber}</TableCell>
+                      <TableCell><span className="text-xs text-muted-foreground">{PHASE_LABELS[t.phase] ?? t.phase}</span></TableCell>
+                      <TableCell className="text-sm">{t.title}</TableCell>
+                      <TableCell className="text-center">
+                        <button
+                          onClick={() => updateTemplate.mutate({ id: t.id, updates: { isActive: !t.isActive } })}
+                          className={cn('w-4 h-4 rounded-full border-2 inline-block', t.isActive ? 'bg-green-500 border-green-600' : 'bg-muted border-border')}
+                          title={t.isActive ? 'Desativar' : 'Ativar'}
+                        />
+                      </TableCell>
+                      <TableCell className="text-right space-x-1">
+                        <button onClick={() => startEdit(t)} className="text-muted-foreground hover:text-foreground"><Pencil className="w-3.5 h-3.5 inline" /></button>
+                        <button onClick={() => deleteTemplate.mutate(t.id, { onSuccess: () => toast.success('Template removido') })} className="text-muted-foreground hover:text-destructive"><Trash2 className="w-3.5 h-3.5 inline" /></button>
+                      </TableCell>
+                    </>
+                  )}
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+      </div>
+    </div>
+  );
 }
 
 export function SettingsPage() {
@@ -570,6 +696,9 @@ export function SettingsPage() {
           </div>
         </div>
       </div>
+
+      {/* Jornada CS Section */}
+      <JornadaCsSettings />
       </div>
 
       {/* Create Dialog */}
