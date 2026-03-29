@@ -71,6 +71,7 @@ interface UpdateUserInput {
   squadIds: string[];
   hireDate?: string | null;
   birthday?: string | null;
+  maxCapacity?: number;
 }
 
 export function useUpdateAppUser() {
