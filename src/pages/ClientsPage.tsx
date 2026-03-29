@@ -6,7 +6,6 @@ import { mockAnalysisData } from '@/components/ClientAIAnalysis';
 import { getPlatformAttributeSummary } from '@/components/PlatformAttributesEditor';
 import { useHealthScores } from '@/hooks/useHealthScores';
 import { canViewHealth, HEALTH_ICONS } from '@/lib/healthScore';
-import { getPlatformAttributeSummary } from '@/components/PlatformAttributesEditor';
 import { useSquads } from '@/contexts/SquadsContext';
 import { usePlatformsQuery } from '@/hooks/usePlatformsQuery';
 import { useProjectsQuery } from '@/hooks/useProjectsQuery';
