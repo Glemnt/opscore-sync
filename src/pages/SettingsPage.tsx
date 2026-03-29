@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, Shield, ShieldCheck, ShieldAlert, Pencil, Trash2, CalendarIcon, Cake } from 'lucide-react';
+import { Plus, Shield, ShieldCheck, ShieldAlert, Pencil, Trash2, CalendarIcon, Cake, Route } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSquads } from '@/contexts/SquadsContext';
 import { useAppUsersQuery, useCreateAppUser, useUpdateAppUser, useDeleteAppUser } from '@/hooks/useAppUsersQuery';
@@ -570,6 +570,9 @@ export function SettingsPage() {
           </div>
         </div>
       </div>
+
+      {/* Jornada CS Section */}
+      <JornadaCsSettings />
       </div>
 
       {/* Create Dialog */}
