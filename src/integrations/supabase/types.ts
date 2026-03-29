@@ -1159,6 +1159,41 @@ export type Database = {
           },
         ]
       }
+      task_pauses: {
+        Row: {
+          created_at: string
+          id: string
+          pause_end: string | null
+          pause_start: string
+          reason: string
+          task_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          pause_end?: string | null
+          pause_start?: string
+          reason?: string
+          task_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          pause_end?: string | null
+          pause_start?: string
+          reason?: string
+          task_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_pauses_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       task_statuses: {
         Row: {
           class_name: string
@@ -1220,6 +1255,7 @@ export type Database = {
           client_id: string
           client_name: string
           comments: string
+          completed_at: string | null
           created_at: string
           deadline: string
           depende_cliente: boolean
@@ -1242,7 +1278,9 @@ export type Database = {
           rejection_count: number
           rejection_reason: string
           responsible: string
+          started_at: string | null
           status: string
+          tempo_real_minutos: number | null
           title: string
           type: string
           updated_at: string
@@ -1256,6 +1294,7 @@ export type Database = {
           client_id: string
           client_name?: string
           comments?: string
+          completed_at?: string | null
           created_at?: string
           deadline?: string
           depende_cliente?: boolean
@@ -1278,7 +1317,9 @@ export type Database = {
           rejection_count?: number
           rejection_reason?: string
           responsible?: string
+          started_at?: string | null
           status?: string
+          tempo_real_minutos?: number | null
           title: string
           type?: string
           updated_at?: string
@@ -1292,6 +1333,7 @@ export type Database = {
           client_id?: string
           client_name?: string
           comments?: string
+          completed_at?: string | null
           created_at?: string
           deadline?: string
           depende_cliente?: boolean
@@ -1314,7 +1356,9 @@ export type Database = {
           rejection_count?: number
           rejection_reason?: string
           responsible?: string
+          started_at?: string | null
           status?: string
+          tempo_real_minutos?: number | null
           title?: string
           type?: string
           updated_at?: string
