@@ -1,93 +1,107 @@
 
 
-## Checklist Onboarding — Nova Tela de Esteira D1-D15
+## Motivos de Atraso + Plano de Acao
 
 ### Resumo
 
-Criar uma nova pagina "Checklist Onboarding" com grid horizontal mostrando clientes em onboarding como linhas e tarefas D1-D15 como colunas. Cada celula e clicavel para alternar status. Semaforo automatico baseado em prazos.
+Criar tabela de motivos de atraso configuravel, integrar dropdown nos modais de plataforma e tarefa, e criar nova pagina "Plano de Acao" com registro e acompanhamento de crises.
 
 ---
 
-### 1. Migration — Tabela `onboarding_checklist_items`
+### 1. Migration — Duas novas tabelas
 
-```sql
-CREATE TABLE onboarding_checklist_items (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  client_id uuid NOT NULL,
-  task_key text NOT NULL,
-  status text NOT NULL DEFAULT 'pendente', -- feito, pendente, atrasado, nao_aplica
-  completed_by text DEFAULT '',
-  completed_at timestamptz DEFAULT NULL,
-  created_at timestamptz NOT NULL DEFAULT now(),
-  UNIQUE(client_id, task_key)
-);
-```
+**`delay_reasons`:**
+- `id uuid PK DEFAULT gen_random_uuid()`
+- `label text NOT NULL`
+- `is_active boolean NOT NULL DEFAULT true`
+- `sort_order integer NOT NULL DEFAULT 0`
+- `created_at timestamptz NOT NULL DEFAULT now()`
 
-RLS: authenticated full CRUD.
+Seed com os 20 motivos listados no prompt.
 
----
+**`action_plans`:**
+- `id uuid PK DEFAULT gen_random_uuid()`
+- `client_id uuid NOT NULL`
+- `platform_id uuid` (nullable, FK -> client_platforms)
+- `identified_at date NOT NULL DEFAULT CURRENT_DATE`
+- `days_delayed integer NOT NULL DEFAULT 0`
+- `issue_description text NOT NULL DEFAULT ''`
+- `crisis_type text NOT NULL DEFAULT 'atraso_tarefa'`
+- `root_cause text NOT NULL DEFAULT ''`
+- `responsible_for_delay text NOT NULL DEFAULT ''`
+- `action_plan_text text NOT NULL DEFAULT ''`
+- `new_deadline date`
+- `resolution_status text NOT NULL DEFAULT 'aberto'` (aberto, em_andamento, escalado_diretoria, resolvido)
+- `manager_aware boolean NOT NULL DEFAULT false`
+- `created_by text NOT NULL DEFAULT ''`
+- `created_at timestamptz NOT NULL DEFAULT now()`
+- `updated_at timestamptz NOT NULL DEFAULT now()`
 
-### 2. Hook — `useOnboardingChecklistQuery.ts`
-
-- Query: busca todos os items, agrupados por `client_id`
-- Mutation `upsertItem`: upsert por `(client_id, task_key)` — alterna status ciclicamente (pendente → feito → atrasado → nao_aplica → pendente), registra `completed_by` e `completed_at`
-
----
-
-### 3. Pagina — `OnboardingChecklistPage.tsx`
-
-**Contadores no topo:** Total no checklist, Em onboarding (≤20 dias), Carteira base (>20 dias), Ativos, Churn, Risco — computados dos clientes filtrados.
-
-**Filtros:** CS Responsavel, Status geral (semaforo), Perfil cliente, Periodo de entrada.
-
-**Grid com scroll horizontal:**
-- Colunas fixas a esquerda: ID, Nome, CS, Perfil, Data Entrada, Prazo D15, Prazo D20, Semaforo Geral
-- Colunas D1-D3 (9 tarefas): Reuniao Onboarding, Link Gravacao, Duracao, Briefing, Acessos, Cronograma, Impressora Termica, Modelo Anuncio, Equipe Definida
-- Colunas D2-D3 (3 tarefas): Kit Entregue, Video 1, Reuniao Implementacao
-- Colunas D3-D9 Auxiliar (8 tarefas): 3/7/11/15/22/25+ Anuncios, Termometro, Logistica
-- Colunas D4-D9 Assistente (5 tarefas): Termometro, Promocoes, Envio, Campanha, Emissor
-- Colunas Entrega (2 tarefas): Reuniao Entrega, NPS
-
-**Cada celula:** Icone colorido (✅🟢/❌🔴/⚠️🟡/—⚫). Click cicla o status via upsert.
-
-**Semaforo automatico:** Para cada tarefa, calcula o dia util esperado a partir da `start_date` do cliente. Se o dia ja passou e status != 'feito', exibe indicador vermelho. Se faltam ≤2 dias, amarelo. Se feito, azul. Caso contrario, verde.
-
-**Prazo D15/D20:** Calculados como start_date + 15/20 dias uteis (funcao utilitaria que pula fins de semana).
+RLS: authenticated full CRUD em ambas.
 
 ---
 
-### 4. Definicao das task_keys
+### 2. Hooks
 
-Array constante com ~27 tarefas, cada uma com: `key`, `label`, `group` (d1d3_cs, d2d3_trans, d3d9_aux, d4d9_asst, entrega), `expectedDay` (numero 1-15 para calculo do semaforo).
+**`useDelayReasonsQuery.ts`** (novo): query all active reasons sorted, add/update/delete mutations.
 
----
-
-### 5. Navegacao
-
-- Adicionar "Checklist Onboarding" no `AppSidebar.tsx` (icone `ClipboardCheck`), visivel para todos
-- Adicionar case `'onboarding-checklist'` no `Index.tsx`
+**`useActionPlansQuery.ts`** (novo): query all action plans (join client name), add/update/delete mutations.
 
 ---
 
-### 6. Funcao utilitaria — dias uteis
+### 3. Substituir MOTIVO_ATRASO_OPTIONS por dados do banco
 
-`addBusinessDays(date, days)`: soma N dias uteis (pula sabado/domingo). Usada para calcular prazos D15 e D20 e o semaforo de cada tarefa.
+Atualizar `PlatformDetailModal.tsx`: o select de motivo de atraso passa a usar dados de `useDelayReasonsQuery` em vez do array estatico em `platformUtils.ts`. Manter o array como fallback.
+
+Atualizar `TaskDetailModal.tsx`: adicionar campo "Motivo de Atraso" (select) visivel quando tarefa esta atrasada ou com status bloqueado. Salvar no campo `comments` ou em novo campo — como a tabela `tasks` nao tem coluna `motivo_atraso`, adicionar coluna `motivo_atraso text DEFAULT ''` na migration.
+
+---
+
+### 4. Configuracoes — Secao "Motivos de Atraso"
+
+Adicionar nova secao na `SettingsPage.tsx` (visivel apenas level 3): lista de motivos com toggle ativo/inativo, botao adicionar, botao excluir. Mesmo padrao visual das secoes de Plataformas e Tipos de Demanda ja existentes.
+
+---
+
+### 5. Nova pagina — `ActionPlansPage.tsx`
+
+Tabela com colunas: Cliente, Data Identificacao, Dias Atraso, Problema, Tipo Crise (dropdown: Atraso de tarefa, Bloqueio externo, Erro interno, Risco de churn, Crise de comunicacao, Problema tecnico, Problema financeiro, Outro), Causa Raiz, Responsavel, Plano de Acao, Novo Prazo, Status Resolucao, Manager Ciente.
+
+Filtros: Status resolucao, Tipo de crise, Responsavel.
+
+Contadores: Total abertos, Em andamento, Escalados, Resolvidos.
+
+Botao "Novo Plano de Acao" abre dialog com todos os campos. Edicao inline na tabela.
+
+---
+
+### 6. Navegacao
+
+Adicionar "Plano de Acao" no `AppSidebar.tsx` (icone `AlertTriangle`), visivel para accessLevel >= 2 (Managers + Admins).
+
+Adicionar case `'action-plans'` no `Index.tsx`.
 
 ---
 
 ### Arquivos
 
-- `supabase/migrations/` — nova migration
-- `src/hooks/useOnboardingChecklistQuery.ts` (novo)
-- `src/pages/OnboardingChecklistPage.tsx` (novo)
-- `src/components/AppSidebar.tsx` (add nav item)
-- `src/pages/Index.tsx` (add route case)
+- `supabase/migrations/` — nova migration (2 tabelas + seed + coluna tasks.motivo_atraso)
+- `src/hooks/useDelayReasonsQuery.ts` (novo)
+- `src/hooks/useActionPlansQuery.ts` (novo)
+- `src/pages/ActionPlansPage.tsx` (novo)
+- `src/components/PlatformDetailModal.tsx` (usar delay_reasons do banco)
+- `src/components/TaskDetailModal.tsx` (adicionar campo motivo_atraso)
+- `src/pages/SettingsPage.tsx` (secao motivos de atraso)
+- `src/components/AppSidebar.tsx` (nav item)
+- `src/pages/Index.tsx` (route case)
+- `src/lib/platformUtils.ts` (manter MOTIVO_ATRASO_OPTIONS como fallback)
 
 ### Ordem
 
-1. Migration
-2. Hook
-3. Constantes de tarefas + utilitario dias uteis
-4. Pagina com grid
-5. Sidebar + rota
+1. Migration (tabelas + seed + coluna tasks)
+2. Hooks (delay_reasons + action_plans)
+3. SettingsPage (secao motivos)
+4. PlatformDetailModal + TaskDetailModal (dropdown dinamico)
+5. ActionPlansPage
+6. Sidebar + rota
 
