@@ -483,6 +483,16 @@ function TaskCard({ task, isLate, onClick, canDelete, onDelete }: { task: Task; 
   const priorityConf = priorityConfig[task.priority] ?? { label: task.priority, className: '', icon: '●' };
   const subtasks = task.subtasks ?? [];
   const progress = subtasks.length > 0 ? Math.round((subtasks.filter(s => s.done).length / subtasks.length) * 100) : -1;
+  
+  const priorityBadge: Record<string, { label: string; className: string }> = {
+    high: { label: 'P1', className: 'bg-destructive/10 text-destructive border-destructive/20' },
+    medium: { label: 'P3', className: 'bg-warning/10 text-warning border-warning/20' },
+    low: { label: 'P4', className: 'bg-muted text-muted-foreground border-border' },
+  };
+  const pBadge = priorityBadge[task.priority] ?? priorityBadge.medium;
+  
+  const diasEmAberto = Math.max(0, Math.floor((Date.now() - new Date(task.createdAt).getTime()) / (1000 * 60 * 60 * 24)));
+  const hasDeps = (task.dependsOn?.length ?? 0) > 0;
 
   const handleDragStart = (e: React.DragEvent) => {
     e.dataTransfer.setData('text/plain', task.id);
@@ -508,7 +518,17 @@ function TaskCard({ task, isLate, onClick, canDelete, onDelete }: { task: Task; 
       )}
       <div className="flex items-start justify-between gap-2 mb-2">
         <p className="text-sm font-semibold text-foreground line-clamp-2 leading-snug flex-1">{task.title}</p>
-        <span className="text-xs">{priorityConf.icon}</span>
+        <div className="flex items-center gap-1">
+          {task.bloqueiaPassagem && (
+            <Lock className="w-3 h-3 text-destructive" title="Bloqueia passagem" />
+          )}
+          {hasDeps && (
+            <Link className="w-3 h-3 text-warning" title="Tem dependências" />
+          )}
+          <span className={cn('text-[10px] px-1.5 py-0.5 rounded border font-bold', pBadge.className)}>
+            {pBadge.label}
+          </span>
+        </div>
       </div>
 
       <div className="flex items-center gap-1.5 mb-3 flex-wrap">
