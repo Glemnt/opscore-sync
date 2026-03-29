@@ -7,7 +7,8 @@ import {
   FileText,
   Settings,
   LogOut,
-  Shield } from
+  Shield,
+  Layers } from
 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
@@ -94,20 +95,32 @@ export function AppSidebar({ currentPage, onNavigate }: AppSidebarProps) {
 
       {/* Footer */}
       <div className="px-3 py-4 border-t border-sidebar-border">
-        {currentUser?.accessLevel === 3 &&
-        <button
-          onClick={() => onNavigate('settings')}
-          className={cn(
-            'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all',
-            currentPage === 'settings' ?
-            'bg-sidebar-accent text-sidebar-accent-foreground shadow-sm' :
-            'text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/60'
-          )}>
-          
-            <Settings className="w-4 h-4" />
-            <span>Admin</span>
-          </button>
-        }
+        {currentUser?.accessLevel === 3 && (
+          <>
+            <button
+              onClick={() => onNavigate('platform-catalog')}
+              className={cn(
+                'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all',
+                currentPage === 'platform-catalog' ?
+                'bg-sidebar-accent text-sidebar-accent-foreground shadow-sm' :
+                'text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/60'
+              )}>
+                <Layers className="w-4 h-4" />
+                <span>Plataformas</span>
+            </button>
+            <button
+              onClick={() => onNavigate('settings')}
+              className={cn(
+                'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all',
+                currentPage === 'settings' ?
+                'bg-sidebar-accent text-sidebar-accent-foreground shadow-sm' :
+                'text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/60'
+              )}>
+                <Settings className="w-4 h-4" />
+                <span>Admin</span>
+            </button>
+          </>
+        )}
         <div className="mt-3 px-3 py-2.5 rounded-lg bg-sidebar-accent/40">
           <div className="flex items-center gap-2">
             <div className="w-7 h-7 rounded-full gradient-primary flex items-center justify-center text-xs font-bold text-white shrink-0">
