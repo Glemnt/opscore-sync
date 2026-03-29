@@ -337,7 +337,8 @@ export function CsDashboardPage() {
                 const clientTasks = myTasks.filter(t => t.clientId === c.id && t.status !== 'done' && t.status !== 'concluida');
                 const overdue = clientTasks.filter(t => differenceInDays(parseISO(t.deadline), now) < 0).length;
                 const ds = daysSince(c.ultimoContato);
-                const healthIcon = overdue >= 3 || c.healthColor === 'red' ? '🔴' : overdue >= 1 || c.healthColor === 'yellow' ? '🟡' : '🟢';
+                const h = allHealthScores[c.id];
+                const healthIcon = HEALTH_ICONS[h?.color ?? 'white'];
                 return (
                   <div key={c.id} className="flex items-center gap-3 py-2.5 text-sm">
                     <span>{healthIcon}</span>
