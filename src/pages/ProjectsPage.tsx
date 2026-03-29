@@ -35,7 +35,9 @@ import { EditPlatformDialog } from '@/components/EditPlatformDialog';
 import { useTaskTypesMap } from '@/hooks/useTaskTypesQuery';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { PlatformDetailModal } from '@/components/PlatformDetailModal';
-
+import { useKanbanColumnConfigsQuery, useKanbanColumnGroups } from '@/hooks/useKanbanColumnConfigsQuery';
+import { supabase } from '@/integrations/supabase/client';
+import { differenceInCalendarDays } from 'date-fns';
 type KanbanColumn = {id: string;label: string;status: ClientStatus | string;};
 type ProjectKanbanColumn = {id: string;label: string;status: ProjectStatus | string;};
 
