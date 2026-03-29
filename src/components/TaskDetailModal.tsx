@@ -31,7 +31,7 @@ interface TaskDetailModalProps {
 }
 
 export function TaskDetailModal({ task, open, onOpenChange }: TaskDetailModalProps) {
-  const { updateTask, deleteTask, flows } = useTasks();
+  const { updateTask, deleteTask, flows, tasks: allTasks } = useTasks();
   const { currentUser } = useAuth();
   const { squads } = useSquads();
   const { clients } = useClients();
