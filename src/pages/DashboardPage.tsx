@@ -342,7 +342,7 @@ export function DashboardPage() {
 
   const revenueByPlatform = useMemo(() => {
     const map: Record<string, number> = {};
-    activeClients.forEach(c => {
+    unfilteredActiveClients.forEach(c => {
       const plats = c.platforms?.length ? c.platforms : ['outro'];
       const rev = (c.monthlyRevenue || 0) / plats.length;
       plats.forEach(p => { map[p] = (map[p] || 0) + rev; });
@@ -351,7 +351,7 @@ export function DashboardPage() {
       name: platformLabels[slug] || slug,
       value: Math.round(value),
     })).sort((a, b) => b.value - a.value);
-  }, [activeClients, platformLabels]);
+  }, [unfilteredActiveClients, platformLabels]);
 
   const addedInPeriod = clients.filter(c => {
     const d = parseISO(c.startDate);
@@ -363,14 +363,14 @@ export function DashboardPage() {
   const allHealthScores = useHealthScores();
   const healthCounts = useMemo(() => {
     const counts = { green: 0, yellow: 0, red: 0, white: 0 };
-    activeClients.forEach(c => {
+    unfilteredActiveClients.forEach(c => {
       const h = allHealthScores[c.id]?.color ?? 'white';
       counts[h as keyof typeof counts] = (counts[h as keyof typeof counts] || 0) + 1;
     });
     return counts;
-  }, [activeClients, allHealthScores]);
+  }, [unfilteredActiveClients, allHealthScores]);
 
-  const churnRiskClients = activeClients.filter(c => c.riscoChurn && c.riscoChurn !== 'baixo');
+  const churnRiskClients = unfilteredActiveClients.filter(c => c.riscoChurn && c.riscoChurn !== 'baixo');
 
   // NPS Consolidated
   const npsStats = useMemo(() => {
