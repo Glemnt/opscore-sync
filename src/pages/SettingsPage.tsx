@@ -29,10 +29,10 @@ import { ptBR } from 'date-fns/locale';
 
 // Only the official Grupo TG roles appear in the dropdown
 const roleLabels: Record<string, string> = {
-  auxiliar_ecommerce: 'AUXILIAR DE ECOMMERCE',
-  assistente_ecommerce: 'ASSISTENTE DE ECOMMERCE',
-  manager: 'MANAGER',
-  head: 'HEAD',
+  auxiliar_ecommerce: 'Auxiliar de E-commerce',
+  assistente_ecommerce: 'Assistente de E-commerce',
+  manager: 'Manager',
+  head: 'Head',
   cs: 'CS',
   coo: 'COO',
   ceo: 'CEO',
@@ -46,6 +46,10 @@ const allRoleLabels: Record<string, string> = {
   copy: 'Copy',
   gestao: 'Gestão',
 };
+
+function titleCase(str: string): string {
+  return str.replace(/\b\w/g, c => c.toUpperCase());
+}
 
 const levelLabels: Record<AccessLevel, { label: string; icon: typeof Shield }> = {
   1: { label: 'Operacional', icon: Shield },
@@ -549,7 +553,7 @@ export function SettingsPage() {
                 const LvlIcon = lvl.icon;
                 return (
                   <TableRow key={u.id}>
-                    <TableCell className="font-medium text-foreground">{u.name}</TableCell>
+                    <TableCell className="font-medium text-foreground">{titleCase(u.name)}</TableCell>
                     <TableCell className="text-muted-foreground">{u.login}</TableCell>
                     <TableCell className="text-muted-foreground">{allRoleLabels[u.role] ?? u.role}</TableCell>
                     <TableCell>
