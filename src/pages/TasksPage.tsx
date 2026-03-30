@@ -401,7 +401,7 @@ export function TasksPage() {
                 onDragStart={(e) => handleColDragStart(e, col.status)}
                 onDragEnd={handleColDragEnd}
                 className={cn(
-                'flex items-center justify-between mb-3 pb-3 border-b-2 cursor-grab active:cursor-grabbing',
+                'flex items-center justify-between mb-3 pb-3 border-b-2 cursor-grab active:cursor-grabbing whitespace-nowrap gap-2',
                 col.status === 'backlog' ? 'border-b-slate-300' :
                   col.status === 'in_progress' ? 'border-b-info' :
                     col.status === 'waiting_client' ? 'border-b-warning' :
@@ -423,7 +423,7 @@ export function TasksPage() {
                   </h3>
                 )}
                 <div className="flex items-center gap-1.5">
-                  <span className="text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded-full font-medium">
+                  <span className="text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded-full font-medium shrink-0">
                     {colTasks.length}
                   </span>
                   <button

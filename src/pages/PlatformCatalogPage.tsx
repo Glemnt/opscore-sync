@@ -71,7 +71,7 @@ export function PlatformCatalogPage() {
                 <div className="flex items-start justify-between">
                   <div>
                     <CardTitle className="text-base">{p.name}</CardTitle>
-                    <p className="text-xs text-muted-foreground font-mono mt-0.5">{p.slug}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">Onboarding: {p.prazo_onboarding}d · Implementação: {p.prazo_implementacao}d</p>
                   </div>
                   <div className="flex items-center gap-1">
                     <Badge variant={p.status === 'ativo' ? 'default' : 'secondary'} className="text-[10px]">
