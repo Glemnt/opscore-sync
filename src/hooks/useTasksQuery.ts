@@ -14,7 +14,7 @@ export function useTasksQuery() {
     queryKey: ['tasks'],
     queryFn: async () => {
       const [tasksRes, subtasksRes, notesRes, depsRes] = await Promise.all([
-        supabase.from('tasks').select('*').order('created_at', { ascending: false }),
+        supabase.from('tasks').select('id, title, client_id, client_name, project_id, project_name, responsible, type, estimated_time, real_time, deadline, status, priority, comments, platform, flow_id, platform_id, etapa, bloqueia_passagem, depende_cliente, aguardando_cliente, origem_tarefa, link_entrega, print_entrega, observacao_entrega, nota_entrega, approval_status, approved_by, approved_at, rejection_reason, rejection_count, started_at, completed_at, tempo_real_minutos, motivo_atraso, created_at').order('created_at', { ascending: false }),
         supabase.from('subtasks').select('*'),
         supabase.from('task_chat_notes').select('*').order('created_at', { ascending: true }),
         supabase.from('task_dependencies' as any).select('*'),

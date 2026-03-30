@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
+import { createContext, useContext, useState, useEffect, useRef, ReactNode, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import type { Client } from '@/types';
 import type { AppUserProfile } from '@/types/database';
@@ -20,17 +20,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [currentUser, setCurrentUser] = useState<AppUserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const fetchedRef = useRef<string | null>(null);
 
   const fetchAppUser = useCallback(async (userId: string) => {
+    if (fetchedRef.current === userId) return;
+    fetchedRef.current = userId;
     const { data, error } = await supabase
       .from('app_users')
-      .select('*')
+      .select('id, auth_user_id, name, login, role, access_level, squad_ids, max_capacity, hire_date, birthday, created_at')
       .eq('auth_user_id', userId)
       .maybeSingle();
     if (data && !error) {
       setCurrentUser(mapDbAppUser(data));
     } else {
-      // No app_user profile yet — create a minimal one
       setCurrentUser(null);
     }
   }, []);
@@ -69,6 +71,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signOut();
     setCurrentUser(null);
     setSession(null);
+    fetchedRef.current = null;
   }, []);
 
   // Signup removed — user creation is exclusively via admin edge function "create-user"
