@@ -1,55 +1,37 @@
 
 
-## Fix: Pontualidade Média incompatível com Tarefas Atrasadas
+## Fix: Percentuais absurdos na pagina Capacidade
 
 ### Problema
-Linha 68: quando `completed.length === 0`, `onTimePct` retorna 100% por default. Com 247 tarefas atrasadas e 0 concluídas, exibe "100% pontualidade" — logicamente impossível.
+`activeStatuses` inclui `'backlog'`, inflando a carga com 100+ tarefas por pessoa. maxCapacity=8 gera 1000%+.
 
-Linha 154: `avgOnTime` é média simples dos `onTimePct` individuais, propagando o mesmo bug.
+### Correcao em `src/pages/CapacityPage.tsx`
 
-### Correção em `src/pages/ProductivityPage.tsx`
-
-**1. Fórmula de `onTimePct` por membro (linha 68)**
-
-Mudar de `completed / completed` para considerar atrasadas abertas:
+**1. Separar statuses ativos de backlog**
 
 ```
-denominador = completed.length + late.length
-onTimePct = denominador > 0 ? Math.round((onTime.length / denominador) * 100) : null
+activeStatuses = ['in_progress', 'waiting_client', 'em_andamento', 'aguardando_cliente', 'revisao', 'aguardando_aprovacao', 'bloqueada']
+backlogStatuses = ['backlog']
 ```
 
-- `null` = sem dados (nem concluídas nem atrasadas)
-- 0 concluídas + 247 atrasadas → 0%
-- 5 no prazo + 0 atrasadas → 100%
+**2. Reformular userLoad memo**
 
-**2. Adicionar `deliveryRate` por membro (novo campo)**
+- `current`: conta apenas tarefas em `activeStatuses` (em execucao)
+- `backlog`: conta tarefas em `backlogStatuses` (informativo)
+- `projected7/15/30`: conta tarefas em backlog com deadline dentro do periodo (carga futura que vai cair na fila)
 
-```
-deliveryRate = (completed + late) > 0 ? Math.round(completed / (completed + late) * 100) : null
-```
+**3. Adicionar coluna "Backlog" na tabela**
 
-Taxa de Entrega: quantas foram finalizadas vs total pendente+finalizado.
+Nova coluna entre "Carga Atual" e "Max" mostrando quantidade de backlog por pessoa (texto muted, sem impacto no %).
 
-**3. KPI `avgOnTime` no topo (linha 154)**
+**4. Projecoes mostram backlog que vira carga**
 
-Recalcular com totais globais em vez de média de percentuais:
+As colunas 7d/15d/30d passam a mostrar: `carga_atual + backlog_com_deadline_no_periodo`. Isso indica "se nada mudar, em 7 dias esta pessoa tera X tarefas ativas".
 
-```
-totalOnTime = soma de onTime de todos os membros
-totalDenominator = totalCompleted + totalLate
-avgOnTime = totalDenominator > 0 ? Math.round((totalOnTime / totalDenominator) * 100) : null
-```
+**5. Legenda explicativa**
 
-Exibir "—" quando `null`.
-
-**4. Tabela ranking (onde exibe `onTimePct`)**
-
-Se `onTimePct === null`, mostrar "—" em vez de número.
-
-**5. Novo KPI card "Taxa de Entrega"**
-
-Adicionar card ao lado de Pontualidade mostrando `deliveryRate` global.
+Adicionar texto abaixo da tabela: "Carga = tarefas em andamento, aguardando cliente, revisao, aprovacao ou bloqueada. Backlog nao conta como carga ativa."
 
 ### Arquivo
-- `src/pages/ProductivityPage.tsx`
+- `src/pages/CapacityPage.tsx`
 
