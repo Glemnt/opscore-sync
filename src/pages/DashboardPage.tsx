@@ -176,14 +176,30 @@ export function DashboardPage() {
 
   const updateFilter = (key: keyof Filters, val: string) => setFilters(f => ({ ...f, [key]: val }));
 
-  // ── Filtered data ──────────────────────────────────────────────────────────
+  // ── Helper: check date in range ────────────────────────────────────────────
+  const isDateInRange = (dateStr: string | null | undefined) => {
+    if (!dateStr) return true; // no date = pass through
+    try {
+      const d = parseISO(dateStr);
+      return isWithinInterval(d, { start: filters.dateFrom, end: filters.dateTo });
+    } catch { return true; }
+  };
+
+  // ── Base filters (squad/responsible/health/etc — NO date) ─────────────────
+  const baseFilterClient = (c: typeof allClients[0]) => {
+    if (filters.squad !== '_all' && c.squadId !== filters.squad) return false;
+    if (filters.responsible !== '_all' && c.responsible !== filters.responsible && c.csResponsavel !== filters.responsible) return false;
+    if (filters.health !== '_all' && (c.healthColor ?? 'white') !== filters.health) return false;
+    if (filters.priority !== '_all' && c.prioridadeGeral !== filters.priority) return false;
+    if (filters.phase !== '_all' && c.faseMacro !== filters.phase) return false;
+    return true;
+  };
+
+  // ── Filtered data (WITH date) ─────────────────────────────────────────────
   const clients = useMemo(() => {
     return allClients.filter(c => {
-      if (filters.squad !== '_all' && c.squadId !== filters.squad) return false;
-      if (filters.responsible !== '_all' && c.responsible !== filters.responsible && c.csResponsavel !== filters.responsible) return false;
-      if (filters.health !== '_all' && (c.healthColor ?? 'white') !== filters.health) return false;
-      if (filters.priority !== '_all' && c.prioridadeGeral !== filters.priority) return false;
-      if (filters.phase !== '_all' && c.faseMacro !== filters.phase) return false;
+      if (!baseFilterClient(c)) return false;
+      if (!isDateInRange(c.startDate)) return false;
       return true;
     });
   }, [allClients, filters]);
@@ -195,6 +211,7 @@ export function DashboardPage() {
       if (!clientIds.has(p.clientId)) return false;
       if (filters.platform !== '_all' && p.platformSlug !== filters.platform) return false;
       if (filters.squad !== '_all' && p.squadId !== filters.squad) return false;
+      if (!isDateInRange(p.startDate)) return false;
       return true;
     });
   }, [allPlatforms, clientIds, filters]);
@@ -203,9 +220,32 @@ export function DashboardPage() {
     return allTasks.filter(t => {
       if (!clientIds.has(t.clientId)) return false;
       if (filters.responsible !== '_all' && t.responsible !== filters.responsible) return false;
+      // Task passes if createdAt OR deadline is within range
+      const createdIn = isDateInRange(t.createdAt);
+      const deadlineIn = isDateInRange(t.deadline);
+      if (!createdIn && !deadlineIn) return false;
       return true;
     });
   }, [allTasks, clientIds, filters]);
+
+  // ── Unfiltered by date (for real-time blocks: Atrasos & MRR) ──────────────
+  const unfilteredClients = useMemo(() => allClients.filter(baseFilterClient), [allClients, filters]);
+  const unfilteredClientIds = useMemo(() => new Set(unfilteredClients.map(c => c.id)), [unfilteredClients]);
+  const unfilteredPlatforms = useMemo(() => {
+    return allPlatforms.filter(p => {
+      if (!unfilteredClientIds.has(p.clientId)) return false;
+      if (filters.platform !== '_all' && p.platformSlug !== filters.platform) return false;
+      if (filters.squad !== '_all' && p.squadId !== filters.squad) return false;
+      return true;
+    });
+  }, [allPlatforms, unfilteredClientIds, filters]);
+  const unfilteredTasks = useMemo(() => {
+    return allTasks.filter(t => {
+      if (!unfilteredClientIds.has(t.clientId)) return false;
+      if (filters.responsible !== '_all' && t.responsible !== filters.responsible) return false;
+      return true;
+    });
+  }, [allTasks, unfilteredClientIds, filters]);
 
   // ── Drill-down state ──────────────────────────────────────────────────────
   const [drillDown, setDrillDown] = useState<{ title: string; items: DrillDownItem[] } | null>(null);
@@ -252,33 +292,34 @@ export function DashboardPage() {
     }));
   }, [activePlatforms, platformLabels]);
 
-  // ── BLOCO 3: Atrasos ──────────────────────────────────────────────────────
-  const overdueTasks = tasks.filter(t => new Date(t.deadline) < today && t.status !== 'done');
+  // ── BLOCO 3: Atrasos (usa dados SEM filtro de data — tempo real) ─────────
+  const overdueTasks = unfilteredTasks.filter(t => new Date(t.deadline) < today && t.status !== 'done');
   const stuckClients3 = useMemo(() => {
-    return clients.filter(c => {
-      const cTasks = tasks.filter(t => t.clientId === c.id && t.status !== 'done' && new Date(t.deadline) < today);
+    return unfilteredClients.filter(c => {
+      const cTasks = unfilteredTasks.filter(t => t.clientId === c.id && t.status !== 'done' && new Date(t.deadline) < today);
       return cTasks.some(t => differenceInDays(today, new Date(t.deadline)) >= 3);
     });
-  }, [clients, tasks, today]);
+  }, [unfilteredClients, unfilteredTasks, today]);
   const stuckClients7 = useMemo(() => {
-    return clients.filter(c => {
-      const cTasks = tasks.filter(t => t.clientId === c.id && t.status !== 'done' && new Date(t.deadline) < today);
+    return unfilteredClients.filter(c => {
+      const cTasks = unfilteredTasks.filter(t => t.clientId === c.id && t.status !== 'done' && new Date(t.deadline) < today);
       return cTasks.some(t => differenceInDays(today, new Date(t.deadline)) >= 7);
     });
-  }, [clients, tasks, today]);
-  const platformsStuckClient = overduePlatforms.filter(p => p.dependeCliente);
-  const platformsStuckOps = overduePlatforms.filter(p => !p.dependeCliente);
+  }, [unfilteredClients, unfilteredTasks, today]);
+  const rtOverduePlatforms = unfilteredPlatforms.filter(p => p.deadline && new Date(p.deadline) < today && !['performance', 'done', 'escala', 'churn', 'cancelado'].includes(p.phase));
+  const platformsStuckClient = rtOverduePlatforms.filter(p => p.dependeCliente);
+  const platformsStuckOps = rtOverduePlatforms.filter(p => !p.dependeCliente);
 
   const delayReasonsChart = useMemo(() => {
     const map: Record<string, number> = {};
-    [...overdueTasks.map(t => t.motivoAtraso), ...overduePlatforms.map(p => p.motivoAtraso)]
+    [...overdueTasks.map(t => t.motivoAtraso), ...rtOverduePlatforms.map(p => p.motivoAtraso)]
       .filter(r => r && r.trim())
       .forEach(r => { map[r] = (map[r] || 0) + 1; });
     return Object.entries(map)
       .sort((a, b) => b[1] - a[1])
       .slice(0, 5)
       .map(([name, value]) => ({ name: name.length > 25 ? name.slice(0, 25) + '…' : name, value }));
-  }, [overdueTasks, overduePlatforms]);
+  }, [overdueTasks, rtOverduePlatforms]);
 
   // ── BLOCO 4: Equipe ───────────────────────────────────────────────────────
   const teamData = useMemo(() => {
@@ -295,12 +336,13 @@ export function DashboardPage() {
 
   const overloaded = teamData.filter(t => t.active > 8);
 
-  // ── BLOCO 5: Receita ──────────────────────────────────────────────────────
-  const mrr = useMemo(() => activeClients.reduce((s, c) => s + (c.monthlyRevenue || 0), 0), [activeClients]);
+  // ── BLOCO 5: Receita (MRR = tempo real, adições/churn = filtrado) ─────────
+  const unfilteredActiveClients = unfilteredClients.filter(c => !churnKeys.has(c.status));
+  const mrr = useMemo(() => unfilteredActiveClients.reduce((s, c) => s + (c.monthlyRevenue || 0), 0), [unfilteredActiveClients]);
 
   const revenueByPlatform = useMemo(() => {
     const map: Record<string, number> = {};
-    activeClients.forEach(c => {
+    unfilteredActiveClients.forEach(c => {
       const plats = c.platforms?.length ? c.platforms : ['outro'];
       const rev = (c.monthlyRevenue || 0) / plats.length;
       plats.forEach(p => { map[p] = (map[p] || 0) + rev; });
@@ -309,7 +351,7 @@ export function DashboardPage() {
       name: platformLabels[slug] || slug,
       value: Math.round(value),
     })).sort((a, b) => b.value - a.value);
-  }, [activeClients, platformLabels]);
+  }, [unfilteredActiveClients, platformLabels]);
 
   const addedInPeriod = clients.filter(c => {
     const d = parseISO(c.startDate);
@@ -321,14 +363,14 @@ export function DashboardPage() {
   const allHealthScores = useHealthScores();
   const healthCounts = useMemo(() => {
     const counts = { green: 0, yellow: 0, red: 0, white: 0 };
-    activeClients.forEach(c => {
+    unfilteredActiveClients.forEach(c => {
       const h = allHealthScores[c.id]?.color ?? 'white';
       counts[h as keyof typeof counts] = (counts[h as keyof typeof counts] || 0) + 1;
     });
     return counts;
-  }, [activeClients, allHealthScores]);
+  }, [unfilteredActiveClients, allHealthScores]);
 
-  const churnRiskClients = activeClients.filter(c => c.riscoChurn && c.riscoChurn !== 'baixo');
+  const churnRiskClients = unfilteredActiveClients.filter(c => c.riscoChurn && c.riscoChurn !== 'baixo');
 
   // NPS Consolidated
   const npsStats = useMemo(() => {
@@ -539,7 +581,7 @@ export function DashboardPage() {
               onClick={() => openDrill('Demandas Atrasadas', overdueTasks.slice(0, 50).map(t => ({ id: t.id, name: t.title, detail: `${t.clientName} • ${t.responsible || 'N/A'}`, status: t.status })))}
             />
             <ClickableStat
-              label="Plataformas Atrasadas" value={overduePlatforms.length}
+              label="Plataformas Atrasadas" value={rtOverduePlatforms.length}
               icon={<AlertTriangle className="w-4 h-4 text-destructive" />} accent="bg-destructive/10"
             />
             <ClickableStat
