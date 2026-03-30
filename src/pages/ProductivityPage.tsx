@@ -217,9 +217,9 @@ export function ProductivityPage() {
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <StatCard icon={<CheckCircle className="w-5 h-5" />} label="Tarefas Concluídas" value={totalCompleted} />
-        <StatCard icon={<Clock className="w-5 h-5" />} label="Pontualidade Média" value={`${avgOnTime}%`} />
+        <StatCard icon={<Clock className="w-5 h-5" />} label="Pontualidade Média" value={avgOnTime != null ? `${avgOnTime}%` : '—'} />
+        <StatCard icon={<TrendingUp className="w-5 h-5" />} label="Taxa de Entrega" value={globalDeliveryRate != null ? `${globalDeliveryRate}%` : '—'} />
         <StatCard icon={<AlertTriangle className="w-5 h-5" />} label="Tarefas Atrasadas" value={totalLate} />
-        <StatCard icon={<Target className="w-5 h-5" />} label="Sobrecarregados" value={overloaded} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
@@ -403,8 +403,8 @@ export function ProductivityPage() {
                     </td>
                     <td className="text-center py-2.5 px-1 font-medium">{member.completedTasks}</td>
                     <td className="text-center py-2.5 px-1">
-                      <span className={cn('font-medium', member.onTimePct >= 80 ? 'text-success' : member.onTimePct >= 60 ? 'text-warning' : 'text-destructive')}>
-                        {member.onTimePct}%
+                      <span className={cn('font-medium', member.onTimePct == null ? 'text-muted-foreground' : member.onTimePct >= 80 ? 'text-success' : member.onTimePct >= 60 ? 'text-warning' : 'text-destructive')}>
+                        {member.onTimePct != null ? `${member.onTimePct}%` : '—'}
                       </span>
                     </td>
                     <td className="text-center py-2.5 px-1 text-muted-foreground">
