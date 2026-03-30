@@ -1,24 +1,21 @@
 
 
-## Fix: Labels em Português nos Gráficos de Fases
+## Fix: Corrigir acentuação nos Tipos de Demanda
 
 ### Problema
-`clientsByPhase` (linha 245) e `platformsByPhase` (linha 251) usam chaves brutas do banco como labels nos gráficos.
+Labels na tabela `task_types` com acentuação incorreta (ex: "Ativaçao" → "Ativação").
 
-### Correção em `src/pages/ReportsPage.tsx`
+### Correção
+Executar 5 UPDATEs na tabela `task_types` via insert tool (é alteração de dados, não de schema):
 
-**1. Criar mapa `phaseLabels`** no topo do componente (ou fora dele como constante):
+```sql
+UPDATE task_types SET label = 'Ativação de Clips' WHERE label LIKE '%Ativaçao de Clps%';
+UPDATE task_types SET label = 'Ativação de Termômetro' WHERE label LIKE '%Ativaçao de Termometro%';
+UPDATE task_types SET label = 'Criação de Anúncio' WHERE label LIKE '%Criaçao de Anuncio%';
+UPDATE task_types SET label = 'Decoração da Loja' WHERE label LIKE '%Decoraçao da Loja%';
+UPDATE task_types SET label = 'Otimização do Ads' WHERE label LIKE '%Otimizaçao do Ads%';
+```
 
-```typescript
-const phaseLabels: Record<string, string> = {
-  onboarding: 'Onboarding',
-  onboard: 'Onboard',
-  implementacao: 'Implementação',
-  implementacao_ativa: 'Implementação Ativa',
-  validacao_final: 'Validação Final',
-  performance: 'Performance',
-  escala: 'Escala',
-  active: 'Ativo',
-  paused: 'Pausado',
-  pausado: 'Pausado',
-  chur
+### Nenhum arquivo de código alterado
+Os labels vêm direto do banco via `useTaskTypesQuery`. Corrigir no banco resolve em todos os lugares.
+
