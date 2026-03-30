@@ -1,21 +1,37 @@
 
 
-## Fix: Corrigir acentuação nos Tipos de Demanda
+## Fix: Normalizar cargos e nomes na página Admin
 
 ### Problema
-Labels na tabela `task_types` com acentuação incorreta (ex: "Ativaçao" → "Ativação").
+1. `roleLabels` (linhas 32-38) usa ALL CAPS: `'AUXILIAR DE ECOMMERCE'`, `'MANAGER'`, etc.
+2. `allRoleLabels` (linhas 42-48) mistura title case (legado) com ALL CAPS (oficial).
+3. Linha 552: `u.name` renderizado sem formatação — nomes em minúscula no banco aparecem assim.
 
-### Correção
-Executar 5 UPDATEs na tabela `task_types` via insert tool (é alteração de dados, não de schema):
+### Correção em `src/pages/SettingsPage.tsx`
 
-```sql
-UPDATE task_types SET label = 'Ativação de Clips' WHERE label LIKE '%Ativaçao de Clps%';
-UPDATE task_types SET label = 'Ativação de Termômetro' WHERE label LIKE '%Ativaçao de Termometro%';
-UPDATE task_types SET label = 'Criação de Anúncio' WHERE label LIKE '%Criaçao de Anuncio%';
-UPDATE task_types SET label = 'Decoração da Loja' WHERE label LIKE '%Decoraçao da Loja%';
-UPDATE task_types SET label = 'Otimização do Ads' WHERE label LIKE '%Otimizaçao do Ads%';
+**1. Atualizar `roleLabels` e `allRoleLabels` (linhas 31-48)**
+
+```typescript
+const roleLabels: Record<string, string> = {
+  auxiliar_ecommerce: 'Auxiliar de E-commerce',
+  assistente_ecommerce: 'Assistente de E-commerce',
+  manager: 'Manager',
+  head: 'Head',
+  cs: 'CS',
+  coo: 'COO',
+  ceo: 'CEO',
+};
+
+const allRoleLabels: Record<string, string> = {
+  ...roleLabels,
+  operacional: 'Operacional',
+  design: 'Design',
+  copy: 'Copy',
+  gestao: 'Gestão',
+};
 ```
 
-### Nenhum arquivo de código alterado
-Os labels vêm direto do banco via `useTaskTypesQuery`. Corrigir no banco resolve em todos os lugares.
+**2. Criar helper `titleCase` e aplicar em `u.name` (linha 552)**
 
+```typescript
+function titleCase(str: string)
