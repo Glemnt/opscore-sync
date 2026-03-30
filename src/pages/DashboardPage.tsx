@@ -292,33 +292,34 @@ export function DashboardPage() {
     }));
   }, [activePlatforms, platformLabels]);
 
-  // ── BLOCO 3: Atrasos ──────────────────────────────────────────────────────
-  const overdueTasks = tasks.filter(t => new Date(t.deadline) < today && t.status !== 'done');
+  // ── BLOCO 3: Atrasos (usa dados SEM filtro de data — tempo real) ─────────
+  const overdueTasks = unfilteredTasks.filter(t => new Date(t.deadline) < today && t.status !== 'done');
   const stuckClients3 = useMemo(() => {
-    return clients.filter(c => {
-      const cTasks = tasks.filter(t => t.clientId === c.id && t.status !== 'done' && new Date(t.deadline) < today);
+    return unfilteredClients.filter(c => {
+      const cTasks = unfilteredTasks.filter(t => t.clientId === c.id && t.status !== 'done' && new Date(t.deadline) < today);
       return cTasks.some(t => differenceInDays(today, new Date(t.deadline)) >= 3);
     });
-  }, [clients, tasks, today]);
+  }, [unfilteredClients, unfilteredTasks, today]);
   const stuckClients7 = useMemo(() => {
-    return clients.filter(c => {
-      const cTasks = tasks.filter(t => t.clientId === c.id && t.status !== 'done' && new Date(t.deadline) < today);
+    return unfilteredClients.filter(c => {
+      const cTasks = unfilteredTasks.filter(t => t.clientId === c.id && t.status !== 'done' && new Date(t.deadline) < today);
       return cTasks.some(t => differenceInDays(today, new Date(t.deadline)) >= 7);
     });
-  }, [clients, tasks, today]);
-  const platformsStuckClient = overduePlatforms.filter(p => p.dependeCliente);
-  const platformsStuckOps = overduePlatforms.filter(p => !p.dependeCliente);
+  }, [unfilteredClients, unfilteredTasks, today]);
+  const rtOverduePlatforms = unfilteredPlatforms.filter(p => p.deadline && new Date(p.deadline) < today && !['performance', 'done', 'escala', 'churn', 'cancelado'].includes(p.phase));
+  const platformsStuckClient = rtOverduePlatforms.filter(p => p.dependeCliente);
+  const platformsStuckOps = rtOverduePlatforms.filter(p => !p.dependeCliente);
 
   const delayReasonsChart = useMemo(() => {
     const map: Record<string, number> = {};
-    [...overdueTasks.map(t => t.motivoAtraso), ...overduePlatforms.map(p => p.motivoAtraso)]
+    [...overdueTasks.map(t => t.motivoAtraso), ...rtOverduePlatforms.map(p => p.motivoAtraso)]
       .filter(r => r && r.trim())
       .forEach(r => { map[r] = (map[r] || 0) + 1; });
     return Object.entries(map)
       .sort((a, b) => b[1] - a[1])
       .slice(0, 5)
       .map(([name, value]) => ({ name: name.length > 25 ? name.slice(0, 25) + '…' : name, value }));
-  }, [overdueTasks, overduePlatforms]);
+  }, [overdueTasks, rtOverduePlatforms]);
 
   // ── BLOCO 4: Equipe ───────────────────────────────────────────────────────
   const teamData = useMemo(() => {
@@ -335,8 +336,9 @@ export function DashboardPage() {
 
   const overloaded = teamData.filter(t => t.active > 8);
 
-  // ── BLOCO 5: Receita ──────────────────────────────────────────────────────
-  const mrr = useMemo(() => activeClients.reduce((s, c) => s + (c.monthlyRevenue || 0), 0), [activeClients]);
+  // ── BLOCO 5: Receita (MRR = tempo real, adições/churn = filtrado) ─────────
+  const unfilteredActiveClients = unfilteredClients.filter(c => !churnKeys.has(c.status));
+  const mrr = useMemo(() => unfilteredActiveClients.reduce((s, c) => s + (c.monthlyRevenue || 0), 0), [unfilteredActiveClients]);
 
   const revenueByPlatform = useMemo(() => {
     const map: Record<string, number> = {};
