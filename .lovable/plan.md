@@ -1,50 +1,59 @@
 
 
-## Fix: 4 Bugs Visuais Agrupados
+## Remover `as any` desnecessários dos hooks
 
-### 1. Saúde do Cliente — labels truncados (`ClientDetailModal.tsx`, linha 1087)
+### Situação atual
+O arquivo `src/integrations/supabase/types.ts` já contém todas as 30+ tabelas (timeline_events, task_pauses, kanban_column_configs, platform_catalog, etc.). Os `as any` foram adicionados quando as tabelas ainda não existiam nos tipos, mas agora são desnecessários.
 
-Remover classe `truncate` e `w-28` do span do label. Usar `whitespace-nowrap` ou `shrink-0` para manter legível:
+### Arquivos a alterar (14 hooks)
 
+Em cada arquivo, remover:
+- `'table_name' as any` → `'table_name'`
+- `{...} as any` em `.insert()`, `.update()`, `.upsert()` → remover o cast
+- `(data as any[])` → `(data ?? [])` (o tipo já é inferido)
+- `(existing as any)?.[0]` → `existing?.[0]`
+
+| Arquivo | Usos de `as any` |
+|---------|-----------------|
+| `useTimelineQuery.ts` | ~6 |
+| `useClientPlatformChecklistQuery.ts` | ~5 |
+| `useOnboardingChecklistQuery.ts` | ~4 |
+| `useTaskPausesQuery.ts` | ~4 |
+| `useKanbanColumnConfigsQuery.ts` | ~2 |
+| `usePlatformCatalogQuery.ts` | ~4 |
+| `useCsJourneyQuery.ts` | ~10+ |
+| `usePhaseDemandsQuery.ts` | ~4 |
+| `usePlatformsQuery.ts` | ~3 |
+| `useClientStatusesQuery.ts` | ~8 |
+| `useTaskStatusesQuery.ts` | ~8 |
+| `useTaskTypesQuery.ts` | ~4 |
+| `usePlatformPhaseStatusesQuery.ts` | ~4+ |
+| `usePlatformChatNotesQuery.ts` | ~2+ |
+
+### Exemplo de transformação
+
+```typescript
+// ANTES
+const { data, error } = await supabase
+  .from('timeline_events' as any)
+  .select('*');
+return (data as any[]).map(mapRow);
+
+// DEPOIS
+const { data, error } = await supabase
+  .from('timeline_events')
+  .select('*');
+return (data ?? []).map(mapRow);
 ```
-- <span className="text-[10px] text-muted-foreground w-28 truncate">
-+ <span className="text-[10px] text-muted-foreground shrink-0">
-```
 
-### 2. Kanban — contador cortado (`TasksPage.tsx`, linhas 399-427)
+### O que NÃO muda
+- `src/integrations/supabase/types.ts` — nunca editado manualmente
+- `src/integrations/supabase/client.ts` — nunca editado manualmente
+- Os 3 `as any` em `useAppUsersQuery.ts` (cast de erro, não de tabela) — mantidos
+- `useClientFlowsQuery.ts` (`row as any` para acessar join) — mantido se o tipo de join não estiver no schema
 
-O header usa `flex items-center justify-between` mas o container pai pode ter overflow hidden. Adicionar `whitespace-nowrap` no header div e `overflow-visible` ou `min-w-0` ajustado:
-
-```
-- 'flex items-center justify-between mb-3 pb-3 border-b-2 ...'
-+ 'flex items-center justify-between mb-3 pb-3 border-b-2 whitespace-nowrap gap-2 ...'
-```
-
-E no badge de contagem (linha 426), adicionar `shrink-0`.
-
-### 3. Checklist Onboarding — cabeçalhos truncados (`OnboardingChecklistPage.tsx`, linha 275-276)
-
-Headers já têm `title` com tooltip. Problema é `max-w-[70px]` + `truncate`. Aumentar `max-w` e permitir quebra:
-
-```
-- <th ... className="px-1 py-1.5 text-center min-w-[60px] max-w-[70px]">
--   <span className="block truncate text-[10px] ...">
-+ <th ... className="px-1 py-1.5 text-center min-w-[70px] max-w-[90px]">
-+   <span className="block text-[10px] leading-tight break-words ...">
-```
-
-### 4. Catálogo de Plataformas — slug exposto (`PlatformCatalogPage.tsx`, linha 74)
-
-Substituir slug por info útil:
-
-```
-- <p className="text-xs text-muted-foreground font-mono mt-0.5">{p.slug}</p>
-+ <p className="text-xs text-muted-foreground mt-0.5">Onboarding: {p.prazo_onboarding}d · Implementação: {p.prazo_implementacao}d</p>
-```
-
-### Arquivos alterados
-- `src/components/ClientDetailModal.tsx`
-- `src/pages/TasksPage.tsx`
-- `src/pages/OnboardingChecklistPage.tsx`
-- `src/pages/PlatformCatalogPage.tsx`
+### Resultado
+- ~200+ `as any` removidos
+- Type-safety real em todas as queries
+- Autocompletion correto no editor
 
