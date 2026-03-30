@@ -65,7 +65,9 @@ export function ProductivityPage() {
         if (!t.completedAt) return true;
         return new Date(t.completedAt) <= new Date(t.deadline + 'T23:59:59');
       });
-      const onTimePct = completed.length > 0 ? Math.round((onTime.length / completed.length) * 100) : 100;
+      const denominator = completed.length + late.length;
+      const onTimePct = denominator > 0 ? Math.round((onTime.length / denominator) * 100) : null;
+      const deliveryRate = denominator > 0 ? Math.round((completed.length / denominator) * 100) : null;
 
       // Average resolution time (minutes)
       const tempos = completed.map(t => t.tempoRealMinutos).filter((v): v is number => v != null && v > 0);
@@ -99,6 +101,7 @@ export function ProductivityPage() {
         completedTasks: completed.length,
         lateTasks: late.length,
         onTimePct,
+        deliveryRate,
         currentLoad,
         inProgress,
         avgResolutionMin,
@@ -139,20 +142,26 @@ export function ProductivityPage() {
   const performanceData = memberMetrics.map(m => ({
     name: m.name.split(' ')[0],
     concluidas: m.completedTasks,
-    noPrazo: Math.round(m.completedTasks * m.onTimePct / 100),
+    noPrazo: Math.round(m.completedTasks * (m.onTimePct ?? 0) / 100),
   }));
 
   const radarData = memberMetrics.slice(0, 6).map(m => ({
     name: m.name.split(' ')[0],
-    pontualidade: m.onTimePct,
+    pontualidade: m.onTimePct ?? 0,
     nota: m.avgNota * 10,
     velocidade: Math.min(100, m.avgResolutionMin > 0 ? Math.round(100 - Math.min(100, m.avgResolutionMin / 5)) : 50),
     qualidade: 100 - m.reworkRate,
   }));
 
   const totalCompleted = memberMetrics.reduce((a, m) => a + m.completedTasks, 0);
-  const avgOnTime = memberMetrics.length > 0 ? Math.round(memberMetrics.reduce((a, m) => a + m.onTimePct, 0) / memberMetrics.length) : 0;
   const totalLate = memberMetrics.reduce((a, m) => a + m.lateTasks, 0);
+  const totalOnTime = memberMetrics.reduce((a, m) => {
+    const onTimeCount = Math.round(m.completedTasks * (m.onTimePct ?? 0) / 100);
+    return a + onTimeCount;
+  }, 0);
+  const globalDenominator = totalCompleted + totalLate;
+  const avgOnTime = globalDenominator > 0 ? Math.round((totalOnTime / globalDenominator) * 100) : null;
+  const globalDeliveryRate = globalDenominator > 0 ? Math.round((totalCompleted / globalDenominator) * 100) : null;
   const overloaded = memberMetrics.filter(m => m.currentLoad >= 8).length;
 
   const sorted = [...memberMetrics].sort((a, b) => b.score - a.score);
@@ -208,9 +217,9 @@ export function ProductivityPage() {
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <StatCard icon={<CheckCircle className="w-5 h-5" />} label="Tarefas Concluídas" value={totalCompleted} />
-        <StatCard icon={<Clock className="w-5 h-5" />} label="Pontualidade Média" value={`${avgOnTime}%`} />
+        <StatCard icon={<Clock className="w-5 h-5" />} label="Pontualidade Média" value={avgOnTime != null ? `${avgOnTime}%` : '—'} />
+        <StatCard icon={<TrendingUp className="w-5 h-5" />} label="Taxa de Entrega" value={globalDeliveryRate != null ? `${globalDeliveryRate}%` : '—'} />
         <StatCard icon={<AlertTriangle className="w-5 h-5" />} label="Tarefas Atrasadas" value={totalLate} />
-        <StatCard icon={<Target className="w-5 h-5" />} label="Sobrecarregados" value={overloaded} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
@@ -394,8 +403,8 @@ export function ProductivityPage() {
                     </td>
                     <td className="text-center py-2.5 px-1 font-medium">{member.completedTasks}</td>
                     <td className="text-center py-2.5 px-1">
-                      <span className={cn('font-medium', member.onTimePct >= 80 ? 'text-success' : member.onTimePct >= 60 ? 'text-warning' : 'text-destructive')}>
-                        {member.onTimePct}%
+                      <span className={cn('font-medium', member.onTimePct == null ? 'text-muted-foreground' : member.onTimePct >= 80 ? 'text-success' : member.onTimePct >= 60 ? 'text-warning' : 'text-destructive')}>
+                        {member.onTimePct != null ? `${member.onTimePct}%` : '—'}
                       </span>
                     </td>
                     <td className="text-center py-2.5 px-1 text-muted-foreground">
