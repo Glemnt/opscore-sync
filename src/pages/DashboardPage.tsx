@@ -176,14 +176,30 @@ export function DashboardPage() {
 
   const updateFilter = (key: keyof Filters, val: string) => setFilters(f => ({ ...f, [key]: val }));
 
-  // ── Filtered data ──────────────────────────────────────────────────────────
+  // ── Helper: check date in range ────────────────────────────────────────────
+  const isDateInRange = (dateStr: string | null | undefined) => {
+    if (!dateStr) return true; // no date = pass through
+    try {
+      const d = parseISO(dateStr);
+      return isWithinInterval(d, { start: filters.dateFrom, end: filters.dateTo });
+    } catch { return true; }
+  };
+
+  // ── Base filters (squad/responsible/health/etc — NO date) ─────────────────
+  const baseFilterClient = (c: typeof allClients[0]) => {
+    if (filters.squad !== '_all' && c.squadId !== filters.squad) return false;
+    if (filters.responsible !== '_all' && c.responsible !== filters.responsible && c.csResponsavel !== filters.responsible) return false;
+    if (filters.health !== '_all' && (c.healthColor ?? 'white') !== filters.health) return false;
+    if (filters.priority !== '_all' && c.prioridadeGeral !== filters.priority) return false;
+    if (filters.phase !== '_all' && c.faseMacro !== filters.phase) return false;
+    return true;
+  };
+
+  // ── Filtered data (WITH date) ─────────────────────────────────────────────
   const clients = useMemo(() => {
     return allClients.filter(c => {
-      if (filters.squad !== '_all' && c.squadId !== filters.squad) return false;
-      if (filters.responsible !== '_all' && c.responsible !== filters.responsible && c.csResponsavel !== filters.responsible) return false;
-      if (filters.health !== '_all' && (c.healthColor ?? 'white') !== filters.health) return false;
-      if (filters.priority !== '_all' && c.prioridadeGeral !== filters.priority) return false;
-      if (filters.phase !== '_all' && c.faseMacro !== filters.phase) return false;
+      if (!baseFilterClient(c)) return false;
+      if (!isDateInRange(c.startDate)) return false;
       return true;
     });
   }, [allClients, filters]);
@@ -195,6 +211,7 @@ export function DashboardPage() {
       if (!clientIds.has(p.clientId)) return false;
       if (filters.platform !== '_all' && p.platformSlug !== filters.platform) return false;
       if (filters.squad !== '_all' && p.squadId !== filters.squad) return false;
+      if (!isDateInRange(p.startDate)) return false;
       return true;
     });
   }, [allPlatforms, clientIds, filters]);
@@ -203,9 +220,32 @@ export function DashboardPage() {
     return allTasks.filter(t => {
       if (!clientIds.has(t.clientId)) return false;
       if (filters.responsible !== '_all' && t.responsible !== filters.responsible) return false;
+      // Task passes if createdAt OR deadline is within range
+      const createdIn = isDateInRange(t.createdAt);
+      const deadlineIn = isDateInRange(t.deadline);
+      if (!createdIn && !deadlineIn) return false;
       return true;
     });
   }, [allTasks, clientIds, filters]);
+
+  // ── Unfiltered by date (for real-time blocks: Atrasos & MRR) ──────────────
+  const unfilteredClients = useMemo(() => allClients.filter(baseFilterClient), [allClients, filters]);
+  const unfilteredClientIds = useMemo(() => new Set(unfilteredClients.map(c => c.id)), [unfilteredClients]);
+  const unfilteredPlatforms = useMemo(() => {
+    return allPlatforms.filter(p => {
+      if (!unfilteredClientIds.has(p.clientId)) return false;
+      if (filters.platform !== '_all' && p.platformSlug !== filters.platform) return false;
+      if (filters.squad !== '_all' && p.squadId !== filters.squad) return false;
+      return true;
+    });
+  }, [allPlatforms, unfilteredClientIds, filters]);
+  const unfilteredTasks = useMemo(() => {
+    return allTasks.filter(t => {
+      if (!unfilteredClientIds.has(t.clientId)) return false;
+      if (filters.responsible !== '_all' && t.responsible !== filters.responsible) return false;
+      return true;
+    });
+  }, [allTasks, unfilteredClientIds, filters]);
 
   // ── Drill-down state ──────────────────────────────────────────────────────
   const [drillDown, setDrillDown] = useState<{ title: string; items: DrillDownItem[] } | null>(null);
