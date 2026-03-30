@@ -1,35 +1,55 @@
 
 
-## Fix: Filtro de Período no Dashboard Executivo
+## Fix: Pontualidade Média incompatível com Tarefas Atrasadas
 
 ### Problema
-Os `useMemo` de `clients`, `platforms` e `tasks` (linhas 180-208) não aplicam `filters.dateFrom`/`filters.dateTo`. Os valores mudam no state mas nunca filtram dados.
+Linha 68: quando `completed.length === 0`, `onTimePct` retorna 100% por default. Com 247 tarefas atrasadas e 0 concluídas, exibe "100% pontualidade" — logicamente impossível.
 
-### Correção
+Linha 154: `avgOnTime` é média simples dos `onTimePct` individuais, propagando o mesmo bug.
 
-**Arquivo: `src/pages/DashboardPage.tsx`**
+### Correção em `src/pages/ProductivityPage.tsx`
 
-1. **`clients` useMemo (linha 180)** — Adicionar filtro por `startDate`:
-   - Se `c.startDate` existe, verificar se está dentro de `[dateFrom, dateTo]` usando `isWithinInterval`
-   - Clientes sem `startDate` passam sem filtro de data
+**1. Fórmula de `onTimePct` por membro (linha 68)**
 
-2. **`platforms` useMemo (linha 193)** — Adicionar filtro por `startDate` da plataforma:
-   - Se `p.startDate` existe, verificar se está dentro do range
+Mudar de `completed / completed` para considerar atrasadas abertas:
 
-3. **`tasks` useMemo (linha 202)** — Adicionar filtro por `createdAt` OU `deadline`:
-   - Tarefa entra se `createdAt` está no range OU `deadline` está no range
+```
+denominador = completed.length + late.length
+onTimePct = denominador > 0 ? Math.round((onTime.length / denominador) * 100) : null
+```
 
-4. **Dados sem filtro de período** — Criar memos separados para:
-   - **BLOCO 3 (Atrasos)**: Usar `allClients`/`allPlatforms`/`allTasks` filtrados apenas por squad/responsible (sem data), pois atrasos são em tempo real
-   - **BLOCO 5 (Receita)**: MRR usa dados atuais sem filtro de data; "Clientes adicionados" e "Churn" usam `clients` filtrado por período
+- `null` = sem dados (nem concluídas nem atrasadas)
+- 0 concluídas + 247 atrasadas → 0%
+- 5 no prazo + 0 atrasadas → 100%
 
-### Implementação concreta
+**2. Adicionar `deliveryRate` por membro (novo campo)**
 
-- Adicionar 3 linhas de filtro de data nos 3 useMemo existentes
-- Criar `unfilteredByDateClients`, `unfilteredByDatePlatforms`, `unfilteredByDateTasks` — mesmos filtros de squad/responsible/etc mas sem data — para uso nos blocos de Atraso
-- No BLOCO 3, trocar referências de `clients`/`platforms`/`tasks` para as versões sem filtro de data
-- No BLOCO 5, MRR usa dados sem filtro; contagens de período usam dados filtrados
+```
+deliveryRate = (completed + late) > 0 ? Math.round(completed / (completed + late) * 100) : null
+```
 
-### Arquivo alterado
-- `src/pages/DashboardPage.tsx`
+Taxa de Entrega: quantas foram finalizadas vs total pendente+finalizado.
+
+**3. KPI `avgOnTime` no topo (linha 154)**
+
+Recalcular com totais globais em vez de média de percentuais:
+
+```
+totalOnTime = soma de onTime de todos os membros
+totalDenominator = totalCompleted + totalLate
+avgOnTime = totalDenominator > 0 ? Math.round((totalOnTime / totalDenominator) * 100) : null
+```
+
+Exibir "—" quando `null`.
+
+**4. Tabela ranking (onde exibe `onTimePct`)**
+
+Se `onTimePct === null`, mostrar "—" em vez de número.
+
+**5. Novo KPI card "Taxa de Entrega"**
+
+Adicionar card ao lado de Pontualidade mostrando `deliveryRate` global.
+
+### Arquivo
+- `src/pages/ProductivityPage.tsx`
 
