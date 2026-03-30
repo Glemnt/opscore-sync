@@ -581,7 +581,7 @@ export function DashboardPage() {
               onClick={() => openDrill('Demandas Atrasadas', overdueTasks.slice(0, 50).map(t => ({ id: t.id, name: t.title, detail: `${t.clientName} • ${t.responsible || 'N/A'}`, status: t.status })))}
             />
             <ClickableStat
-              label="Plataformas Atrasadas" value={overduePlatforms.length}
+              label="Plataformas Atrasadas" value={rtOverduePlatforms.length}
               icon={<AlertTriangle className="w-4 h-4 text-destructive" />} accent="bg-destructive/10"
             />
             <ClickableStat
