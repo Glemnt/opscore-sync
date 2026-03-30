@@ -1084,7 +1084,7 @@ function HealthScoreSection({ client }: { client: Client }) {
           <div className="space-y-1">
             {(Object.keys(BREAKDOWN_LABELS) as Array<keyof typeof BREAKDOWN_LABELS>).map(key => (
               <div key={key} className="flex items-center gap-2">
-                <span className="text-[10px] text-muted-foreground w-28 truncate">{BREAKDOWN_LABELS[key]} ({BREAKDOWN_WEIGHTS[key]}%)</span>
+                <span className="text-[10px] text-muted-foreground shrink-0">{BREAKDOWN_LABELS[key]} ({BREAKDOWN_WEIGHTS[key]}%)</span>
                 <Progress value={health.breakdown[key]} className="h-1.5 flex-1" />
                 <span className="text-[10px] font-mono w-8 text-right">{health.breakdown[key]}</span>
               </div>

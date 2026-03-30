@@ -272,8 +272,8 @@ export function OnboardingChecklistPage() {
                 <th className="px-2 py-1.5 text-left min-w-[80px]">D15 Int.</th>
                 <th className="px-2 py-1.5 text-center min-w-[80px]">Semáforo</th>
                 {ONBOARDING_TASKS.map((t) => (
-                  <th key={t.key} className="px-1 py-1.5 text-center min-w-[60px] max-w-[70px]" title={t.label}>
-                    <span className="block truncate text-[10px] text-muted-foreground">{t.shortLabel}</span>
+                  <th key={t.key} className="px-1 py-1.5 text-center min-w-[70px] max-w-[90px]" title={t.label}>
+                    <span className="block text-[10px] leading-tight break-words text-muted-foreground">{t.shortLabel}</span>
                   </th>
                 ))}
               </tr>
