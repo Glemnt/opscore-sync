@@ -237,18 +237,40 @@ export function ReportsPage() {
   const opFilteredPlatforms = useMemo(() => filterPlatforms(clientPlatforms, opSquad, opResponsible, opPlatform), [clientPlatforms, opSquad, opResponsible, opPlatform, visibleClientIds]);
   const opFilteredTasks = useMemo(() => filterTasks(tasks, opPeriod, opSquad, opResponsible, opPlatform), [tasks, opPeriod, opSquad, opResponsible, opPlatform, squads]);
 
+  const phaseLabels: Record<string, string> = {
+    onboarding: 'Onboarding',
+    onboard: 'Onboard',
+    implementacao: 'Implementação',
+    implementacao_ativa: 'Implementação Ativa',
+    validacao_final: 'Validação Final',
+    performance: 'Performance',
+    escala: 'Escala',
+    active: 'Ativo',
+    paused: 'Pausado',
+    pausado: 'Pausado',
+    churned: 'Churn',
+    cancelado: 'Cancelado',
+    inativo: 'Inativo',
+    nao_iniciada: 'Não Iniciada',
+    aguardando_cliente: 'Aguardando Cliente',
+    bloqueada: 'Bloqueada',
+    pronta_performance: 'Pronta p/ Performance',
+    em_performance: 'Em Performance',
+    escalada: 'Escalada',
+  };
+
   const clientsByPhase = useMemo(() => {
     const map: Record<string, number> = {};
     let filtered = activeClients;
     if (opSquad !== 'all') filtered = filtered.filter(c => c.squadId === opSquad);
     filtered.forEach(c => { map[c.faseMacro || 'implementacao'] = (map[c.faseMacro || 'implementacao'] || 0) + 1; });
-    return Object.entries(map).map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count);
+    return Object.entries(map).map(([key, count]) => ({ name: phaseLabels[key] || key, count })).sort((a, b) => b.count - a.count);
   }, [activeClients, opSquad]);
 
   const platformsByPhase = useMemo(() => {
     const map: Record<string, number> = {};
     opFilteredPlatforms.forEach(p => { map[p.phase] = (map[p.phase] || 0) + 1; });
-    return Object.entries(map).map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count);
+    return Object.entries(map).map(([key, count]) => ({ name: phaseLabels[key] || key, count })).sort((a, b) => b.count - a.count);
   }, [opFilteredPlatforms]);
 
   const platformsByConsultor = useMemo(() => {
